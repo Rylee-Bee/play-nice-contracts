@@ -1,0 +1,488 @@
+{
+  "schema": "play-nice/lock-v1",
+  "generated_from": {
+    "contract_count": 60
+  },
+  "contracts": [
+    {
+      "id": "accessibility-floor",
+      "version": "1.0.0",
+      "path": "contracts/human/ACCESSIBILITY_FLOOR.md",
+      "sha256": "2b4b107059db4f991e37bbc8f22f16662e730bd2f9499cf8f21bf791c8296120",
+      "receipt": "ridge-meadow-kindle",
+      "status": "canonical"
+    },
+    {
+      "id": "agent-behavior",
+      "version": "1.0.0",
+      "path": "contracts/agents/AGENT_BEHAVIOR.md",
+      "sha256": "9dd75fcf902818c50054a8d5a6bdcd02b90d27f0312b624342531f29117f1348",
+      "receipt": "wren-compass-timber",
+      "status": "canonical"
+    },
+    {
+      "id": "api",
+      "version": "1.0.0",
+      "path": "contracts/interfaces/API.md",
+      "sha256": "3987e89294e735f3506fc008dc4293ac1dc9f8a67e19d3132ad3756a19af83b1",
+      "receipt": "jetty-window-urnfield",
+      "status": "canonical"
+    },
+    {
+      "id": "attention-and-focus",
+      "version": "1.0.0",
+      "path": "contracts/human/ATTENTION_AND_FOCUS.md",
+      "sha256": "a693f2532c9a9a06ee4cc90a47b5a1967bd80aba286e62b2871a5dd70e255d2f",
+      "receipt": "kindle-inkstone-timber",
+      "status": "canonical"
+    },
+    {
+      "id": "authentication",
+      "version": "1.0.0",
+      "path": "contracts/security/AUTHENTICATION.md",
+      "sha256": "d090300c16b28c6c05a61aaef0f8b5482fdd4608ea285b5846eb7695575b0a94",
+      "receipt": "bramble-zenith-gable",
+      "status": "canonical"
+    },
+    {
+      "id": "authorization",
+      "version": "1.0.0",
+      "path": "contracts/security/AUTHORIZATION.md",
+      "sha256": "08e4badb355584e1f7426c9fdac4d78e45cc031c6691c52594440cf8aa4fea82",
+      "receipt": "compass-vellum-dovetail",
+      "status": "canonical"
+    },
+    {
+      "id": "bounded-work",
+      "version": "1.0.0",
+      "path": "contracts/engineering/BOUNDED_WORK.md",
+      "sha256": "ca2ce20133a20ad24daaf331d75626a91bf47867f93c246919949c4276f4628b",
+      "receipt": "meadow-willow-cedar",
+      "status": "canonical"
+    },
+    {
+      "id": "capability-first",
+      "version": "1.0.0",
+      "path": "contracts/interoperability/CAPABILITY_FIRST.md",
+      "sha256": "2ec333692742411bad41f8a9e9883ed128c3c391a876417243b756caa6e557a6",
+      "receipt": "orchard-river-inkstone",
+      "status": "canonical"
+    },
+    {
+      "id": "cli",
+      "version": "1.0.0",
+      "path": "contracts/interfaces/CLI.md",
+      "sha256": "95ea53151175d5bcce668c49004a41b0addf397e12258821f0bd54684d4d1138",
+      "receipt": "timber-latch-basalt",
+      "status": "canonical"
+    },
+    {
+      "id": "complexity-on-demand",
+      "version": "1.0.0",
+      "path": "contracts/human/COMPLEXITY_ON_DEMAND.md",
+      "sha256": "85d84acbf3932173855a9124b05bf7b6579e7a3b697c28eb97a545b1358bc295",
+      "receipt": "anchor-window-willow",
+      "status": "canonical"
+    },
+    {
+      "id": "contract-attestation",
+      "version": "1.1.0",
+      "path": "contracts/agents/CONTRACT_ATTESTATION.md",
+      "sha256": "47bc2e5fadb73d5ca3311b9e72888489f23ee0e5b05a3615c08eaba474a8c107",
+      "receipt": "kindle-cedar-beacon",
+      "status": "canonical"
+    },
+    {
+      "id": "copy-and-language",
+      "version": "1.0.0",
+      "path": "contracts/experience/COPY_AND_LANGUAGE.md",
+      "sha256": "d4da9e0d7a38f986da935850e4f23c67fe659bd77c4b80db592ba3f97b705f76",
+      "receipt": "amber-wren-marble",
+      "status": "canonical"
+    },
+    {
+      "id": "data-classification",
+      "version": "1.0.0",
+      "path": "contracts/security/DATA_CLASSIFICATION.md",
+      "sha256": "81c48ca3026a0c6e1504b3b47d2c40155a301b7a9bbd54f98a280d7b3782fb85",
+      "receipt": "inkstone-quartz-sail",
+      "status": "canonical"
+    },
+    {
+      "id": "dependency-discipline",
+      "version": "1.0.0",
+      "path": "contracts/engineering/DEPENDENCY_DISCIPLINE.md",
+      "sha256": "8593fff7c07f313f9f5ecefa1aec7f7e37e0df695b0979a66b5905e4e4bd7608",
+      "receipt": "inkstone-velvet-opal",
+      "status": "canonical"
+    },
+    {
+      "id": "design-source-and-fidelity",
+      "version": "1.0.0",
+      "path": "contracts/experience/DESIGN_SOURCE_AND_FIDELITY.md",
+      "sha256": "328b38134433cdd436b04aaf01c9fe73c3450942afd5ae05cd5c7c3381dd8035",
+      "receipt": "heather-ledger-juniper",
+      "status": "canonical"
+    },
+    {
+      "id": "deterministic-first",
+      "version": "1.0.0",
+      "path": "contracts/engineering/DETERMINISTIC_FIRST.md",
+      "sha256": "f854be815b44aebff845848b70262f8dd61939a468b6e4f19733e5c4ffea200c",
+      "receipt": "tundra-maple-orchard",
+      "status": "canonical"
+    },
+    {
+      "id": "discovery-and-negotiation",
+      "version": "1.0.0",
+      "path": "contracts/interoperability/DISCOVERY_AND_NEGOTIATION.md",
+      "sha256": "4585e35919f364a2ba84e4168d29bdd458a89fcfea3267ebbe54c5d2aada29b4",
+      "receipt": "nectar-heather-prairie",
+      "status": "canonical"
+    },
+    {
+      "id": "documentation-and-continuity",
+      "version": "1.0.0",
+      "path": "contracts/engineering/DOCUMENTATION_AND_CONTINUITY.md",
+      "sha256": "8b162cd9859f0d8428487648091429d4bbe8b87344c2cd0d120afa58e18a44bf",
+      "receipt": "prairie-clover-sail",
+      "status": "canonical"
+    },
+    {
+      "id": "explicit-state",
+      "version": "1.0.0",
+      "path": "contracts/core/EXPLICIT_STATE.md",
+      "sha256": "d3520caaba163cd170a4f23d568142286ccaf694cc5c5f2e59d5f1f607127e5f",
+      "receipt": "driftwood-thicket-jetty",
+      "status": "canonical"
+    },
+    {
+      "id": "external-mutations",
+      "version": "1.0.0",
+      "path": "contracts/interoperability/EXTERNAL_MUTATIONS.md",
+      "sha256": "37b020f4cd026eaf38beebfadf2c8fa12d186d7f2b4860e4743bfe8efd60b643",
+      "receipt": "heather-rill-hollow",
+      "status": "canonical"
+    },
+    {
+      "id": "failure-and-degradation",
+      "version": "1.0.0",
+      "path": "contracts/interoperability/FAILURE_AND_DEGRADATION.md",
+      "sha256": "18b250b560887cc4f86dad627a178db3d8ef3dd0efc8ba9066394787c5015754",
+      "receipt": "nectar-ledger-basalt",
+      "status": "canonical"
+    },
+    {
+      "id": "friendly-api-client",
+      "version": "1.0.0",
+      "path": "contracts/interoperability/FRIENDLY_API_CLIENT.md",
+      "sha256": "2e6a41ba6c12714417183463af21dc366ce07104f965e4ea61993b3a82e11997",
+      "receipt": "harbor-prairie-fable",
+      "status": "canonical"
+    },
+    {
+      "id": "git-and-worktrees",
+      "version": "1.0.0",
+      "path": "contracts/engineering/GIT_AND_WORKTREES.md",
+      "sha256": "7ee4195b00be77fcdb2ed38f4e5a26425745327cfa84372da39f4566d19e2393",
+      "receipt": "bramble-urnfield-inkstone",
+      "status": "canonical"
+    },
+    {
+      "id": "guide-me",
+      "version": "1.0.0",
+      "path": "contracts/experience/GUIDE_ME.md",
+      "sha256": "9f22638f32fa50fa07dfc0cd78d62636c3ccfaac8610aa3ff1a41b096961cfe7",
+      "receipt": "fern-prairie-gatehouse",
+      "status": "canonical"
+    },
+    {
+      "id": "handoff",
+      "version": "1.0.0",
+      "path": "contracts/agents/HANDOFF.md",
+      "sha256": "08f49d192aa6b3bcdcd8547457dec4391869b54f24d44a087421f820a3ad45c8",
+      "receipt": "cinder-clover-quartz",
+      "status": "canonical"
+    },
+    {
+      "id": "human-and-machine-parity",
+      "version": "1.0.0",
+      "path": "contracts/interfaces/HUMAN_AND_MACHINE_PARITY.md",
+      "sha256": "2bf1f525ade5350177b171875eab8a637a52e6b43852e0a5d3575c8f20b5dea1",
+      "receipt": "lantern-latch-river",
+      "status": "canonical"
+    },
+    {
+      "id": "human-reliability",
+      "version": "1.0.0",
+      "path": "contracts/human/HUMAN_RELIABILITY.md",
+      "sha256": "854e5165520f7d9c3172bbea31f29d8510ba4614ecf67a833976e35e41f1f68d",
+      "receipt": "dell-maple-anchor",
+      "status": "canonical"
+    },
+    {
+      "id": "idempotency",
+      "version": "1.0.0",
+      "path": "contracts/interoperability/IDEMPOTENCY.md",
+      "sha256": "f23cb8b497599a7531c03324c58fd4860c23d2588aad6aa70a5393ea5d0be06e",
+      "receipt": "timber-kite-quay",
+      "status": "canonical"
+    },
+    {
+      "id": "interruption-and-resumption",
+      "version": "1.0.0",
+      "path": "contracts/human/INTERRUPTION_AND_RESUMPTION.md",
+      "sha256": "52419b2213a72fef18e94cf44839854d15dad9ddf51b24ec1d92cebbf9c3d663",
+      "receipt": "rill-loam-orchard",
+      "status": "canonical"
+    },
+    {
+      "id": "least-privilege",
+      "version": "1.0.0",
+      "path": "contracts/security/LEAST_PRIVILEGE.md",
+      "sha256": "38ba4988549fd637da943f25cf82555539a8a2f2e3113d58d82c6cfe89df7425",
+      "receipt": "latch-heather-river",
+      "status": "canonical"
+    },
+    {
+      "id": "low-vision-and-reflow",
+      "version": "1.0.0",
+      "path": "contracts/human/LOW_VISION_AND_REFLOW.md",
+      "sha256": "2fbd6a44ba04fcc47d24546e1e0f9cdab85a4c7f1d336b1abee38b0024fcfd7d",
+      "receipt": "dell-echo-quay",
+      "status": "canonical"
+    },
+    {
+      "id": "machine-readable-output",
+      "version": "1.0.0",
+      "path": "contracts/interfaces/MACHINE_READABLE_OUTPUT.md",
+      "sha256": "6e57f21701df4cfb109390d8c0c46333124be52952fcaba66a2b945fd97ef74d",
+      "receipt": "dovetail-gable-jetty",
+      "status": "canonical"
+    },
+    {
+      "id": "migraine-and-sensory-safety",
+      "version": "1.0.0",
+      "path": "contracts/human/MIGRAINE_AND_SENSORY_SAFETY.md",
+      "sha256": "aec5a96e8fed0e8cbffe7ef7c9054c1ba66ba1cd6e00c081ffeff23c2889ce9e",
+      "receipt": "fathom-opal-zenith",
+      "status": "canonical"
+    },
+    {
+      "id": "migrations",
+      "version": "1.0.0",
+      "path": "contracts/engineering/MIGRATIONS.md",
+      "sha256": "c6afdfedea0bea4804d9b49e631729331e2865dc15c6fd4989586981a836589d",
+      "receipt": "fathom-latch-harbor",
+      "status": "canonical"
+    },
+    {
+      "id": "model-routing",
+      "version": "1.0.0",
+      "path": "contracts/agents/MODEL_ROUTING.md",
+      "sha256": "b51aaa590f6316447e71c31100dddeb7103465ca8765472aeac4c0a0bae776dc",
+      "receipt": "sable-fathom-orbit",
+      "status": "canonical"
+    },
+    {
+      "id": "motion-and-feedback",
+      "version": "1.0.0",
+      "path": "contracts/experience/MOTION_AND_FEEDBACK.md",
+      "sha256": "ec40b904e085aa2260f6446cb9a06d34be9a0e2ff2380303c3023218bd0cab69",
+      "receipt": "gable-fern-velvet",
+      "status": "canonical"
+    },
+    {
+      "id": "observability",
+      "version": "1.0.0",
+      "path": "contracts/engineering/OBSERVABILITY.md",
+      "sha256": "da1756b55a8cc721c2c7f55f01544b85b5530360587e5f1541eecac438bfd127",
+      "receipt": "quay-cinder-window",
+      "status": "canonical"
+    },
+    {
+      "id": "orchestration",
+      "version": "1.0.0",
+      "path": "contracts/agents/ORCHESTRATION.md",
+      "sha256": "a90bf604943b4d488eb5f289d950bd026928966f059fb4355aba6907ee9d0d95",
+      "receipt": "echo-quartz-hollow",
+      "status": "canonical"
+    },
+    {
+      "id": "play-nice-together",
+      "version": "1.0.0",
+      "path": "contracts/core/PLAY_NICE_TOGETHER.md",
+      "sha256": "8f65aa13e748787e35bb57d33f0ab5c3a79084664d3322948436cdfde3a704f9",
+      "receipt": "timber-juniper-velvet",
+      "status": "canonical"
+    },
+    {
+      "id": "polling-webhooks-and-caching",
+      "version": "1.0.0",
+      "path": "contracts/interoperability/POLLING_WEBHOOKS_AND_CACHING.md",
+      "sha256": "7f68f22ba40673092b676329b44eb77173434b3aec8523f30e181cc3baa4a89f",
+      "receipt": "ellsworth-sail-wren",
+      "status": "canonical"
+    },
+    {
+      "id": "portability-and-ownership",
+      "version": "1.0.0",
+      "path": "contracts/core/PORTABILITY_AND_OWNERSHIP.md",
+      "sha256": "e9259bab46c5f0cda5da4048500327959d701bfb80de25273ccf9414bf427c01",
+      "receipt": "tundra-orchard-echo",
+      "status": "canonical"
+    },
+    {
+      "id": "progress-and-closure",
+      "version": "1.0.0",
+      "path": "contracts/experience/PROGRESS_AND_CLOSURE.md",
+      "sha256": "22fd586c6916d3398ffd001f7a00f233fbc2c97cde370f068507a732725757ac",
+      "receipt": "inkstone-tundra-cedar",
+      "status": "canonical"
+    },
+    {
+      "id": "progressive-disclosure",
+      "version": "1.0.0",
+      "path": "contracts/experience/PROGRESSIVE_DISCLOSURE.md",
+      "sha256": "9ef9f7270b41d6b10acc0929f56c03c4c850cf424bfd3ea0bb053456cdeb055e",
+      "receipt": "timber-compass-willow",
+      "status": "canonical"
+    },
+    {
+      "id": "provenance-and-audit",
+      "version": "1.0.0",
+      "path": "contracts/core/PROVENANCE_AND_AUDIT.md",
+      "sha256": "c9bfec4b0102fcaa0deca3a11b0d2c3025638a6a8852cd23c08169b72c975307",
+      "receipt": "window-prairie-gatehouse",
+      "status": "canonical"
+    },
+    {
+      "id": "provider-neutrality",
+      "version": "1.0.0",
+      "path": "contracts/interoperability/PROVIDER_NEUTRALITY.md",
+      "sha256": "5aa845addee0273bc00250af5f828284b1000a3c0b5ac40f632781cb80a7e0ee",
+      "receipt": "bramble-ledger-inkstone",
+      "status": "canonical"
+    },
+    {
+      "id": "public-private-boundaries",
+      "version": "1.0.0",
+      "path": "contracts/security/PUBLIC_PRIVATE_BOUNDARIES.md",
+      "sha256": "e15241b17cf08c251308feaf0e3a6aa1dd47bebf3550e0d5fa79f470ac27dbf8",
+      "receipt": "beacon-sable-echo",
+      "status": "canonical"
+    },
+    {
+      "id": "quiet-when-healthy",
+      "version": "1.0.0",
+      "path": "contracts/experience/QUIET_WHEN_HEALTHY.md",
+      "sha256": "ee1d1d7a635982311573b66f74215e39a32cfb54fba26ff850f9b9db9651852f",
+      "receipt": "fable-thicket-cinder",
+      "status": "canonical"
+    },
+    {
+      "id": "recovery-and-reversibility",
+      "version": "1.0.0",
+      "path": "contracts/core/RECOVERY_AND_REVERSIBILITY.md",
+      "sha256": "d0e07dd26de36a4a72972e6a7edaf34c3dfcd190441b7c10fe769b705d03ed2b",
+      "receipt": "meadow-fathom-aster",
+      "status": "canonical"
+    },
+    {
+      "id": "review-and-integration",
+      "version": "1.0.0",
+      "path": "contracts/agents/REVIEW_AND_INTEGRATION.md",
+      "sha256": "154a8441c2cc1d606b9ccbfdf01734854cba48b3bc0aeca5ae304133807f34bf",
+      "receipt": "harbor-zenith-ember",
+      "status": "canonical"
+    },
+    {
+      "id": "search-before-inventing",
+      "version": "1.0.0",
+      "path": "contracts/engineering/SEARCH_BEFORE_INVENTING.md",
+      "sha256": "397cfa123f7e64ddef476128af5f80337efc6313ca19e14c5dbe7b554e3243b9",
+      "receipt": "beacon-wren-fathom",
+      "status": "canonical"
+    },
+    {
+      "id": "secrets",
+      "version": "1.0.0",
+      "path": "contracts/security/SECRETS.md",
+      "sha256": "24bd70bc77453d9f4b4f3b35732d2af35d77354a6835986d383f4899bf3e6915",
+      "receipt": "prairie-latch-gatehouse",
+      "status": "canonical"
+    },
+    {
+      "id": "stable-truth-replaceable-machinery",
+      "version": "1.0.0",
+      "path": "contracts/core/STABLE_TRUTH_REPLACEABLE_MACHINERY.md",
+      "sha256": "bf5964edbc90dcdfd03f9c6d1c65f058f91143525c8e983169b575dda4731b7b",
+      "receipt": "quiet-bramble-fable",
+      "status": "canonical"
+    },
+    {
+      "id": "testing-and-verification",
+      "version": "1.0.0",
+      "path": "contracts/engineering/TESTING_AND_VERIFICATION.md",
+      "sha256": "1f7308e1452cc5a0399be894805084267e83530aa37d292d6d6798ad8c8a1e28",
+      "receipt": "prairie-yarrow-quartz",
+      "status": "canonical"
+    },
+    {
+      "id": "themes-and-personalization",
+      "version": "1.0.0",
+      "path": "contracts/experience/THEMES_AND_PERSONALIZATION.md",
+      "sha256": "74d0a5bad6fda3dcf64e8e9282731acd37918c4654a2c6174894143dd51cbef9",
+      "receipt": "cinder-opal-window",
+      "status": "canonical"
+    },
+    {
+      "id": "truth-and-evidence",
+      "version": "1.0.0",
+      "path": "contracts/core/TRUTH_AND_EVIDENCE.md",
+      "sha256": "634cf3e11234fd83be585a7eb5a09bb38bc0fee3be011c184d3fafe4cb7eff2e",
+      "receipt": "wren-loam-sail",
+      "status": "canonical"
+    },
+    {
+      "id": "versioning-and-compatibility",
+      "version": "1.0.0",
+      "path": "contracts/interoperability/VERSIONING_AND_COMPATIBILITY.md",
+      "sha256": "e898f7bc22e6a6a23737438fc3f992481961b62372bb16919db82cff04d322e2",
+      "receipt": "opal-dell-prairie",
+      "status": "canonical"
+    },
+    {
+      "id": "visual-fidelity-and-composition",
+      "version": "1.0.0",
+      "path": "contracts/experience/VISUAL_FIDELITY_AND_COMPOSITION.md",
+      "sha256": "c915c7d643846a81e1ac55879114e9f586ad6178c1a28387a1ab34d535abb478",
+      "receipt": "vellum-fen-cedar",
+      "status": "canonical"
+    },
+    {
+      "id": "web-ui",
+      "version": "1.0.0",
+      "path": "contracts/interfaces/WEB_UI.md",
+      "sha256": "f9f51dc0e3022c7eb1a273f5b70ab2fe49a67667dfa11b9c27aacafa8fff815b",
+      "receipt": "thicket-willow-rill",
+      "status": "canonical"
+    },
+    {
+      "id": "what-why-next",
+      "version": "1.0.0",
+      "path": "contracts/experience/WHAT_WHY_NEXT.md",
+      "sha256": "a664b43b798f7548d20d3ec03ad2bf9aacb4bb924c19f9275017480cd98b13ff",
+      "receipt": "timber-nectar-zenith",
+      "status": "canonical"
+    },
+    {
+      "id": "worker-contract",
+      "version": "1.0.0",
+      "path": "contracts/agents/WORKER_CONTRACT.md",
+      "sha256": "05a9e5c04822b4ad2d3e439dc213d4d1535171d921f77c95d0cc467847b5b922",
+      "receipt": "dell-opal-ember",
+      "status": "canonical"
+    }
+  ]
+}

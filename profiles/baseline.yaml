@@ -1,0 +1,32 @@
+# Baseline profile (universal defaults)
+
+# Profiles layer ABOVE universal contracts and may raise but never lower
+# any floor defined in the library. This baseline carries no personal
+# preferences at all — it documents the neutral default stance.
+schema: play-nice/profile-v1
+name: baseline
+description: >-
+  Universal default profile. No personal preferences. Universal safety and
+  accessibility floors apply to everyone regardless of profile; themes and
+  comfort preferences layer above them.
+
+presentation:
+  motion: reduced          # floor: off; reduced is the universal default
+  contrast: comfortable    # must meet WCAG AA at minimum; high available
+  text_scale: 1.0          # never blocks browser zoom
+  density: comfortable
+  targets: standard        # >=44px floor
+
+interaction:
+  quiet_when_healthy: true
+  progress_and_closure: true
+  guide_me_available: true
+
+orchestration:
+  model_routing: explicit  # never silent fallback
+  parallel_leaves_only: true
+  human_gates: [release, destructive-action, product-acceptance]
+
+security:
+  secrets: symbolic-references-only
+  authorization: fail-closed

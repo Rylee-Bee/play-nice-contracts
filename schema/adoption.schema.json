@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "play-nice/adoption-v1",
+  "title": "Play-Nice Project Adoption Manifest",
+  "description": "How a project consumes the shared contract library. Projects consume; they do not fork.",
+  "type": "object",
+  "required": ["schema", "source"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "play-nice/adoption-v1",
+      "description": "Exact schema marker. Unknown values must fail clearly, never be silently reinterpreted."
+    },
+    "project": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "Optional project name for humans."
+    },
+    "source": {
+      "type": "object",
+      "required": ["repository", "revision"],
+      "additionalProperties": false,
+      "properties": {
+        "repository": {
+          "type": "string",
+          "description": "Repository identifier the library is consumed from, e.g. burgeswe/play-nice-contracts."
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 7,
+          "maxLength": 64,
+          "description": "Pinned revision (commit SHA preferred). Drift from this pin is reported as stale."
+        }
+      }
+    },
+    "profile": {
+      "type": ["string", "null"],
+      "description": "Optional profile name layered above universal contracts. A profile may raise but never lower universal floors."
+    },
+    "always": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/contract_id" },
+      "description": "Contracts loaded for every task in this project."
+    },
+    "triggers": {
+      "type": "object",
+      "description": "Surface tag -> contracts loaded when a task matches that surface.",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/contract_id" }
+      }
+    },
+    "requirements": {
+      "type": "object",
+      "description": "Optional machine-checkable acceptance rules the project adds on top of contracts.",
+      "additionalProperties": true
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Free-form context for humans and agents."
+    }
+  },
+  "$defs": {
+    "contract_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64
+    }
+  }
+}

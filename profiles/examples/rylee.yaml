@@ -1,0 +1,39 @@
+# Rylee's personal profile — an excellent first-class profile, never a
+# hidden requirement for anyone else. Raises comfort; never lowers any
+# universal floor. Contains no medical history: these are presentation
+# preferences, stated as engineering choices.
+schema: play-nice/profile-v1
+name: rylee
+description: >-
+  Comfort-first presentation profile. Dark, low-glare, quiet, reduced motion
+  by default. May be adopted, ignored, or replaced by any other profile
+  without affecting contract compliance.
+
+presentation:
+  motion: reduced           # off available; OS prefers-reduced-motion overrides all
+  contrast: comfortable     # house palette is a low-glare dark default
+  text_scale: 1.0
+  density: comfortable
+  targets: standard         # >=44px always; large (56px) available as preference
+
+interaction:
+  quiet_when_healthy: true
+  progress_and_closure: true
+  guide_me_available: true
+
+theme:
+  default: dark
+  notes: >-
+    Personality/companion slots are decorative only (aria-hidden), never
+    carry operational meaning, and can be turned off with zero functional
+    loss. Semantic tokens stay canonical regardless of theme.
+
+orchestration:
+  model_routing: explicit
+  stop_conditions_required: true
+  human_gates: [release, destructive-action, product-acceptance]
+
+work_style:
+  closure_discipline: true   # done beats additionally awesome; new ideas -> backlog
+  bounded_work: true
+  evidence_grades_required: true
