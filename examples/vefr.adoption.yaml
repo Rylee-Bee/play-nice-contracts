@@ -1,0 +1,64 @@
+# Example adoption manifest — VEFR (engine + playable worlds)
+# Adopt the shared floors; world/content/game-specific contracts stay local
+# in the VEFR repository. VEFR does NOT inherit Personal World's visual
+# design — its own accessibility contract and parchment aesthetic govern
+# locally; only the universal floors apply here.
+schema: play-nice/adoption-v1
+project: vefr
+source:
+  repository: burgeswe/play-nice-contracts
+  revision: 0000000   # pin to the adopted commit SHA
+
+always:
+  - truth-and-evidence
+  - provenance-and-audit
+  - recovery-and-reversibility
+  - explicit-state
+  - deterministic-first
+  - stable-truth-replaceable-machinery
+
+triggers:
+  human-facing:
+    - accessibility-floor
+    - attention-and-focus
+    - human-reliability
+    - copy-and-language
+  ui:
+    - low-vision-and-reflow
+    - migraine-and-sensory-safety
+    - motion-and-feedback
+    - web-ui
+    - visual-fidelity-and-composition
+  design:
+    - design-source-and-fidelity
+    - visual-fidelity-and-composition
+  api:
+    - api
+    - failure-and-degradation
+    - versioning-and-compatibility
+    - machine-readable-output
+    - human-and-machine-parity
+  external-api:
+    - friendly-api-client
+    - provider-neutrality
+    - capability-first
+    - model-routing
+  portability:
+    - portability-and-ownership
+  agent:
+    - agent-behavior
+    - bounded-work
+    - handoff
+    - contract-attestation
+  engineering:
+    - testing-and-verification
+    - documentation-and-continuity
+    - migrations
+    - search-before-inventing
+
+notes: >-
+  VEFR keeps deterministic surfaces deterministic (world validation, map
+  transforms, exports) while models operate at explicit generative edges;
+  that split is exactly deterministic-first. The local accessibility contract
+  (44px floor, motion off by default, luminance-first, plain-English-first)
+  remains the local authority and is compatible with the shared floor.

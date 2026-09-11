@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "play-nice/attestation-v1",
+  "title": "Play-Nice Contract Attestation and Commitment",
+  "description": "Proof that the exact applicable contracts were read and understood before mutating work (receipt + version/hash + task-impact), and the operational commitment that they will actively govern the work. Neither is ever authorization.",
+  "type": "object",
+  "required": ["format", "bundle", "loaded", "task_impact", "gate"],
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "CONTRACT_ATTESTATION v1"
+    },
+    "bundle": {
+      "type": "object",
+      "required": ["revision", "receipt"],
+      "additionalProperties": false,
+      "properties": {
+        "revision": {
+          "type": "string",
+          "description": "Library revision the bundle was resolved from."
+        },
+        "receipt": {
+          "type": "string",
+          "description": "Bundle receipt derived from the selected versions and hashes, e.g. cedar-lantern-47."
+        }
+      }
+    },
+    "loaded": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["contract_id", "version", "sha256", "receipt", "status"],
+        "additionalProperties": false,
+        "properties": {
+          "contract_id": { "$ref": "#/$defs/contract_id" },
+          "version": { "$ref": "#/$defs/semver" },
+          "sha256": { "$ref": "#/$defs/sha256" },
+          "receipt": { "$ref": "#/$defs/receipt" },
+          "status": { "enum": ["ACCEPTED", "CONFLICT", "N/A"] },
+          "conflict": {
+            "type": ["string", "null"],
+            "description": "Required when status is CONFLICT: the specific conflicting rule pair and the safest reversible interpretation."
+          }
+        }
+      }
+    },
+    "task_impact": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 8 },
+      "description": "For each applicable contract, one concrete sentence stating how it changes what this task will do. Forces application, not mere retrieval."
+    },
+    "conflicts": {
+      "type": ["string", "null"],
+      "description": "Null or 'none' when no material conflicts. Otherwise the full conflict explanation."
+    },
+    "gate": {
+      "enum": ["PASS", "BLOCKED"],
+      "description": "PASS permits commitment (and then mutating work) to proceed. BLOCKED means a material contract conflict or failed verification must be resolved first."
+    },
+    "commitment": {
+      "type": "object",
+      "description": "CONTRACT OPERATIONAL COMMITMENT v1. Required before mutating work. Not legal acceptance — an operating state.",
+      "required": ["format", "contract_gate", "commitment", "bundle_sha256", "task", "contracts"],
+      "additionalProperties": false,
+      "properties": {
+        "format": { "const": "CONTRACT OPERATIONAL COMMITMENT v1" },
+        "role": { "enum": ["session", "orchestrator", "worker"], "description": "Participant role in the propagation tree." },
+        "contract_gate": { "const": "PASS" },
+        "commitment": { "enum": ["ACTIVE", "INACTIVE"] },
+        "bundle_receipt": { "type": "string", "description": "Human-rememberable bundle phrase." },
+        "bundle_sha256": { "$ref": "#/$defs/sha256", "description": "Exact resolved bundle material hash. Stale bundles invalidate the commitment." },
+        "task": { "type": "string", "minLength": 1 },
+        "resolved_contracts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "id@version for every resolved contract."
+        },
+        "contracts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/contract_id" }
+        },
+        "inherited_bundle": {
+          "type": ["string", "null"],
+          "description": "Workers only: the parent orchestrator's bundle hash. A worker may resolve additional contracts but may not drop the parent's applicable constraints."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "contract_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "maxLength": 64
+    },
+    "semver": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "receipt": {
+      "type": "string",
+      "pattern": "^[a-z]+(-[a-z]+){2}$",
+      "description": "Three-word hyphenated phrase from the hidden receipt comment in the contract file."
+    }
+  }
+}

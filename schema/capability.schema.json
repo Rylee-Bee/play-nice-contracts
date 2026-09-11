@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "play-nice/capability-v1",
+  "title": "Play-Nice Capability Declaration",
+  "description": "Declares one capability: an intent-level concept a system owns, independent of any provider or tool that implements it. Providers implement or enrich capabilities; they never own the meaning.",
+  "type": "object",
+  "required": ["schema", "capability_id", "native_baseline", "absence"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "play-nice/capability-v1"
+    },
+    "capability_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(_[a-z0-9]+)*$",
+      "maxLength": 48,
+      "description": "Stable machine identifier, snake_case (e.g. source_control, health)."
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 80,
+      "description": "Human concept name (e.g. Source Control, Health)."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "What the user can accomplish through this capability, in user language."
+    },
+    "native_baseline": {
+      "type": "boolean",
+      "description": "True when the system provides a useful local meaning without any third-party provider."
+    },
+    "absence": {
+      "enum": ["degrades_gracefully", "not_configured", "unavailable_concept"],
+      "description": "What happens when every provider for this capability is removed. not_configured and degrades_gracefully keep the concept alive; unavailable_concept means the system cannot yet represent it, which must be explicit, never silent."
+    },
+    "providers": {
+      "type": "array",
+      "description": "Known provider types that implement or enrich this capability. Optional and open: new providers do not require a library change.",
+      "items": {
+        "type": "object",
+        "required": ["type", "mode"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "mode": { "enum": ["native", "enrichment", "replacement"] },
+          "notes": { "type": "string", "maxLength": 200 }
+        }
+      }
+    }
+  }
+}

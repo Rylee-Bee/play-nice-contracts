@@ -1,0 +1,62 @@
+# Example adoption manifest — Homelab (infrastructure & operations)
+# Adopt the shared engineering/security/agent floors. Private topology,
+# host inventory, DNS zones, and configuration stay local to the homelab
+# repository — nothing private is copied into the shared library.
+schema: play-nice/adoption-v1
+project: homelab
+source:
+  repository: burgeswe/play-nice-contracts
+  revision: 0000000   # pin to the adopted commit SHA
+
+always:
+  - truth-and-evidence
+  - explicit-state
+  - recovery-and-reversibility
+  - provenance-and-audit
+
+triggers:
+  external-api:
+    - friendly-api-client
+    - capability-first
+    - provider-neutrality
+    - idempotency
+    - polling-webhooks-and-caching
+    - external-mutations
+    - discovery-and-negotiation
+  security:
+    - secrets
+    - authorization
+    - authentication
+    - least-privilege
+    - public-private-boundaries
+    - data-classification
+  agent:
+    - agent-behavior
+    - bounded-work
+    - orchestration
+    - model-routing
+    - worker-contract
+    - review-and-integration
+    - handoff
+    - contract-attestation
+  git:
+    - git-and-worktrees
+  engineering:
+    - testing-and-verification
+    - deterministic-first
+    - search-before-inventing
+    - documentation-and-continuity
+    - migrations
+    - observability
+    - dependency-discipline
+  operations:
+    - failure-and-degradation
+    - quiet-when-healthy
+    - observability
+
+notes: >-
+  Infrastructure benefits most from: prove-stale-before-clean git worktree
+  discipline, secrets by symbolic reference only, least-privilege per
+  service, honest status vocabulary across dashboards/scripts, and quiet
+  monitoring that surfaces exceptions instead of green noise. Private
+  topology never enters the shared library; only the reusable lessons do.

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "play-nice/status-v1",
+  "title": "Play-Nice Shared Status Vocabulary",
+  "description": "Closed semantic vocabulary for system state. Projects map provider-specific states into this vocabulary so every surface (CLI, API, UI, agents) speaks the same truth. Distinctions that matter: unavailable != not_configured; unknown != healthy; stale != current; implemented != verified; running != correct.",
+  "type": "string",
+  "enum": [
+    "healthy",
+    "warning",
+    "needs_attention",
+    "degraded",
+    "unavailable",
+    "not_configured",
+    "disabled",
+    "stale",
+    "unknown",
+    "working",
+    "waiting",
+    "blocked",
+    "deferred",
+    "partial",
+    "complete"
+  ],
+  "$comment": "Machine vocabulary. A human UI may render any of these as plain language (e.g. healthy -> 'Everything looks good.') but must never collapse distinct states into one another.",
+  "$defs": {
+    "meanings": {
+      "healthy": "observed ok right now, with recent evidence",
+      "warning": "usable, something is off",
+      "needs_attention": "real problem, actionable by someone",
+      "degraded": "partially operating; core still works",
+      "unavailable": "cannot be reached or is not responding - not necessarily failed, and not the same as not configured",
+      "not_configured": "nothing wired up - a vacancy, not a failure",
+      "disabled": "deliberately turned off",
+      "stale": "last observation too old to trust; do not re-show as current",
+      "unknown": "no evidence either way - NOT healthy, NOT failed",
+      "working": "an operation is actively in progress",
+      "waiting": "paused on an external event or timer",
+      "blocked": "cannot proceed without a decision or dependency",
+      "deferred": "intentionally postponed, with a record of why",
+      "partial": "some of a multi-part thing is true (e.g. migration parity)",
+      "complete": "finished, with verification"
+    }
+  }
+}
