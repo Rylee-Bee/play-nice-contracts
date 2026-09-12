@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "play-nice/project-v1",
+  "title": "Play-Nice Project Manifest",
+  "description": "Machine-readable manifest for a project's durable context (.project/project.yaml). What this project is, wants, owns, and currently uses. Contains no secrets.",
+  "type": "object",
+  "required": ["schema", "id", "name", "ownership", "contracts"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "play-nice/project-v1" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "maxLength": 64,
+      "description": "Stable machine identifier for the project."
+    },
+    "name": { "type": "string", "minLength": 2, "maxLength": 80 },
+    "purpose": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "summary": { "type": "string", "maxLength": 600 }
+      }
+    },
+    "ownership": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["human", "team", "organization", "public"] },
+        "role": { "type": ["string", "null"], "maxLength": 80 }
+      }
+    },
+    "contracts": {
+      "type": "object",
+      "required": ["manifest"],
+      "additionalProperties": false,
+      "properties": {
+        "manifest": { "type": "string", "maxLength": 200, "description": "Path to the Play-Nice adoption manifest." }
+      }
+    },
+    "canonical": {
+      "type": ["object", "null"],
+      "additionalProperties": { "type": "string", "maxLength": 200 },
+      "description": "Pointers to canonical files, e.g. {current_state, decisions}."
+    },
+    "participants": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "directory": { "type": "string", "maxLength": 200 }
+      }
+    },
+    "status": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "vocabulary": { "type": ["string", "null"], "maxLength": 80 }
+      }
+    },
+    "secrets_policy": {
+      "type": ["string", "null"],
+      "description": "Marker: the manifest must never contain secret values. Any authentication material is referenced symbolically (e.g. 'vault: figma/oauth').",
+      "enum": ["symbolic-references-only", null]
+    }
+  }
+}

@@ -1,0 +1,55 @@
+schema: play-nice/participant-v1
+
+id: figma
+name: Figma
+type: design-service
+
+relationship:
+  role: design-source
+  optional: true
+  authoritative_for:
+    - approved-visual-composition
+    - design-tokens-when-explicitly-designated
+  not_authoritative_for:
+    - product-policy
+    - runtime-state
+    - accessibility-floor
+    - source-code-truth
+
+interfaces:
+  - type: mcp
+    id: figma-mcp
+  - type: exported-files
+  - type: browser
+
+capabilities:
+  file: capabilities.yaml
+
+interaction:
+  file: interaction.md
+
+references:
+  file: references.yaml
+
+help:
+  can_answer:
+    - visual-composition
+    - design-token
+    - frame-reference
+  cannot_answer:
+    - product-priority
+    - deployment-state
+  preferred_question_format:
+    schema: play-nice/question-v1
+
+contracts:
+  inherits_project_bundle: true
+
+authentication:
+  method: oauth
+  secret_reference: "vault: figma/oauth"
+
+provenance:
+  supplied_by: figma
+  observed_at: "2026-09-12T00:00:00Z"
+  source_revision: "example-pack"

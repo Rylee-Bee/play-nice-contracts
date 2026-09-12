@@ -1,0 +1,37 @@
+schema: play-nice/participant-capabilities-v1
+
+participant: figma
+
+capabilities:
+  - id: inspect-design
+    description: Read design structure and visual references.
+    inputs:
+      - file
+      - frame
+    outputs:
+      - hierarchy
+      - dimensions
+      - tokens
+      - component references
+
+  - id: export-frame
+    description: Export approved design frames.
+    outputs:
+      - png
+      - svg
+
+  - id: expose-design-tokens
+    description: Provide semantic design variables where available.
+    outputs:
+      - token names
+      - values
+
+  - id: identify-component
+    description: Resolve the intended component or frame behind a design element.
+    outputs:
+      - component reference
+
+limitations:
+  - runtime behavior must be verified in the implementation, not in the design
+  - accessibility contracts override inaccessible visual choices
+  - exported imagery is evidence, not application state

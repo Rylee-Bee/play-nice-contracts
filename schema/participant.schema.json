@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "play-nice/participant-v1",
+  "title": "Play-Nice Participant Manifest",
+  "description": "Describes how an optional collaborator (service, agent, team, tool) interacts with a project. A shared boundary document: what both sides know about working together. Packs are optional enrichment — they never silently become canonical project truth. Contains no secrets; authentication is referenced symbolically.",
+  "type": "object",
+  "required": ["schema", "id", "name", "type", "relationship", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": { "const": "play-nice/participant-v1" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "maxLength": 64,
+      "description": "Stable participant identifier; unique within the project (e.g. figma, claude, security-team)."
+    },
+    "name": { "type": "string", "minLength": 2, "maxLength": 80 },
+    "type": {
+      "enum": ["design-service", "forge", "agent", "automation", "test-tool",
+               "deployment-system", "database", "external-api", "monitoring",
+               "identity", "human-team", "other"]
+    },
+    "relationship": {
+      "type": "object",
+      "required": ["role", "optional", "authoritative_for", "not_authoritative_for"],
+      "additionalProperties": false,
+      "properties": {
+        "role": { "type": "string", "maxLength": 80 },
+        "optional": {
+          "type": "boolean",
+          "description": "True unless the project explicitly justifies a required exception. Optional participants may disappear without corrupting the project."
+        },
+        "authoritative_for": {
+          "type": "array",
+          "items": { "type": "string", "maxLength": 100 },
+          "description": "What this participant's data may be treated as authoritative for — narrowly."
+        },
+        "not_authoritative_for": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "maxLength": 100 },
+          "description": "What this participant explicitly does NOT own. Always non-empty: no participant owns everything."
+        }
+      }
+    },
+    "interfaces": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["type"],
+        "additionalProperties": false,
+        "properties": {
+          "type": { "enum": ["mcp", "http-api", "cli", "browser", "exported-files", "git", "webhook", "file-system", "human-channel"] },
+          "id": { "type": ["string", "null"], "maxLength": 80 }
+        }
+      }
+    },
+    "capabilities": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "file": { "type": "string", "maxLength": 200, "description": "Pointer to capabilities.yaml (play-nice/capabilities-v1)." }
+      }
+    },
+    "interaction": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "file": { "type": "string", "maxLength": 200, "description": "Pointer to interaction.md (human-readable working guide)." }
+      }
+    },
+    "references": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "file": { "type": "string", "maxLength": 200, "description": "Pointer to references.yaml (play-nice/references-v1)." }
+      }
+    },
+    "help": {
+      "type": ["object", "null"],
+      "description": "Ask-for-help routing: what questions this participant can answer directly.",
+      "additionalProperties": false,
+      "properties": {
+        "can_answer": { "type": "array", "items": { "type": "string", "maxLength": 100 } },
+        "cannot_answer": { "type": "array", "items": { "type": "string", "maxLength": 100 } },
+        "preferred_question_format": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "schema": { "const": "play-nice/question-v1" }
+          }
+        }
+      }
+    },
+    "contracts": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "inherits_project_bundle": {
+          "type": ["boolean", "null"],
+          "description": "True when the participant accepts the project's resolved contract bundle."
+        }
+      }
+    },
+    "authentication": {
+      "type": ["object", "null"],
+      "description": "NEVER contains secret values. Method + a symbolic secret-store reference only.",
+      "required": ["method", "secret_reference"],
+      "additionalProperties": false,
+      "properties": {
+        "method": { "type": "string", "maxLength": 40 },
+        "secret_reference": { "type": "string", "maxLength": 120, "description": "Symbolic reference (e.g. 'vault: figma/oauth') — never the value." }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["supplied_by", "observed_at"],
+      "additionalProperties": false,
+      "properties": {
+        "supplied_by": { "type": "string", "maxLength": 80, "description": "Who supplied this pack (participant, human, discovery)." },
+        "observed_at": { "type": "string", "format": "date-time" },
+        "source_revision": { "type": ["string", "null"], "maxLength": 120 }
+      }
+    }
+  }
+}
