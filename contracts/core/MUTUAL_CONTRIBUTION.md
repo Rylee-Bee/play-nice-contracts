@@ -1,7 +1,7 @@
 ---
 contract_id: mutual-contribution
 title: Mutual Contribution by Agreement
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: core
 applies: [agents, orchestration, tools, services, humans, api, project-management]
@@ -9,7 +9,7 @@ triggers: [delegation, task-assignment, orchestration, contribution-work, integr
 rationale: A participant should not simply be assigned the largest contribution it appears capable of performing. The requester and the participant should be able to agree on a useful contribution that fits the participant's capabilities, constraints, safety boundaries, usability needs, and current condition. This is cooperation, not extraction — capability defines possibility, not obligation.
 ---
 
-<!-- contract-receipt: ember-quay-compass -->
+<!-- contract-receipt: prairie-vellum-aster -->
 
 # Mutual Contribution by Agreement
 
@@ -51,7 +51,7 @@ This contract completes the participation principle (see Participation and Contr
 ### Offer, don't impose
 
 5. A requester offers a shaped contribution: "Would you be comfortable comparing the live screenshot against these two approved references and listing composition differences?" — and the participant may answer: yes; "I cannot inspect the live browser, but I can compare screenshots if you provide them"; "that task is too broad for me reliably — I can inspect one screen at a time"; or "I cannot safely perform the mutation, but I can produce the plan and verification checklist." These are all successful cooperation states.
-6. Every participant may respond to an offered contribution with: `ACCEPT`, `MODIFY`, `DECLINE`, `OFFER_ALTERNATIVE`, `NEEDS_CONTEXT`, `NEEDS_HELP` (see Ask for Help). None of these is misbehavior by default. A good participant knows its boundaries; a good requester respects them. Treating `DECLINE` as disobedience or `MODIFY` as failure is an anti-pattern.
+6. Every participant may respond to an offered contribution with: `ACCEPT`, `MODIFY`, `DECLINE`, `OFFER_ALTERNATIVE`, `NEEDS_CONTEXT`, `NEEDS_HELP` (see Ask for Help). None of these is misbehavior by default. A good participant knows its boundaries; a good requester respects them. Treating `DECLINE` as disobedience or `MODIFY` as failure is an anti-pattern. This negotiation only works when refusal, disagreement, and uncertainty are safe from ridicule and status games — collaborative good faith is the social prerequisite of mutual contribution (see Collaborative Good Faith).
 7. No penalty for boundaries. Do not pressure participants to claim competence they do not have ("You should be able to do this. Try harder."). Ask instead: what part can you do reliably? what would need another participant? what context would make this workable? This reduces fabrication structurally.
 
 ### Mutual constraints
