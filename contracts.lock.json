@@ -1,7 +1,7 @@
 {
   "schema": "play-nice/lock-v1",
   "generated_from": {
-    "contract_count": 64
+    "contract_count": 65
   },
   "contracts": [
     {
@@ -30,10 +30,10 @@
     },
     {
       "id": "ask-for-help",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "path": "contracts/core/ASK_FOR_HELP.md",
-      "sha256": "942e352c906e083b3fa545b3a492c74be47bbaafb3ae10938c841ab0e64cd9a1",
-      "receipt": "orchard-basalt-north",
+      "sha256": "d4c46b8f83a03ff8213d425aad0a6bb04d547a06439aac5086fd393bf1e2cd6e",
+      "receipt": "velvet-orchard-wren",
       "status": "canonical"
     },
     {
@@ -82,6 +82,14 @@
       "path": "contracts/interfaces/CLI.md",
       "sha256": "95ea53151175d5bcce668c49004a41b0addf397e12258821f0bd54684d4d1138",
       "receipt": "timber-latch-basalt",
+      "status": "canonical"
+    },
+    {
+      "id": "collaborative-good-faith",
+      "version": "1.0.0",
+      "path": "contracts/core/COLLABORATIVE_GOOD_FAITH.md",
+      "sha256": "60458a4c8887e1917ab0cb5646070c8cba83ebbfc06a19bdd873684e40875f59",
+      "receipt": "cinder-hollow-wren",
       "status": "canonical"
     },
     {
@@ -302,10 +310,10 @@
     },
     {
       "id": "mutual-contribution",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "contracts/core/MUTUAL_CONTRIBUTION.md",
-      "sha256": "ed71606eb55158edd7d297f5d6a003d0a52238b2fe7efdf8d7cdb581b1039e5b",
-      "receipt": "ember-quay-compass",
+      "sha256": "6ebfc27843fae6c213a3f136a8dfc1b9f821d1b6dde6c555b87959ffe32910e3",
+      "receipt": "prairie-vellum-aster",
       "status": "canonical"
     },
     {
@@ -318,26 +326,26 @@
     },
     {
       "id": "orchestration",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "path": "contracts/agents/ORCHESTRATION.md",
-      "sha256": "a86eb897ccd6be330b7a41f7769830efd241c776bbf45f20bfb199f8f9733670",
-      "receipt": "ridge-quartz-fable",
+      "sha256": "bb26b06339bd14a8155f0cbd51541f319f6df90e7dcc3564e97ec14c2c74cd54",
+      "receipt": "aster-quay-thicket",
       "status": "canonical"
     },
     {
       "id": "participation-and-contribution",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "path": "contracts/core/PARTICIPATION_AND_CONTRIBUTION.md",
-      "sha256": "aeede4c1fbdfc4452187d00b634ecb97ba6c58fdfa5b8677bbb058b33cf8795a",
-      "receipt": "harbor-vellum-aster",
+      "sha256": "9b3b8aaea4874fd45320a1a0bb005750e4618aea3b7e07670ecea686e743edb6",
+      "receipt": "compass-yarrow-latch",
       "status": "canonical"
     },
     {
       "id": "play-nice-together",
-      "version": "1.4.0",
+      "version": "1.5.0",
       "path": "contracts/core/PLAY_NICE_TOGETHER.md",
-      "sha256": "495b29077fe26142f53ddb3daff46707a7cadcb8c29231d90234d8a4c9a22c1e",
-      "receipt": "dell-timber-clover",
+      "sha256": "aaafbaee9f16b94128cff2b68dfad0462a29e0f8cbd87ad5fc2b5d8ef49220b3",
+      "receipt": "gatehouse-meadow-juniper",
       "status": "canonical"
     },
     {

@@ -14,6 +14,7 @@ always:
   - project-context-and-participant-packs
   - participation-and-contribution
   - mutual-contribution
+  - collaborative-good-faith
 
 triggers:
   ui:

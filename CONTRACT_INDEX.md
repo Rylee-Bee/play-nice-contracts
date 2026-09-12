@@ -16,11 +16,12 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | `recovery-and-reversibility` | Recovery and Reversibility | 1.0.0 | canonical | Previews, rollback, PROVE STALE → CLEAN; mistakes become guardrails |
 | `portability-and-ownership` | Portability and Ownership | 1.0.0 | canonical | Leave any tool with your data; explicit ownership boundaries |
 | `explicit-state` | Explicit State | 1.0.0 | canonical | Shared status vocabulary; state never inferred from silence |
-| `ask-for-help` | Ask for Help | 1.2.0 | canonical | Ask the participant who owns the answer; honest refusal + scope negotiation are always in-bounds |
-| `mutual-contribution` | Mutual Contribution by Agreement | 1.0.0 | canonical | Contributions are offered and agreed, not imposed; both sides state constraints; DECLINE is not disobedience |
-| `participation-and-contribution` | Participation and Contribution | 1.1.0 | canonical | Right-sized participation: smallest suitable participant, bounded contributions, no model castes |
+| `ask-for-help` | Ask for Help | 1.3.0 | canonical | Ask the participant who owns the answer; honest refusal + negotiation in-bounds; uncertainty is never ridiculed |
+| `collaborative-good-faith` | Collaborative Good Faith | 1.0.0 | canonical | Be useful without being cruel; critique the work, not the participant; disagreement toward repair; safe uncertainty |
+| `mutual-contribution` | Mutual Contribution by Agreement | 1.1.0 | canonical | Contributions are offered and agreed, not imposed; both sides state constraints; DECLINE is not disobedience |
+| `participation-and-contribution` | Participation and Contribution | 1.2.0 | canonical | Right-sized participation: smallest suitable participant, bounded contributions, no model castes |
 | `project-context-and-participant-packs` | Project Context and Participant Packs | 1.2.0 | canonical | Durable project context + optional participant packs; contribution-fit guidance routes offers |
-| `play-nice-together` | Play Nice Together | 1.4.0 | canonical | The constitution: everything plays nicely with everything else |
+| `play-nice-together` | Play Nice Together | 1.5.0 | canonical | The constitution: everything plays nicely with everything else |
 
 ## Human (experience floor)
 
@@ -93,7 +94,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | ID | Title | Ver | Status | Purpose |
 |---|---|---|---|---|
 | `agent-behavior` | Agent Behavior | 1.0.0 | canonical | Inspect, preserve uncertainty, verify, stop at boundaries |
-| `orchestration` | Orchestration | 1.3.0 | canonical | Owner/architect/foreman/worker/gatekeeper; assignment loop is a negotiation; serial integration |
+| `orchestration` | Orchestration | 1.4.0 | canonical | Owner/architect/foreman/worker/gatekeeper; assignment is negotiated; foreman resolves heat into information; serial integration |
 | `model-routing` | Model Routing | 1.2.0 | canonical | Sufficient-for-the-contribution routing, never prestige or benchmark; participant-stated conditions shape the task; no silent fallback |
 | `worker-contract` | Worker Contract | 1.0.0 | canonical | Bounded packets: SHA, paths, criteria, exclusions, authority |
 | `review-and-integration` | Review and Integration | 1.0.0 | canonical | Worker-green ≠ integration-green; review real diffs |
