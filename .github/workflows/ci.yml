@@ -18,6 +18,29 @@ jobs:
       - name: Install test runner
         run: pip install pytest
 
+      - name: Validate CI workflow YAML parses and defines the expected job
+        run: |
+          pip install pyyaml
+          python3 - <<'PYEOF'
+          import sys
+          try:
+              import yaml
+          except ImportError:
+              print("pyyaml unavailable; skipping strict parse (non-fatal)")
+              sys.exit(0)
+          with open(".github/workflows/ci.yml") as f:
+              doc = yaml.safe_load(f)
+          assert isinstance(doc, dict), "workflow root must be a mapping"
+          jobs = doc.get("jobs") or {}
+          assert "library" in jobs, "expected job 'library' missing"
+          steps = jobs["library"].get("steps") or []
+          names = [s.get("name") or s.get("uses") or "?" for s in steps]
+          for expected in ["Validate library", "Full test suite",
+                           "Secret / private-material scan (library surfaces)"]:
+              assert expected in names, f"expected step {expected!r} missing"
+          print("workflow YAML valid; job and steps present:", names)
+          PYEOF
+
       - name: Validate library
         run: python3 tools/contractctl/contractctl.py validate
 
@@ -31,26 +54,27 @@ jobs:
         run: python3 -m pytest tests/ -q
 
       - name: Secret / private-material scan (library surfaces)
-        run: python3 - <<'EOF'
-        import subprocess, sys
-        from pathlib import Path
-        banned = ["gh" + "p_", "gh" + "o_", "AK" + "IA",
-                  "BEGIN PRIVATE " + "KEY", "BEGIN " + "RSA",
-                  "192.168" + ".", "hulganfamily.duck" + "dns.org", "10.0" + "."]
-        repo = Path(".")
-        hits = []
-        for f in repo.rglob("*"):
-            if not f.is_file() or any(p in f.parts for p in (".git", ".venv", "__pycache__", ".pytest_cache", ".contract-commitments")):
-                continue
-            try:
-                text = f.read_text()
-            except (UnicodeDecodeError, ValueError):
-                continue
-            for b in banned:
-                if b in text:
-                    hits.append(f"{f}: contains {b!r}")
-        if hits:
-            print("\n".join(hits))
-            sys.exit(1)
-        print("secret/private-material scan clean")
-        EOF
+        run: |
+          python3 - <<'PYEOF'
+          import sys
+          from pathlib import Path
+          banned = ["gh" + "p_", "gh" + "o_", "AK" + "IA",
+                    "BEGIN PRIVATE " + "KEY", "BEGIN " + "RSA",
+                    "192.168" + ".", "hulganfamily.duck" + "dns.org", "10.0" + "."]
+          repo = Path(".")
+          hits = []
+          for f in repo.rglob("*"):
+              if not f.is_file() or any(p in f.parts for p in (".git", ".venv", "__pycache__", ".pytest_cache", ".contract-commitments")):
+                  continue
+              try:
+                  text = f.read_text()
+              except (UnicodeDecodeError, ValueError):
+                  continue
+              for b in banned:
+                  if b in text:
+                      hits.append(f"{f}: contains {b!r}")
+          if hits:
+              print("\n".join(hits))
+              sys.exit(1)
+          print("secret/private-material scan clean")
+          PYEOF

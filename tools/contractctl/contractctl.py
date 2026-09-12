@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -313,6 +314,9 @@ def validate_library(lib: list[dict] | None = None) -> list[str]:
         if cid not in seen_ids:
             errors.append(f"index drift: CONTRACT_INDEX.md lists unknown contract '{cid}'")
 
+    # Receipt-rotation discipline: meaningful changes must rotate receipts
+    errors.extend(check_receipt_rotation(lib))
+
     return errors
 
 
@@ -602,9 +606,25 @@ systems as carefully as the systems themselves."""
 
 
 def make_attestation(manifest_path: Path, task: str, task_impact: dict[str, str],
-                     revision: str = "uncommitted", format_text: str = True) -> dict | str:
+                     revision: str = "uncommitted", format_text: str = True,
+                     task_tags: list[str] | None = None,
+                     resolved_ids: set[str] | None = None) -> dict | str:
+    """Attest an exact contract set.
+
+    resolved_ids: when provided (e.g. by build_commitment for workers), attest
+    EXACTLY this set — no re-resolution. This is the governing invariant:
+    the contract set attested must be exactly the contract set committed.
+    """
     manifest = load_adoption(manifest_path)
-    res = resolve_set(manifest, task)
+    if resolved_ids is not None:
+        # verify every id is real and known to the lockfile; no re-resolution
+        lib_all = {c["front_matter"]["contract_id"]: c for c in load_library()}
+        unknown = [cid for cid in resolved_ids if cid not in lib_all]
+        if unknown:
+            raise CTError("attestation: unknown contract ids in resolved set: " + ", ".join(sorted(unknown)))
+        res = {"selected": {cid: "inherited-or-resolved" for cid in resolved_ids}, "errors": [], "library_size": len(lib_all)}
+    else:
+        res = resolve_set(manifest, task, task_tags)
     if res["errors"]:
         raise CTError("resolution errors:\n  " + "\n  ".join(res["errors"]))
     lib = {c["front_matter"]["contract_id"]: c for c in load_library()}
@@ -831,15 +851,42 @@ COMMITMENT_ACTIVE = "ACTIVE"
 COMMITMENT_INACTIVE = "INACTIVE"
 
 
-def default_artifact_path(role: str = "session", task: str = "") -> Path:
-    """Session/worktree-safe artifact path.
+def _consumer_context_key(manifest_path: Path | None = None) -> str:
+    """Identity of the consuming execution context.
 
-    Artifacts are keyed by role+task fingerprint so parallel lanes in separate
-    worktrees never share one global mutable singleton. All artifacts live in
-    the library root's .contract-commitments/ (gitignored).
+    Resolution order:
+    1. $CONTRACTCTL_SESSION_DIR — caller pins the artifact directory explicitly
+       (any orchestration harness should set this per worktree/session).
+    2. <manifest's consuming project root>/.contracts/sessions/ — the
+       directory containing the adoption manifest (or its .contracts/ parent)
+       anchors the artifacts to THAT project, so two consuming projects or two
+       worktrees of the same project never collide.
+    3. <library>/.contract-commitments/ — last-resort fallback when running
+       inside the library itself with no manifest context.
     """
-    d = REPO_ROOT / ".contract-commitments"
-    d.mkdir(exist_ok=True)
+    env = os.environ.get("CONTRACTCTL_SESSION_DIR")
+    if env:
+        return env
+    if manifest_path is not None:
+        m = Path(manifest_path).resolve()
+        if m.parent.name == ".contracts":
+            root = m.parent          # <project>/.contracts/
+            return str(root / "sessions")
+        return str(m.parent / ".contracts" / "sessions")
+    return str(REPO_ROOT / ".contract-commitments")
+
+
+def default_artifact_path(role: str = "session", task: str = "",
+                          manifest_path: Path | None = None) -> Path:
+    """Project/worktree/session-safe artifact path.
+
+    Artifacts live in the CONSUMING execution context (the project that owns
+    the adoption manifest), never a global path in the contract library.
+    Keyed by role+task so parallel sessions/workers coexist; callers may pin
+    the directory with CONTRACTCTL_SESSION_DIR or --output.
+    """
+    d = Path(_consumer_context_key(manifest_path))
+    d.mkdir(parents=True, exist_ok=True)
     slug = re.sub(r"[^a-z0-9-]+", "-", task.lower()).strip("-")[:48] or "untitled"
     return d / f"{role}-{slug}.json"
 
@@ -848,7 +895,8 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
                      revision: str = "uncommitted",
                      role: str = "session", parent_bundle: str | None = None,
                      parent_manifest: Path | None = None,
-                     worker: bool = False) -> tuple[dict, str]:
+                     worker: bool = False,
+                     task_tags: list[str] | None = None) -> tuple[dict, str]:
     """Build the operational commitment for a task.
 
     Returns (artifact_dict, text_block). Raises CTError on any failure that
@@ -856,7 +904,7 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
     conflicts, lock drift, or (for workers) an unverifiable parent bundle.
     """
     manifest = load_adoption(manifest_path)
-    res = resolve_set(manifest, task)
+    res = resolve_set(manifest, task, task_tags)
     if res["errors"]:
         raise CTError("commitment: resolution errors:\n  " + "\n  ".join(res["errors"]))
 
@@ -872,7 +920,7 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
         # cannot silently drop a parent constraint.
         if not parent_bundle:
             raise CTError("commitment: worker commitment requires --parent-bundle (inherited bundle sha256)")
-        parent = find_commitment_by_bundle(parent_bundle)
+        parent = find_commitment_by_bundle(parent_bundle, manifest_path)
         if parent is None:
             raise CTError(
                 "commitment: parent bundle not found — an orchestrator commitment "
@@ -907,13 +955,23 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
             f"{', '.join(sorted(missing_all))}"
         )
 
-    # A PASS attestation over the full (possibly unioned) set is a precondition;
-    # its machinery also fails closed on lock drift.
-    att = make_attestation(manifest_path, task, task_impact, revision, format_text=False)
+    # A PASS attestation over the EXACT (possibly unioned) set is a precondition;
+    # its machinery also fails closed on lock drift. Governing invariant:
+    # the set attested must be exactly the set committed.
+    att = make_attestation(manifest_path, task, task_impact, revision, format_text=False,
+                           resolved_ids=selected_ids)
     if att["gate"] != "PASS":
         raise CTError(
             "commitment: contract gate is BLOCKED — conflicts prevent the ACTIVE state:\n  "
             + str(att["conflicts"])
+        )
+    # defensive: the attested set must equal the committed set
+    attested_ids = {e["contract_id"] for e in att["loaded"]}
+    if attested_ids != selected_ids:
+        raise CTError(
+            "commitment: attestation/commitment set mismatch "
+            f"(attested-only: {sorted(attested_ids - selected_ids)}, "
+            f"committed-only: {sorted(selected_ids - attested_ids)})"
         )
 
     artifact = {
@@ -928,6 +986,7 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
         "bundle_scope": "resolved-set",
         "task": task,
         "task_fingerprint": task,
+        "session_dir": str(default_artifact_path(role, task, manifest_path=manifest_path).parent),
         "resolved_contracts": sorted(f"{cid}@{lib[cid]['front_matter']['version']}" for cid in selected_ids),
         "contracts": sorted(selected_ids),
         "inherited_bundle": parent_bundle,
@@ -938,23 +997,42 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
     return artifact, text
 
 
-def find_commitment_by_bundle(bundle_sha: str) -> dict | None:
+def _artifact_search_dirs(manifest_path: Path | None = None) -> list[Path]:
+    """Directories to search for commitment artifacts, consumer-context first."""
+    dirs: list[Path] = []
+    seen: set[str] = set()
+    primary = Path(_consumer_context_key(manifest_path))
+    dirs.append(primary)
+    # fallbacks: explicit env dirs may differ; library-local dir for
+    # in-library sessions; never duplicate
+    for d in (primary, Path(os.environ.get("CONTRACTCTL_SESSION_DIR", "")) if os.environ.get("CONTRACTCTL_SESSION_DIR") else None,
+              REPO_ROOT / ".contract-commitments"):
+        if d is None:
+            continue
+        key = str(d.resolve()) if d.exists() or d.parent.exists() else str(d)
+        if key not in seen:
+            seen.add(key)
+            if d not in dirs:
+                dirs.append(d)
+    return [d for d in dirs if d.is_dir()]
+
+
+def find_commitment_by_bundle(bundle_sha: str, manifest_path: Path | None = None) -> dict | None:
     """Find a recorded commitment (orchestrator or session) by its bundle sha256.
 
-    Inheritance validates against recorded parent state, so a worker cannot
-    claim an invented parent.
+    Inheritance validates against recorded parent state in the SAME consuming
+    context (plus the library-local fallback), so a worker cannot claim an
+    invented parent.
     """
-    d = REPO_ROOT / ".contract-commitments"
-    if not d.is_dir():
-        return None
-    for f in sorted(d.glob("*.json")):
-        try:
-            a = json.loads(f.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            continue
-        if a.get("bundle_sha256") == bundle_sha and a.get("commitment") == COMMITMENT_ACTIVE:
-            if a.get("role") in ("orchestrator", "session"):
-                return a
+    for d in _artifact_search_dirs(manifest_path):
+        for f in sorted(d.glob("*.json")):
+            try:
+                a = json.loads(f.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                continue
+            if a.get("bundle_sha256") == bundle_sha and a.get("commitment") == COMMITMENT_ACTIVE:
+                if a.get("role") in ("orchestrator", "session"):
+                    return a
     return None
 
 
@@ -975,35 +1053,37 @@ def format_commitment_text(a: dict) -> str:
     return "\n".join(lines)
 
 
-def write_session_artifact(artifact: dict, path: Path | None = None) -> Path:
-    """Persist the commitment as a keyed session artifact (no secrets, by construction)."""
-    p = path or default_artifact_path(artifact.get("role", "session"), artifact.get("task", ""))
-    p.parent.mkdir(exist_ok=True)
+def write_session_artifact(artifact: dict, path: Path | None = None,
+                           manifest_path: Path | None = None) -> Path:
+    """Persist the commitment into the consuming context (no secrets, by construction)."""
+    p = path or default_artifact_path(artifact.get("role", "session"), artifact.get("task", ""),
+                                      manifest_path=manifest_path)
+    p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")
     return p
 
 
-def load_session_artifact(path: Path | None = None, role: str = "session", task: str = "") -> dict | None:
+def load_session_artifact(path: Path | None = None, role: str = "session", task: str = "",
+                          manifest_path: Path | None = None) -> dict | None:
     """Load the artifact for this role+task key, or the newest artifact when
-    only a path/role is given. Returns None when absent."""
+    only a path/role is given. Searches the consuming context. Returns None
+    when absent."""
     if path is not None:
         if not path.is_file():
             return None
         return json.loads(path.read_text(encoding="utf-8"))
-    d = REPO_ROOT / ".contract-commitments"
-    if not d.is_dir():
-        return None
-    candidates = sorted(d.glob(f"{role}-*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-    if task:
-        slug = re.sub(r"[^a-z0-9-]+", "-", task.lower()).strip("-")[:48] or "untitled"
-        exact = d / f"{role}-{slug}.json"
-        if exact.is_file():
-            candidates = [exact] + [c for c in candidates if c != exact]
-    for c in candidates:
-        try:
-            return json.loads(c.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            continue
+    slug = re.sub(r"[^a-z0-9-]+", "-", task.lower()).strip("-")[:48] or "untitled"
+    for d in _artifact_search_dirs(manifest_path):
+        candidates = sorted(d.glob(f"{role}-*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if task:
+            exact = d / f"{role}-{slug}.json"
+            if exact.is_file():
+                candidates = [exact] + [c for c in candidates if c != exact]
+        for c in candidates:
+            try:
+                return json.loads(c.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                continue
     return None
 
 
@@ -1017,7 +1097,7 @@ def session_status(manifest_path: Path | None = None, artifact_path: Path | None
     - worker artifacts: parent bundle must still be a real recorded commitment
     """
     problems: list[str] = []
-    artifact = load_session_artifact(artifact_path, role=role, task=task)
+    artifact = load_session_artifact(artifact_path, role=role, task=task, manifest_path=manifest_path)
     if artifact is None:
         return "CONTRACT COMMITMENT: INACTIVE (no session artifact)", ["no commitment recorded for this session"]
 
@@ -1046,7 +1126,7 @@ def session_status(manifest_path: Path | None = None, artifact_path: Path | None
             )
 
     if artifact.get("role") == "worker" and artifact.get("inherited_bundle"):
-        parent = find_commitment_by_bundle(artifact["inherited_bundle"])
+        parent = find_commitment_by_bundle(artifact["inherited_bundle"], manifest_path)
         if parent is None:
             problems.append(
                 "parent commitment no longer recorded — inherited bundle "
@@ -1091,7 +1171,7 @@ def verify_commitment_artifact(artifact: dict, manifest_path: Path | None = None
         if not artifact.get("inherited_bundle"):
             errors.append("commitment: worker commitment missing inherited bundle")
         else:
-            parent = find_commitment_by_bundle(artifact["inherited_bundle"])
+            parent = find_commitment_by_bundle(artifact["inherited_bundle"], manifest_path)
             if parent is None:
                 errors.append("commitment: worker's inherited bundle has no recorded parent commitment")
             else:
@@ -1108,6 +1188,73 @@ def verify_commitment_artifact(artifact: dict, manifest_path: Path | None = None
             errors.append(f"commitment: unknown contract '{ref}'")
         elif ref in lib and locked[ref]["sha256"] != lib[ref]["sha256"]:
             errors.append(f"commitment: contract '{ref}' content changed since commitment")
+    return errors
+
+
+def check_receipt_rotation(lib: list[dict]) -> list[str]:
+    """Mechanical enforcement: meaningful contract changes rotate receipts.
+
+    For each canonical contract with a committed previous version in Git
+    history: if content changed AND the semantic version changed beyond a
+    pure PATCH clarification, the receipt MUST also have changed. This makes
+    'meaningful change -> version change -> receipt change' checkable rather
+    than memory-driven. Skipped (reported, not failed) when Git history is
+    unavailable (e.g. a fresh export).
+    """
+    import subprocess
+
+    def git(*args: str) -> str | None:
+        try:
+            r = subprocess.run(
+                ["git", "-C", str(REPO_ROOT), *args],
+                capture_output=True, text=True, timeout=10,
+            )
+            return r.stdout if r.returncode == 0 else None
+        except Exception:
+            return None
+
+    if git("rev-parse", "--git-dir") is None:
+        return []  # no history available; cannot enforce (documented limitation)
+
+    errors: list[str] = []
+    for c in lib:
+        fm = c["front_matter"]
+        if fm.get("status") != "canonical":
+            continue
+        rel = c["rel_path"]
+        prev = git("show", f"HEAD:{rel}")
+        if prev is None or prev == c["text"]:
+            continue  # unchanged or brand-new file
+        prev_fm = None
+        try:
+            prev_fm = parse_front_matter(prev)
+        except CTError:
+            continue
+        prev_version = str(prev_fm.get("version", ""))
+        cur_version = str(fm.get("version", ""))
+        if prev_version == cur_version:
+            # content changed with NO version bump: that's a lock-drift class
+            # error already caught elsewhere; here, unchanged receipt is expected
+            continue
+        # version changed: is it beyond a pure PATCH?
+        try:
+            pm, pd, pp = (int(x) for x in prev_version.split("."))
+            cm, cd, cp = (int(x) for x in cur_version.split("."))
+        except ValueError:
+            continue
+        patch_only = (pm == cm and pd == cd and cp == pp + 1) and cur_version != prev_version
+        prev_receipts = RECEIPT_RE.findall(prev)
+        cur_receipts = c["receipts"]
+        if patch_only:
+            # PATCH = clarification only: content may change without receipt
+            # rotation, but any receipt change must stay unique (checked elsewhere)
+            continue
+        # MINOR/MAJOR = meaningful change: receipt MUST rotate
+        if prev_receipts and cur_receipts and prev_receipts[0] == cur_receipts[0]:
+            errors.append(
+                f"{rel}: version changed {prev_version} -> {cur_version} "
+                f"(meaningful) but receipt did not rotate (still {cur_receipts[0]})"
+            )
     return errors
 
 
@@ -1133,8 +1280,13 @@ def validate_question(path: Path) -> list[str]:
             errs.append(f"question: missing required field '{key}'")
 
     statuses = schema["properties"]["status"]["enum"]
-    if data.get("status") not in statuses:
-        errs.append(f"question: invalid status {data.get('status')!r} (valid: {statuses})")
+    # documented migration aliases: legacy lowercase forms parse but are
+    # normalized (never emitted canonically)
+    ALIASES = {"waiting_for_answer": "WAITING", "answered": "ANSWERED"}
+    raw_status = data.get("status")
+    status = ALIASES.get(raw_status, raw_status)
+    if status not in statuses:
+        errs.append(f"question: invalid status {raw_status!r} (valid: {statuses})")
 
     for pkey in ("requester", "target"):
         p = data.get(pkey)
@@ -1148,8 +1300,8 @@ def validate_question(path: Path) -> list[str]:
     if data.get("schema") == "play-nice/help-response-v1":
         if not data.get("result"):
             errs.append("question: help-response-v1 requires 'result'")
-        if data.get("status") not in ("answered", "ANSWERED", "DECLINED", "EXPIRED"):
-            errs.append("question: help-response status must be answered/ANSWERED/DECLINED/EXPIRED")
+        if status not in ("ANSWERED", "DECLINED", "EXPIRED"):
+            errs.append("question: help-response status must be ANSWERED, DECLINED, or EXPIRED")
 
     if data.get("blocking") is False and data.get("safe_to_continue_without_answer") is False:
         errs.append("question: inconsistent — not blocking but not safe to continue")
@@ -1336,7 +1488,7 @@ def cmd_attest(args) -> int:
     manifest = Path(args.manifest)
     impact = _read_impact_args(args)
     revision = args.revision or library_revision()
-    out = make_attestation(manifest, args.task, impact, revision)
+    out = make_attestation(manifest, args.task, impact, revision, task_tags=(getattr(args, "tag", None) or []))
     print(out)
     if "CONTRACT GATE: PASS" in str(out):
         print()
@@ -1374,14 +1526,17 @@ def cmd_commit(args) -> int:
         artifact, text = build_commitment(
             manifest, args.task, impact, revision,
             role=role, parent_bundle=args.parent_bundle, worker=args.worker,
+            task_tags=(getattr(args, "tag", None) or []),
         )
     except CTError as e:
         print(f"CONTRACT GATE: BLOCKED\nCONTRACT COMMITMENT: INACTIVE\n\n{e}", file=sys.stderr)
         return 2
-    out = Path(args.output) if args.output else default_artifact_path(role, args.task)
+    out = Path(args.output) if args.output else default_artifact_path(role, args.task, manifest_path=manifest)
     if args.text_only:
+        out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(text + "\n", encoding="utf-8")
     else:
+        out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")
     print(text)
     print()
@@ -1479,6 +1634,8 @@ def main(argv=None) -> int:
                    help="contract_id=sentence task-impact acknowledgement (repeatable)")
     p.add_argument("--impact-file", help="file of 'id = sentence' lines")
     p.add_argument("--revision", default="")
+    p.add_argument("--tag", action="append", default=[],
+                   help="explicit surface tags for trigger matching (repeatable)")
     p.set_defaults(func=cmd_attest)
 
     p = sub.add_parser("commit", help="activate CONTRACT OPERATIONAL COMMITMENT v1")
@@ -1488,6 +1645,8 @@ def main(argv=None) -> int:
                    help="contract_id=sentence task-impact acknowledgement (repeatable)")
     p.add_argument("--impact-file", help="file of 'id = sentence' lines")
     p.add_argument("--revision", default="")
+    p.add_argument("--tag", action="append", default=[],
+                   help="explicit surface tags for trigger matching (repeatable)")
     p.add_argument("--role", default="session", choices=["session", "orchestrator", "worker"],
                    help="participant role in the propagation tree")
     p.add_argument("--worker", action="store_true",

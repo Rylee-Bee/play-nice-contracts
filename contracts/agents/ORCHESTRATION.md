@@ -9,7 +9,7 @@ triggers: [agent-work, multi-agent, batch-work]
 rationale: The owner/architect/foreman/worker separation: expensive reasoning becomes durable constraints, the foreman owns current truth and integration, workers execute bounded tasks, and deterministic gatekeepers enforce what can be enforced. The foreman does not blindly trust workers.
 ---
 
-<!-- contract-receipt: echo-quartz-hollow -->
+<!-- contract-receipt: maple-cedar-gatehouse -->
 
 # Orchestration
 

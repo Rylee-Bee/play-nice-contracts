@@ -1,6 +1,24 @@
 # Changelog
 
-All notable changes to the play-nice-contracts library. Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR = incompatible behavior change.
+All notable changes to the play-nice-contracts library. Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR = incompatible behavior change. Meaningful contract changes (MINOR/MAJOR) rotate the hidden receipt — enforced mechanically by `contractctl validate` via Git history.
+
+## [0.2.1] — 2026-09-12
+
+Fix-only hardening pass (no new philosophy, no scope expansion).
+
+### Fixed
+- **CI workflow YAML**: the secret/private-material scanner step used a multiline heredoc without a YAML block scalar, so the workflow never parsed and GitHub could not create a job. Now `run: |` with a proper block; CI additionally self-validates its own YAML (job and expected steps present) before running the library checks.
+- **Worker attestation covers the exact inherited union**: `make_attestation(..., resolved_ids=...)` now attests the exact union set computed by `build_commitment` (no re-resolution of only the worker's own task). Governing invariant enforced and asserted: the contract set attested is exactly the contract set committed (defensive mismatch check raises). Inherited parent-only contracts now appear in the worker's attestation; missing task-impact for an inherited contract blocks.
+- **Receipt rotation enforced mechanically**: `check_receipt_rotation()` — Git-history based: canonical contract content changed with a MINOR/MAJOR version bump must have a rotated receipt; PATCH clarifications are exempt. Wired into `validate_library` and CI. No more memory-driven discipline.
+- **Duplicate rules removed from `play-nice-together`**: the accidental double of normative rules 7–8 removed (content preserved once, numbering correct).
+- **Question status vocabulary normalized**: one canonical machine vocabulary (OPEN/WAITING/ANSWERED/DECLINED/EXPIRED/SUPERSEDED/CANCELLED). Legacy lowercase forms parse as documented migration aliases but are never emitted canonically; help-response validation updated.
+- **README truthfulness**: repository is public; README now says so (was claiming private).
+
+### Changed
+- Receipts rotated for the v0.2.0 meaning-changes that had kept stale receipts (enforced by the new rule): `play-nice-together` timber-juniper-velvet → cedar-basalt-vellum; `orchestration` echo-quartz-hollow → maple-cedar-gatehouse; `human-and-machine-parity` lantern-latch-river → window-sail-ember; `discovery-and-negotiation` nectar-heather-prairie → clover-dovetail-maple.
+- `ask-for-help` example normalized to canonical status vocabulary (PATCH-level; receipt unchanged per the patch exemption).
+- Commitment artifacts are now **consumer-context scoped**: default location is `<consuming project>/.contracts/sessions/` (anchored to the adoption manifest), with `CONTRACTCTL_SESSION_DIR` for harness-pinned per-worktree/session dirs and the library-local directory only as an in-library fallback. Parallel projects, worktrees, and workers can no longer collide; artifacts record their `session_dir` for inspectability. Parent-bundle lookup searches the consuming context first.
+- `commit`/`attest` accept `--tag` for explicit surface-trigger matching (parity with `resolve`).
 
 ## [0.2.0] — 2026-09-11
 

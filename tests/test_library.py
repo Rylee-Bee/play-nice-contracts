@@ -25,6 +25,7 @@ Covers the required validation cases:
 
 import copy
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -48,20 +49,49 @@ def lib():
 
 @pytest.fixture()
 def tmp_repo(tmp_path, lib):
-    """A copy of the library for mutation tests (keeps the real tree safe)."""
+    """A copy of the library for mutation tests (keeps the real tree safe).
+    Initialized as a Git repo with one baseline commit so Git-history-based
+    enforcement (receipt rotation) is exercisable."""
     dest = tmp_path / "play-nice-contracts"
-    shutil.copytree(REPO, dest / "play-nice-contracts", symlinks=True)
+    shutil.copytree(REPO, dest / "play-nice-contracts", symlinks=True,
+                    ignore=shutil.ignore_patterns(".git", ".venv", "__pycache__",
+                                                   ".pytest_cache", ".contract-commitments"))
+    repo = dest / "play-nice-contracts"
+    def _git(*args):
+        return subprocess.run(["git", "-C", str(repo), *args],
+                              capture_output=True, text=True, timeout=30)
+    _git("init", "-b", "main")
+    _git("config", "user.email", "test@example.invalid")
+    _git("config", "user.name", "Test")
+    _git("add", "-A")
+    _git("commit", "-m", "baseline", "--no-gpg-sign")
     # contractctl resolves REPO_ROOT from its own path; run against the copy
-    ct_path = dest / "play-nice-contracts" / "tools" / "contractctl" / "contractctl.py"
-    (dest / "play-nice-contracts" / ".tests-ct-path").write_text(str(ct_path))
-    yield dest / "play-nice-contracts"
+    ct_path = repo / "tools" / "contractctl" / "contractctl.py"
+    (repo / ".tests-ct-path").write_text(str(ct_path))
+    yield repo
 
 
-def run_ct(args, cwd=None, ct_path=None):
+import os as _os
+
+
+def artifact_dir(repo, manifest_rel="examples/homelab.adoption.yaml"):
+    """Consumer-context artifact dir for a repo whose adoption manifest lives
+    at manifest_rel: <manifest's parent>/.contracts/sessions/."""
+    m = repo / manifest_rel
+    if m.parent.name == ".contracts":
+        return m.parent / "sessions"
+    return m.parent / ".contracts" / "sessions"
+
+
+def run_ct(args, cwd=None, ct_path=None, env=None):
     ct = ct_path or CT
+    full_env = _os.environ.copy()
+    if env:
+        full_env.update(env)
     return subprocess.run(
         [sys.executable, str(ct), *args],
         capture_output=True, text=True, cwd=cwd or str(REPO), timeout=60,
+        env=full_env,
     )
 
 
@@ -134,7 +164,7 @@ def test_duplicate_receipt_fails(tmp_repo):
     target = tmp_repo / "contracts" / "core" / "PLAY_NICE_TOGETHER.md"
     text = target.read_text()
     # give PLAY_NICE_TOGETHER the same receipt as EXPLICIT_STATE
-    text = text.replace("timber-juniper-velvet", "driftwood-thicket-jetty")
+    text = text.replace("cedar-basalt-vellum", "driftwood-thicket-jetty")
     target.write_text(text)
     errors = ct.validate_library()
     assert any("duplicate receipt" in e for e in errors), errors
@@ -491,7 +521,7 @@ def test_commitment_records_exact_bundle(tmp_repo):
     r = run_ct(_commit_args(manifest, task, _IMPACT_OK), cwd=str(tmp_repo), ct_path=ct_path)
     assert r.returncode == 0
     # keyed artifact path, not a global singleton
-    slug_dir = tmp_repo / ".contract-commitments"
+    slug_dir = artifact_dir(tmp_repo)
     assert slug_dir.is_dir()
     arts = list(slug_dir.glob("session-*.json"))
     assert len(arts) == 1
@@ -507,7 +537,7 @@ def test_commitment_records_exact_bundle(tmp_repo):
     assert selected == {
         "truth-and-evidence", "explicit-state", "recovery-and-reversibility",
         "provenance-and-audit", "least-privilege", "ask-for-help"}
-    assert art["library_version"] == "0.2.0"  # semver from VERSION
+    assert art["library_version"] == "0.2.1"  # semver from VERSION
     # no secrets by construction: artifact only carries ids/hashes/words
     blob = json.dumps(art).lower()
     for bad in ("token", "secret", "password", "api_key"):
@@ -532,7 +562,7 @@ def test_resolved_set_bundle_differs_by_scope(tmp_repo):
 def test_library_version_vs_revision(tmp_repo):
     """Library semver and adopted git revision are distinct concepts (hardening #2)."""
     ct = _load_ct_from(tmp_repo)
-    assert ct.library_version() == "0.2.0"          # semver from VERSION file
+    assert ct.library_version() == "0.2.1"          # semver from VERSION file
     rev = ct.library_revision()
     assert rev != "unknown"
     assert rev != ct.library_version()              # git SHA when repo initialized
@@ -547,7 +577,8 @@ def test_stale_bundle_invalidates_commitment(tmp_repo):
     target = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
     target.write_text(target.read_text().replace("Make honesty cheap.", "Make honesty cheap and durable."))
     run_ct(["lock"], cwd=str(tmp_repo), ct_path=ct_path)
-    s = run_ct(["session-status"], cwd=str(tmp_repo), ct_path=ct_path)
+    s = run_ct(["session-status", "--manifest", str(manifest), "--task", task],
+               cwd=str(tmp_repo), ct_path=ct_path)
     assert s.returncode != 0
     assert "STALE" in s.stdout
     assert "re-attest and re-commit" in s.stdout
@@ -565,7 +596,7 @@ def test_task_change_requires_reresolution(tmp_repo):
     # same task → still ACTIVE
     assert s.returncode == 0
     # rewrite the recorded task to one that triggers more; simulate scope expansion
-    art_path = next((tmp_repo / ".contract-commitments").glob("session-*.json"))
+    art_path = next((artifact_dir(tmp_repo)).glob("session-*.json"))
     art = json.loads(art_path.read_text())
     art["task_fingerprint"] = "rotate the deploy credentials and update the health checks"
     art_path.write_text(json.dumps(art))
@@ -614,7 +645,7 @@ def test_worker_commitment_inherits_real_parent(tmp_repo):
                 cwd=str(tmp_repo), ct_path=ct_path)
     assert r0.returncode == 0, r0.stdout + r0.stderr
     orch_art = json.loads(
-        next((tmp_repo / ".contract-commitments").glob("orchestrator-*.json")).read_text())
+        next((artifact_dir(tmp_repo)).glob("orchestrator-*.json")).read_text())
     parent_sha = orch_art["bundle_sha256"]
 
     # 2. worker with a narrower task inherits the orchestrator's bundle;
@@ -628,7 +659,7 @@ def test_worker_commitment_inherits_real_parent(tmp_repo):
     assert r.returncode == 0, r.stdout + r.stderr
     assert "INHERITED CONTRACT BUNDLE:" in r.stdout
     assert "PARENT CONTRACT COMMITMENT: ACTIVE" in r.stdout
-    art_path = next((tmp_repo / ".contract-commitments").glob("worker-*.json"))
+    art_path = next((artifact_dir(tmp_repo)).glob("worker-*.json"))
     art = json.loads(art_path.read_text())
     assert art["role"] == "worker"
     assert art["inherited_bundle"] == parent_sha
@@ -637,8 +668,73 @@ def test_worker_commitment_inherits_real_parent(tmp_repo):
                 "provenance-and-audit", "least-privilege"):
         assert cid in art["contracts"]
     # worker artifact verifies: parent recorded + no dropped constraints
-    errs = ct.verify_commitment_artifact(art)
+    errs = ct.verify_commitment_artifact(art, manifest)
     assert errs == [], errs
+
+
+def test_worker_attestation_covers_exact_union(tmp_repo):
+    """Hardening: the contract set ATTESTED must be exactly the set COMMITTED.
+    A worker inherits a parent-only contract (least-privilege); that inherited
+    contract must appear in the worker's attestation, and the attested set
+    must equal the committed set — including the parent-only contract."""
+    ct = _load_ct_from(tmp_repo)
+    ct_path = tmp_repo / "tools" / "contractctl" / "contractctl.py"
+    manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
+    # orchestrator on a broad task resolves least-privilege (credentials trigger)
+    orch_task = "rotate the deploy credentials and update the health checks"
+    r0 = run_ct(_commit_args(manifest, orch_task, _IMPACT_OK, extra=["--role", "orchestrator"]),
+                cwd=str(tmp_repo), ct_path=ct_path)
+    assert r0.returncode == 0, r0.stdout + r0.stderr
+    parent_sha = json.loads(
+        next((artifact_dir(tmp_repo)).glob("orchestrator-*.json")).read_text())["bundle_sha256"]
+
+    # worker's own task does NOT trigger least-privilege...
+    worker_task = "update a compose file"
+    own = set(ct.resolve_set(ct.load_adoption(manifest), worker_task)["selected"])
+    assert "least-privilege" not in own
+    # ...so when it inherits, least-privilege is a parent-only addition
+    impact = {cid: "applied" for cid in own}
+    impact["least-privilege"] = "inherited: deploy token scoped to the deploy job"
+    # capture the attestation the worker's commitment used
+    atts = {}
+    orig_make_attestation = ct.make_attestation
+    def spy(mpath, task, task_impact, revision="uncommitted", format_text=True,
+            task_tags=None, resolved_ids=None):
+        out = orig_make_attestation(mpath, task, task_impact, revision, format_text,
+                                    task_tags, resolved_ids)
+        if not format_text:
+            atts["resolved_ids"] = resolved_ids
+            atts["loaded"] = {e["contract_id"] for e in out["loaded"]}
+        return out
+    ct.make_attestation = spy
+    try:
+        w_art, _ = ct.build_commitment(manifest, worker_task, impact, role="worker",
+                                      parent_bundle=parent_sha, worker=True)
+    finally:
+        ct.make_attestation = orig_make_attestation
+    # inherited parent-only contract IS in the attested set and committed set
+    assert "least-privilege" in atts["loaded"]
+    assert atts["loaded"] == set(w_art["contracts"]), "attested set != committed set"
+    assert atts["resolved_ids"] is not None and set(atts["resolved_ids"]) == atts["loaded"]
+
+
+def test_worker_missing_impact_for_inherited_contract_blocks(tmp_repo):
+    """Missing task-impact for an inherited (parent-only) contract blocks
+    attestation/commitment — inherited contracts are attested, not assumed."""
+    ct = _load_ct_from(tmp_repo)
+    manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
+    orch_task = "rotate the deploy credentials and update the health checks"
+    orch_art, _ = ct.build_commitment(manifest, orch_task, dict(_IMPACT_OK), role="orchestrator")
+    ct.write_session_artifact(orch_art)
+    worker_task = "update a compose file"
+    own = set(ct.resolve_set(ct.load_adoption(manifest), worker_task)["selected"])
+    assert "least-privilege" not in own
+    w_impact = {cid: "applied" for cid in own}  # NO impact for least-privilege
+    import pytest as _pq
+    with _pq.raises(ct.CTError) as exc:
+        ct.build_commitment(manifest, worker_task, w_impact, role="worker",
+                            parent_bundle=orch_art["bundle_sha256"], worker=True)
+    assert "least-privilege" in str(exc.value)
 
 
 def test_worker_cannot_drop_parent_constraints(tmp_repo):
@@ -673,13 +769,52 @@ def test_session_safe_keyed_artifacts(tmp_repo):
           ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit", "ask-for-help")}
     assert run_ct(_commit_args(manifest, t1, i1), cwd=str(tmp_repo), ct_path=ct_path).returncode == 0
     assert run_ct(_commit_args(manifest, t2, _IMPACT_OK), cwd=str(tmp_repo), ct_path=ct_path).returncode == 0
-    arts = list((tmp_repo / ".contract-commitments").glob("session-*.json"))
+    arts = list((artifact_dir(tmp_repo)).glob("session-*.json"))
     assert len(arts) == 2  # keyed by task; both coexist
     # status default picks the newest, but keyed lookup finds each
-    s1 = run_ct(["session-status", "--task", t1], cwd=str(tmp_repo), ct_path=ct_path)
-    s2 = run_ct(["session-status", "--task", t2], cwd=str(tmp_repo), ct_path=ct_path)
+    s1 = run_ct(["session-status", "--manifest", str(manifest), "--task", t1], cwd=str(tmp_repo), ct_path=ct_path)
+    s2 = run_ct(["session-status", "--manifest", str(manifest), "--task", t2], cwd=str(tmp_repo), ct_path=ct_path)
     assert s1.returncode == 0 and s2.returncode == 0
     assert t1 in s1.stdout and t2 in s2.stdout
+
+
+def test_session_isolation_across_projects(tmp_repo, tmp_path):
+    """Hardening: two consuming PROJECTS with identical task strings and roles
+    produce distinct commitment state — artifacts live in the consuming
+    project's context, never a global library path."""
+    ct_path = tmp_repo / "tools" / "contractctl" / "contractctl.py"
+    task = "identical integration task"
+    role = "session"
+    impact = {cid: "applied" for cid in
+              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility",
+               "provenance-and-audit", "ask-for-help")}
+    # two consumer projects, each with its own .contracts/ adoption manifest
+    proj_a = tmp_path / "project-a"
+    proj_b = tmp_path / "project-b"
+    for proj in (proj_a, proj_b):
+        (proj / ".contracts").mkdir(parents=True)
+        shutil.copy(tmp_repo / "examples" / "homelab.adoption.yaml",
+                    proj / ".contracts" / "adoption.yaml")
+    for proj in (proj_a, proj_b):
+        r = run_ct(_commit_args(proj / ".contracts" / "adoption.yaml", task, impact),
+                   cwd=str(proj), ct_path=ct_path)
+        assert r.returncode == 0, r.stdout + r.stderr
+    # distinct artifact files in each project's own context
+    art_a = json.loads(next((proj_a / ".contracts" / "sessions").glob(f"{role}-*.json")).read_text())
+    art_b = json.loads(next((proj_b / ".contracts" / "sessions").glob(f"{role}-*.json")).read_text())
+    assert art_a["session_dir"] != art_b["session_dir"]
+    assert str(proj_a) in art_a["session_dir"] and str(proj_b) not in art_a["session_dir"]
+    assert str(proj_b) in art_b["session_dir"] and str(proj_a) not in art_b["session_dir"]
+    # the library checkout itself stays untouched — no workflow-state singleton
+    assert not (tmp_repo / ".contract-commitments").exists() or \
+        not list((tmp_repo / ".contract-commitments").glob(f"{role}-*.json"))
+    # worktree isolation: CONTRACTCTL_SESSION_DIR pins a private dir per lane
+    lane_dir = tmp_path / "lane-wt" / "sessions"
+    r = run_ct(_commit_args(proj_a / ".contracts" / "adoption.yaml", task, impact),
+               cwd=str(proj_a), ct_path=ct_path,
+               env={"CONTRACTCTL_SESSION_DIR": str(lane_dir)})
+    assert r.returncode == 0
+    assert (lane_dir / f"{role}-{re.sub(r'[^a-z0-9-]+', '-', task.lower()).strip('-')[:48]}.json").is_file()
 
 
 def test_attestation_fails_closed_on_lock_drift(tmp_repo):
@@ -745,6 +880,42 @@ def test_session_status_inactive_when_no_artifact(tmp_repo):
     assert "INACTIVE" in s.stdout
 
 
+# --------------------------------------------------------------- receipt rotation enforcement
+
+def test_receipt_rotation_enforced_for_meaningful_changes(tmp_repo):
+    """Git-history rule: a canonical contract whose version changed MINOR/MAJOR
+    (meaningful) without rotating its receipt fails validation."""
+    ct = _load_ct_from(tmp_repo)
+    # HEAD has play-nice-together @1.1.0 with the rotated receipt. Bump the
+    # version MINOR again WITHOUT rotating the receipt -> violation.
+    target = tmp_repo / "contracts" / "core" / "PLAY_NICE_TOGETHER.md"
+    text = target.read_text()
+    assert "version: 1.1.0" in text
+    target.write_text(text.replace("version: 1.1.0", "version: 1.2.0")
+                      .replace("Make honesty cheap.", "Make honesty cheap and durable."))
+    errors = ct.check_receipt_rotation(ct.load_library())
+    assert any("receipt did not rotate" in e and "PLAY_NICE" in e for e in errors), errors
+
+
+def test_receipt_rotation_not_required_for_patch(tmp_repo):
+    """PATCH-clarification content changes do not require receipt rotation."""
+    ct = _load_ct_from(tmp_repo)
+    target = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
+    text = target.read_text()
+    assert "version: 1.0.0" in text
+    target.write_text(text.replace("version: 1.0.0", "version: 1.0.1")
+                      .replace("Make honesty cheap.", "Make honesty cheap and durable."))
+    errors = ct.check_receipt_rotation(ct.load_library())
+    assert not any("TRUTH_AND_EVIDENCE" in e for e in errors), errors
+
+
+def test_receipt_rotation_clean_when_compliant(tmp_repo):
+    """No false positives on the current tree (rotations done correctly)."""
+    ct = _load_ct_from(tmp_repo)
+    errors = ct.check_receipt_rotation(ct.load_library())
+    assert errors == [], errors
+
+
 # --------------------------------------------------------------- ask-for-help
 
 def test_ask_for_help_contract_exists(lib):
@@ -766,7 +937,7 @@ def test_play_nice_references_ask_for_help(lib):
 GOOD_QUESTION = {
     "schema": "play-nice/question-v1",
     "question_id": "q-01842",
-    "status": "waiting_for_answer",
+    "status": "WAITING",
     "requester": {"type": "agent", "id": "frontend-worker"},
     "target": {"type": "human", "role": "owner"},
     "reason": "Two approved visual references disagree about navigation placement.",

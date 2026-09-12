@@ -60,8 +60,11 @@ contractctl attest --manifest .contracts/adoption.yaml --task "your task" \
   --impact truth-and-evidence="unknown stays unknown in my status output" ...
 contractctl commit --manifest .contracts/adoption.yaml --task "your task" \
   --impact ... # activates CONTRACT COMMITMENT: ACTIVE
-contractctl session-status          # ACTIVE / STALE / INACTIVE (keyed by role+task)
+contractctl session-status --manifest .contracts/adoption.yaml   # ACTIVE / STALE / INACTIVE
 contractctl validate-question q.json  # play-nice question / help-request / help-response artifacts
+```
+
+Commitment artifacts are **consumer-context scoped** (project/worktree/session-safe by default): they live in `<your project>/.contracts/sessions/` next to your adoption manifest — parallel projects, worktrees, and workers never collide. Orchestration harnesses may pin a per-lane directory with `CONTRACTCTL_SESSION_DIR`; `--output` overrides explicitly. Artifacts are secret-free JSON, keyed by role+task, and record their own location.
 ```
 
 ## Asking for help is part of the architecture
@@ -92,33 +95,4 @@ Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR =
 python3 -m pytest tests/ -q
 ```
 
-61 tests covering: duplicate IDs/receipts, missing/invalid receipts and versions, index drift, lockfile drift and hash verification, adoption schema validation, unknown-contract rejection, ALWAYS-selection, trigger selection, irrelevant omission, bundle-receipt change on contract change, stale pins (git revision), wrong receipt/hash failures, missing-mandatory-contract failure, conflict-state representation, offline validation, full attestation pass/fail paths — and the commitment machinery (resolved-set bundles, version-vs-revision separation, real worker inheritance with union enforcement, invented-parent rejection, keyed session-safe artifacts, lock-drift fail-closed, impact-file support) — plus ask-for-help (contract presence, cross-references) and the question schema family (good/bad/secret-bearing artifacts, help-request capability requirement, help-response shape, lifecycle states).
-
-## Privacy / repository state
-
-This repository is **private** today. It is written and structured to be
-publishable: sanitize-first (no credentials, private endpoints, personal
-topology, or private medical history — enforced by a canary test), MIT-licensed,
-with reusable contracts deliberately separated from any personal profile
-(profiles are examples, not personal records). Publishing later requires only
-a review pass, not a redesign.
-
-## CI / branch protection
-
-CI (`.github/workflows/ci.yml`) runs on every push and PR: library validation,
-lock determinism (byte-identical regeneration), the full test suite, and a
-secret/private-material scan.
-
-Recommended branch protection for broad adoption:
-
-- `main`: require PR with ≥1 review; require status checks
-  (`Validate library`, `Full test suite`); require branches up to date;
-  block force pushes (aligns with git-and-worktrees).
-- Contract text changes: lockfile regeneration must ship in the same commit
-  (`contractctl lock`) — CI's determinism check fails otherwise.
-- Receipts are unique per contract and indexed; changing a receipt
-  intentionally means a version bump and CHANGELOG entry.
-
-## License
-
-MIT (see `LICENSE`), chosen so the reusable contracts can eventually be published and adopted freely.
+67 tests covering: duplicate IDs/receipts, missing/invalid receipts and versions, index drift, lockfile drift and hash verification, adoption schema validation, unknown-contract rejection, ALWAYS-selection, trigger selection, irrelevant omission, bundle-receipt change on contract change, stale pins (git revision), wrong receipt/hash failures, missing-mandatory-contract failure, conflict-state representation, offline validation, full attestation pass/fail paths — the commitment machinery (resolved-set bundles, version-vs-revision separation, worker inheritance with exact-union attestation enforcement, invented-parent rejection, consumer-context session isolation across projects/worktrees, lock-drift fail-closed, impact-file support) — receipt-rotation enforcement via Git history (meaningful change → version change → receipt change; PATCH exempt) — and ask-for-help + the question schema family (canonical status vocabulary, secret-bearing rejection, help-request capability requirement).

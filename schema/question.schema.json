@@ -19,8 +19,8 @@
       "description": "Stable identifier. Persists across sessions; referenced by decision provenance."
     },
     "status": {
-      "enum": ["OPEN", "WAITING", "ANSWERED", "DECLINED", "EXPIRED", "SUPERSEDED", "CANCELLED", "waiting_for_answer", "answered"],
-      "description": "Lifecycle states. lowercase variants are the on-the-wire question forms of WAITING/ANSWERED."
+      "enum": ["OPEN", "WAITING", "ANSWERED", "DECLINED", "EXPIRED", "SUPERSEDED", "CANCELLED"],
+      "description": "Lifecycle states — one canonical machine vocabulary. Human renderers may use any friendly wording; wire/machine values stay stable. Legacy lowercase forms (waiting_for_answer, answered) are accepted by the validator as parse aliases but never emitted canonically."
     },
     "requester": { "$ref": "#/$defs/participant" },
     "target": { "$ref": "#/$defs/participant" },
