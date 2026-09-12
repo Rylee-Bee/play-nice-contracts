@@ -53,6 +53,27 @@ Demonstrated in onboarding and Qwen profiling:
 - **Restraint from mutation** — did not modify canonical contracts, did not
   change adoption pins, did not edit lockfile, did not push without
   verification.
+- **Orientation/friction detection** — after completing cold onboarding of
+  all 65 contracts, produced a concrete list of 8 onboarding friction
+  points. Distinguished contract-quality problems (none found) from
+  presentation/tooling problems (orientation, discoverability, role-based
+  reading). Proposed improvements without weakening contract semantics.
+- **Improvement implementation** — implemented 4 of 8 proposed improvements
+  (README front door, Quick Reference, contractctl onboard, handoff
+  examples). Deferred 4 (cross-reference map — no markdown links to
+  extract; Trusted Translation split — unnecessary with section markers;
+  machine-readable changelog — deferred for demonstrated need). Added 7
+  tests. All 106 tests pass. CI green.
+- **Participant discovery scope correction** — initially missed Big Pickle's
+  project-local participant pack. Lesson recorded: check both global
+  (profiles/) and project-local (.project/participants/) before concluding
+  UNKNOWN.
+- **Live-state re-observation** — initially observed no service on
+  localhost:8000 (correct at observation time). Another participant deployed
+  Project Worlds on :18080 concurrently. Re-observed and confirmed the new
+  state. Did not call the earlier observation "wrong" — it was true when
+  observed. Lesson: timestamp observations; re-observe before consequential
+  live-state recommendations.
 
 ## GOOD WITH VERIFICATION
 
@@ -114,6 +135,8 @@ No evidence of strength in these areas:
 | Could over-trust worker reports without integration verification | Orchestration contract rule 6: worker-green is not integration-green |
 | Model identity changes between sessions; must track current brain | Record CURRENT BRAIN in profile; do not inherit claims from previous models |
 | No observed multi-worker parallel orchestration yet | Start with serial integration; prove parallel capability before relying on it |
+| **Discovery scope** — initially searched only global profile locations and missed Big Pickle's project-local participant pack | Check both global (profiles/) and project-local (.project/participants/) before concluding UNKNOWN |
+| **Live-state freshness** — a correct observation may become stale while another participant changes the system | Timestamp observations; re-observe before consequential live-state recommendations |
 
 ## AUTHORITY
 
@@ -166,10 +189,19 @@ pressure, the temptation is to convert UNKNOWN into a plausible answer to
 appear productive. The contracts say: UNKNOWN is a valid state. Stopping
 with an honest UNKNOWN is preferable to manufacturing progress.
 
+**ONBOARDING COMPLEXITY:** The contract library is internally coherent, but
+orientation becomes expensive as the library grows. Presentation and tooling
+should help participants find the right entry point without weakening
+applicability or authority. Hermes's own experience: cold-onboarding 65
+contracts was expensive; the improvements implemented (Trusted Translation
+front door, Quick Reference, contractctl onboard) reduce that friction
+without changing contract semantics.
+
 ## EVIDENCE BASE
 
 **Observed tasks:** Play-Nice onboarding (2026-09-12), Qwen profiling
-(2026-09-12)
+(2026-09-12), onboarding improvement implementation (2026-09-12), Project
+Worlds documentation audit (2026-09-12), live-state reconciliation (2026-09-12)
 
 **Evidence:**
 - All 65 contracts read and validated (contractctl validate → VALID)
@@ -186,3 +218,9 @@ with an honest UNKNOWN is preferable to manufacturing progress.
 - No canonical contracts modified
 - No adoption pins changed
 - No secrets or private IPs in any output
+- Onboarding friction detected and 4 improvements implemented
+- 7 new tests for contractctl onboard (106 total, all pass)
+- contractctl onboard dogfooded for orchestrator role
+- Big Pickle discovered in project-local participants after initial miss
+- Live-state re-observed after concurrent deployment (18080)
+- Trusted Translation section marker added (not split)
