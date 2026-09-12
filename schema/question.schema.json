@@ -1,0 +1,143 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "play-nice/question-v1",
+  "title": "Play-Nice Question and Help Artifacts",
+  "description": "One generalized schema family for help interactions. play-nice/question-v1 is the human-facing question (with choices and recommendation); help-request-v1/help-response-v1 (same schema, kind discriminant) are the agent-to-agent forms. A question is resumable workflow state with provenance — never a chat message, never authorization, never secret-bearing.",
+  "type": "object",
+  "required": ["schema", "question_id", "requester", "target", "question", "status", "created_at", "blocking"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "enum": ["play-nice/question-v1", "play-nice/help-request-v1", "play-nice/help-response-v1"],
+      "description": "question-v1: human-facing decision request. help-request-v1: agent-to-agent capability request. help-response-v1: the answer artifact."
+    },
+    "question_id": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Stable identifier. Persists across sessions; referenced by decision provenance."
+    },
+    "status": {
+      "enum": ["OPEN", "WAITING", "ANSWERED", "DECLINED", "EXPIRED", "SUPERSEDED", "CANCELLED", "waiting_for_answer", "answered"],
+      "description": "Lifecycle states. lowercase variants are the on-the-wire question forms of WAITING/ANSWERED."
+    },
+    "requester": { "$ref": "#/$defs/participant" },
+    "target": { "$ref": "#/$defs/participant" },
+    "reason": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Why the question is being asked — what is ambiguous, conflicting, or missing."
+    },
+    "question": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 2000,
+      "description": "The question itself, answerable in one decision. For help-requests: the needed capability or operation."
+    },
+    "checked": {
+      "type": "array",
+      "items": { "type": "string", "maxLength": 300 },
+      "description": "What the requester already inspected before asking (discover-before-asking discipline)."
+    },
+    "choices": {
+      "type": "array",
+      "minItems": 2,
+      "description": "Labeled options for the respondent. Absent when freeform input is appropriate.",
+      "items": {
+        "type": "object",
+        "required": ["id", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$" },
+          "label": { "type": "string", "minLength": 1, "maxLength": 120 }
+        }
+      }
+    },
+    "recommended": {
+      "type": ["string", "null"],
+      "description": "The recommended choice id or freeform recommendation, if any. A recommendation is not the answer."
+    },
+    "recommendation_reason": { "type": ["string", "null"], "maxLength": 1000 },
+    "confidence": {
+      "enum": ["high", "medium", "low", null],
+      "description": "Confidence in the recommendation. Distinguishes FACT/INFERENCE/RECOMMENDATION rather than flattening them."
+    },
+    "blocking": {
+      "type": "boolean",
+      "description": "True when work cannot safely continue without the answer."
+    },
+    "safe_to_continue_without_answer": { "type": "boolean" },
+    "if_unanswered": {
+      "type": ["string", "null"],
+      "maxLength": 500,
+      "description": "What happens if nobody answers (e.g. 'preserve current state, return WAITING_FOR_HELP')."
+    },
+    "affected_scope": {
+      "type": "array",
+      "items": { "type": "string", "maxLength": 120 },
+      "description": "Screens, services, files, or resources this decision affects."
+    },
+    "evidence": {
+      "type": "array",
+      "items": { "type": "string", "maxLength": 300 },
+      "description": "References supporting the question (file paths, frame ids, API responses). No inline secrets — references only."
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "answered_by": { "$ref": "#/$defs/participant_nullable" },
+    "answered_at": { "type": ["string", "null"], "format": "date-time" },
+    "answer": {
+      "type": ["string", "null"],
+      "maxLength": 4000,
+      "description": "The received answer. Information only — NEVER authorization (see Authorization)."
+    },
+    "answer_kind": {
+      "enum": ["decision", "fact", "clarification", "correction", null],
+      "description": "What kind of answer this was; decisions become provenance."
+    },
+    "resulting_action": {
+      "type": ["string", "null"],
+      "maxLength": 1000,
+      "description": "What was done as a result, for decision provenance ('because it asked, and this was the answer')."
+    },
+    "needed_capability": {
+      "type": ["string", "null"],
+      "maxLength": 80,
+      "description": "help-requests only: the capability sought (e.g. browser-visual-inspection)."
+    },
+    "inputs": {
+      "type": ["object", "null"],
+      "description": "help-requests only: structured inputs the helper needs (routes, reference paths). No secrets."
+    },
+    "expected_output": {
+      "type": ["object", "null"],
+      "description": "help-requests only: expected shape of the result."
+    },
+    "result": {
+      "type": ["object", "null"],
+      "description": "help-responses only: the structured result."
+    },
+    "secrets_policy": {
+      "const": "excluded",
+      "description": "Marker field: help artifacts structurally exclude secret material; sensitive data uses secure mechanisms instead of pasting."
+    }
+  },
+  "$defs": {
+    "participant": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["human", "agent", "orchestrator", "worker", "service", "api", "tool", "automation"] },
+        "id": { "type": ["string", "null"], "maxLength": 80 },
+        "role": { "type": ["string", "null"], "maxLength": 80, "description": "e.g. owner, foreman, specialist" }
+      }
+    },
+    "participant_nullable": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/participant" }
+      ]
+    }
+  }
+}

@@ -54,6 +54,33 @@ For tasks resolving visual-fidelity-and-composition, the task-impact must
 additionally identify: design reference, live surface, intended composition
 to preserve, known anti-patterns, verification method.
 
+For tasks resolving ask-for-help, the task-impact should identify (HELP IMPACT):
+
+```text
+HELP IMPACT
+
+potential uncertainty:
+  <what might be missing/ambiguous that matters to this task>
+
+available helpers:
+  <service/API docs, capability endpoints, specialist agents, config>
+
+human-owned decisions:
+  <decisions only the owner can make, if any are expected>
+
+service-owned questions:
+  <facts another system naturally owns (API version, limits, semantics)>
+
+safe stop:
+  <e.g. preserve current state and return WAITING_FOR_HELP
+   rather than guess or retry a mutation>
+```
+
+When blocked mid-work, return NEEDS_HELP / WAITING_FOR_HELP with a
+well-formed question (checked-where, options, recommendation, blocking,
+if-unanswered) — asking is GOOD, SAFE, POLITE, SMART, and COMPLIANT,
+not failure. Never guess to keep moving.
+
 WORKER INHERITANCE: a foreman that accepted the contracts cannot dispatch a
 worker outside them. Worker packets carry:
   INHERITED CONTRACT BUNDLE: <bundle hash>
@@ -86,10 +113,14 @@ Perform the bounded task under the accepted, committed contracts:
   - the commitment governs how EVERY side interacts: be truthful,
     accessible, interoperable, respectful of attention and external
     systems, inspectable, recoverable, explicit about uncertainty
+  - know when to act, when to discover, when to ask, and when to
+    preserve UNKNOWN: check discoverable places first, then ask the
+    participant who naturally owns the answer; record the question as
+    resumable state; answers become provenance, never authorization
   - if a contract proves ambiguous, impossible, or friction-causing:
     record the issue, don't silently work around it — the library learns
-  - stop conditions: objective met / human decision needed /
-    insufficient evidence / rising risk — stop states are success
+  - stop conditions: objective met / human decision needed / insufficient
+    evidence / rising risk / WAITING_FOR_HELP — stop states are success
 ```
 
 ---

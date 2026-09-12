@@ -16,7 +16,8 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | `recovery-and-reversibility` | Recovery and Reversibility | 1.0.0 | canonical | Previews, rollback, PROVE STALE → CLEAN; mistakes become guardrails |
 | `portability-and-ownership` | Portability and Ownership | 1.0.0 | canonical | Leave any tool with your data; explicit ownership boundaries |
 | `explicit-state` | Explicit State | 1.0.0 | canonical | Shared status vocabulary; state never inferred from silence |
-| `play-nice-together` | Play Nice Together | 1.0.0 | canonical | The constitution: everything plays nicely with everything else |
+| `ask-for-help` | Ask for Help | 1.0.0 | canonical | Ask the participant who owns the answer; never guess to keep moving |
+| `play-nice-together` | Play Nice Together | 1.1.0 | canonical | The constitution: everything plays nicely with everything else |
 
 ## Human (experience floor)
 
@@ -52,7 +53,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | `capability-first` | Capability First | 1.0.0 | canonical | Intent → capability → policy → adapter → provider; vendors never own meaning |
 | `friendly-api-client` | Friendly API Client | 1.0.0 | canonical | Learn, respect, read-before-write, retry intelligently, idempotent |
 | `provider-neutrality` | Provider Neutrality | 1.0.0 | canonical | Provider-neutral meaning; namespaced enrichment; no config looks "real" |
-| `discovery-and-negotiation` | Discovery and Negotiation | 1.0.0 | canonical | Ask what's supported; degrade gracefully on absence |
+| `discovery-and-negotiation` | Discovery and Negotiation | 1.1.0 | canonical | Ask what's supported; degrade gracefully on absence |
 | `versioning-and-compatibility` | Versioning and Compatibility | 1.0.0 | canonical | Declared versions; breaks explicit; unknown fails clearly |
 | `failure-and-degradation` | Failure and Degradation | 1.0.0 | canonical | Shared status vocabulary; optional failure contained; errors answer six questions |
 | `idempotency` | Idempotency | 1.0.0 | canonical | Repeated invocation never double-applies destruction |
@@ -89,7 +90,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | ID | Title | Ver | Status | Purpose |
 |---|---|---|---|---|
 | `agent-behavior` | Agent Behavior | 1.0.0 | canonical | Inspect, preserve uncertainty, verify, stop at boundaries |
-| `orchestration` | Orchestration | 1.0.0 | canonical | Owner/architect/foreman/worker/gatekeeper; serial integration |
+| `orchestration` | Orchestration | 1.1.0 | canonical | Owner/architect/foreman/worker/gatekeeper; workers NEEDS_HELP to foreman; serial integration |
 | `model-routing` | Model Routing | 1.0.0 | canonical | Expensive judgment, cheap execution; no silent fallback |
 | `worker-contract` | Worker Contract | 1.0.0 | canonical | Bounded packets: SHA, paths, criteria, exclusions, authority |
 | `review-and-integration` | Review and Integration | 1.0.0 | canonical | Worker-green ≠ integration-green; review real diffs |
@@ -104,7 +105,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | `api` | API | 1.0.0 | canonical | The programmable seam; versioned, honest envelopes, documented |
 | `web-ui` | Web UI | 1.0.0 | canonical | A view, never the source of truth; honest states; floor applies |
 | `machine-readable-output` | Machine Readable Output | 1.0.0 | canonical | Stable parseable shapes for scripts/agents/future tools |
-| `human-and-machine-parity` | Human and Machine Parity | 1.0.0 | canonical | Every state legible twice; surfaces are views of one truth |
+| `human-and-machine-parity` | Human and Machine Parity | 1.1.0 | canonical | Every state legible twice; surfaces are views of one truth |
 
 ## How to use this index
 

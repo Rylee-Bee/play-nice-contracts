@@ -1,7 +1,7 @@
 ---
 contract_id: human-and-machine-parity
 title: Human and Machine Parity
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: interfaces
 applies: [ui, cli, api, agents]
@@ -37,6 +37,7 @@ Every important state is legible twice: as understandable human language/interfa
 5. Every capability is reachable through every appropriate surface: a human by UI/CLI, an agent by tool/JSON, a script by CLI `--json`, a program by API. No surface is a hack.
 6. Do not make one interface first-class while leaving others as undocumented side doors — unless there is a compelling technical reason, recorded.
 7. Interface parity is testable: the same underlying operation, exercised through each surface, yields equivalent truth (same states, same effects, same policy applied).
+8. Questions and help requests carry parity too (see Ask for Help): every help request has a useful human representation and a stable machine representation (`play-nice/question-v1`), because a question is one of the highest-value interfaces between a human and a machine. No raw RPC errors for humans; no prose-parsing for machines.
 
 ## RATIONALE
 

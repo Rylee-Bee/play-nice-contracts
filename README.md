@@ -29,8 +29,8 @@ Rylee's preferred experience is a first-class profile (`profiles/`), not a hidde
 ## What's here
 
 ```text
-schema/            contract, adoption, attestation, capability, status schemas
-contracts/         60 canonical contracts across 8 layers
+schema/            contract, adoption, attestation, capability, status, question schemas
+contracts/         61 canonical contracts across 8 layers
 profiles/          baseline + example personal profiles
 tools/contractctl  the CLI (stdlib-only Python)
 tests/             full library test suite
@@ -60,8 +60,13 @@ contractctl attest --manifest .contracts/adoption.yaml --task "your task" \
   --impact truth-and-evidence="unknown stays unknown in my status output" ...
 contractctl commit --manifest .contracts/adoption.yaml --task "your task" \
   --impact ... # activates CONTRACT COMMITMENT: ACTIVE
-contractctl session-status          # ACTIVE / STALE / INACTIVE
+contractctl session-status          # ACTIVE / STALE / INACTIVE (keyed by role+task)
+contractctl validate-question q.json  # play-nice question / help-request / help-response artifacts
 ```
+
+## Asking for help is part of the architecture
+
+`ask-for-help` (core) encodes: **it is nice, polite, kind, and smart to ask.** Know → act; can safely discover → discover; another participant can answer cheaply → ask; high-risk/ambiguous → ask or escalate; unknown and nobody can answer → preserve UNKNOWN. Never guess to keep moving. Questions are resumable state (`play-nice/question-v1`), answers become provenance, and answers are never authorization. `WAITING_FOR_HELP` is a successful stop state.
 
 ## The contract gate (session prefix)
 
@@ -79,7 +84,7 @@ The three stages mean: receipt = "I obtained the lesson"; attestation = "I know 
 
 ## Versioning
 
-Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR = incompatible change. `contracts.lock.json` pins id, version, path, SHA-256, receipt, and status; lock drift is detected deterministically. A library revision's resolved set derives a bundle receipt (e.g. `cedar-lantern-47`) — an identifier, never a credential or authorization.
+Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR = incompatible change. Library semver (VERSION) is distinct from the adopted Git revision: the version describes contract content, the revision pins the exact adopted commit. `contracts.lock.json` pins id, version, path, SHA-256, receipt, and status; lock drift is detected deterministically and attestations fail closed on it. A commitment's bundle identity represents the **resolved contract set** for its task — different scopes, different bundles — and stale bundles invalidate commitments. Bundle receipts (e.g. `cedar-lantern-47`) are identifiers, never credentials or authorization.
 
 ## Tests
 
@@ -87,11 +92,32 @@ Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR =
 python3 -m pytest tests/ -q
 ```
 
-Covers: duplicate IDs/receipts, missing/invalid receipts and versions, index drift, lockfile drift and hash verification, adoption schema validation, unknown-contract rejection, ALWAYS-selection, trigger selection, irrelevant omission, bundle-receipt change on contract change, stale pins, wrong receipt/hash failures, missing-mandatory-contract failure, conflict-state representation, offline validation, full attestation pass/fail paths — and the commitment machinery: ACTIVE after PASS, blocked without impact, exact bundle recording, stale-bundle invalidation, task-change re-resolution, worker inheritance (parent bundle required, floors preserved), and hash-mismatch prevention.
+61 tests covering: duplicate IDs/receipts, missing/invalid receipts and versions, index drift, lockfile drift and hash verification, adoption schema validation, unknown-contract rejection, ALWAYS-selection, trigger selection, irrelevant omission, bundle-receipt change on contract change, stale pins (git revision), wrong receipt/hash failures, missing-mandatory-contract failure, conflict-state representation, offline validation, full attestation pass/fail paths — and the commitment machinery (resolved-set bundles, version-vs-revision separation, real worker inheritance with union enforcement, invented-parent rejection, keyed session-safe artifacts, lock-drift fail-closed, impact-file support) — plus ask-for-help (contract presence, cross-references) and the question schema family (good/bad/secret-bearing artifacts, help-request capability requirement, help-response shape, lifecycle states).
 
-## Privacy
+## Privacy / repository state
 
-This library is private but sanitize-first: no credentials, private endpoints, personal topology, or private medical history. Sensory-safe/low-vision/attention requirements stand as engineering requirements with no personal context attached. The architecture is intended to survive eventual public release of the reusable contracts.
+This repository is **private** today. It is written and structured to be
+publishable: sanitize-first (no credentials, private endpoints, personal
+topology, or private medical history — enforced by a canary test), MIT-licensed,
+with reusable contracts deliberately separated from any personal profile
+(profiles are examples, not personal records). Publishing later requires only
+a review pass, not a redesign.
+
+## CI / branch protection
+
+CI (`.github/workflows/ci.yml`) runs on every push and PR: library validation,
+lock determinism (byte-identical regeneration), the full test suite, and a
+secret/private-material scan.
+
+Recommended branch protection for broad adoption:
+
+- `main`: require PR with ≥1 review; require status checks
+  (`Validate library`, `Full test suite`); require branches up to date;
+  block force pushes (aligns with git-and-worktrees).
+- Contract text changes: lockfile regeneration must ship in the same commit
+  (`contractctl lock`) — CI's determinism check fails otherwise.
+- Receipts are unique per contract and indexed; changing a receipt
+  intentionally means a version bump and CHANGELOG entry.
 
 ## License
 

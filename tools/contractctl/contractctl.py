@@ -32,6 +32,7 @@ SCHEMA_DIR = REPO_ROOT / "schema"
 LOCKFILE = REPO_ROOT / "contracts.lock.json"
 INDEX_FILE = REPO_ROOT / "CONTRACT_INDEX.md"
 VERSION_FILE = REPO_ROOT / "VERSION"
+QUESTION_SCHEMA = SCHEMA_DIR / "question.schema.json"
 
 FM_DELIM = "---"
 FM_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.DOTALL)
@@ -426,16 +427,34 @@ def verify_lock(lib: list[dict] | None = None) -> list[str]:
     return errors
 
 
-# ---------------------------------------------------------------- bundle receipt
+# ---------------------------------------------------------------- bundle identity
+# Bundle identity represents the RESOLVED contract set (the contracts selected
+# for a task), not the whole library. Two sessions resolving different task
+# scopes get different bundle identities; the same scope + same library gets
+# a byte-stable identity. The full library is itself representable as a set
+# (all contracts) for lockfile purposes.
 
-def bundle_receipt(lock: dict) -> str:
-    """Deterministic three-word bundle receipt derived from the resolved set.
+def _bundle_material(contract_refs: list[str]) -> str:
+    """Canonical material: sorted id@version#sha256 refs."""
+    return "|".join(sorted(contract_refs))
+
+
+def resolved_refs(lock: dict, contract_ids: list[str] | set[str] | None = None) -> list[str]:
+    """id@version#sha256 refs for the given ids (all lockfile entries if None)."""
+    ids = set(contract_ids) if contract_ids is not None else None
+    refs = []
+    for e in lock["contracts"]:
+        if ids is None or e["id"] in ids:
+            refs.append(f"{e['id']}@{e['version']}#{e['sha256']}")
+    return refs
+
+
+def bundle_receipt(lock: dict, contract_ids: list[str] | set[str] | None = None) -> str:
+    """Deterministic three-word bundle receipt for the RESOLVED set.
 
     Not a credential; identifies a set of contract versions/hashes.
     """
-    material = "|".join(
-        f"{e['id']}@{e['version']}#{e['sha256']}" for e in lock["contracts"]
-    )
+    material = _bundle_material(resolved_refs(lock, contract_ids))
     digest = hashlib.sha256(material.encode("utf-8")).hexdigest()
     words = _RECEIPT_WORDS
     n = len(words)
@@ -444,6 +463,12 @@ def bundle_receipt(lock: dict) -> str:
     w2 = words[(i >> 24) % n]
     w3 = words[(i >> 48) % n]
     return f"{w1}-{w2}-{w3}"
+
+
+def bundle_sha256(lock: dict, contract_ids: list[str] | set[str] | None = None) -> str:
+    """SHA-256 over the exact resolved-set material (id@version#sha256)."""
+    material = _bundle_material(resolved_refs(lock, contract_ids))
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 
 _RECEIPT_WORDS = (
@@ -576,14 +601,6 @@ I understand that "play nice together" means designing the boundary between
 systems as carefully as the systems themselves."""
 
 
-def bundle_sha256(lock: dict) -> str:
-    """SHA-256 over the exact resolved-bundle material (id@version#hash)."""
-    material = "|".join(
-        f"{e['id']}@{e['version']}#{e['sha256']}" for e in lock["contracts"]
-    )
-    return hashlib.sha256(material.encode("utf-8")).hexdigest()
-
-
 def make_attestation(manifest_path: Path, task: str, task_impact: dict[str, str],
                      revision: str = "uncommitted", format_text: str = True) -> dict | str:
     manifest = load_adoption(manifest_path)
@@ -592,8 +609,14 @@ def make_attestation(manifest_path: Path, task: str, task_impact: dict[str, str]
         raise CTError("resolution errors:\n  " + "\n  ".join(res["errors"]))
     lib = {c["front_matter"]["contract_id"]: c for c in load_library()}
     lock = load_lock()
+    # Fail closed on lock drift: an attestation against a drifted lockfile
+    # would pin stale hashes and must not be produced.
+    drift = verify_lock(list(lib.values()))
+    if drift:
+        raise CTError("attestation blocked — lockfile drift (run contractctl lock):\n  " + "\n  ".join(drift))
     locked = {e["id"]: e for e in lock["contracts"]}
-    b_receipt = bundle_receipt(lock)
+    selected_ids = set(res["selected"])
+    b_receipt = bundle_receipt(lock, selected_ids)
 
     loaded = []
     conflicts = []
@@ -605,7 +628,7 @@ def make_attestation(manifest_path: Path, task: str, task_impact: dict[str, str]
         conflict = None
         if impact is None:
             status = "CONFLICT"
-            conflict = "missing task-impact acknowledgement (see contract-attestation rule 3)"
+            conflict = "missing task-impact acknowledgement (see contract-attestation rule 6)"
             conflicts.append(f"{cid}: {conflict}")
         loaded.append(
             {
@@ -621,7 +644,13 @@ def make_attestation(manifest_path: Path, task: str, task_impact: dict[str, str]
     gate = "PASS" if not conflicts else "BLOCKED"
     att = {
         "format": ATTESTATION_FORMAT,
-        "bundle": {"revision": revision, "receipt": b_receipt},
+        "bundle": {
+            "library_version": library_version(),
+            "library_revision": revision,
+            "receipt": b_receipt,
+            "sha256": bundle_sha256(lock, selected_ids),
+            "scope": "resolved-set",
+        },
         "loaded": loaded,
         "task_impact": [f"{k}: {v}" for k, v in sorted(task_impact.items())],
         "conflicts": "; ".join(conflicts) if conflicts else "none",
@@ -635,8 +664,11 @@ def make_attestation(manifest_path: Path, task: str, task_impact: dict[str, str]
 def format_attestation_text(att: dict, res: dict) -> str:
     lines = [ATTESTATION_FORMAT, ""]
     lines.append("bundle:")
-    lines.append(f"  revision: {att['bundle']['revision']}")
+    lines.append(f"  library_version: {att['bundle'].get('library_version', '?')}")
+    lines.append(f"  library_revision: {att['bundle'].get('library_revision', '?')}")
     lines.append(f"  receipt: {att['bundle']['receipt']}")
+    lines.append(f"  sha256: {att['bundle'].get('sha256', '?')}")
+    lines.append("  scope: resolved-set")
     lines.append("")
     lines.append("loaded:")
     for e in att["loaded"]:
@@ -679,13 +711,22 @@ def verify_attestation(att_path: Path, manifest_path: Path | None = None) -> lis
     if gate not in ("PASS", "BLOCKED"):
         errors.append(f"attestation: gate must be PASS or BLOCKED, got {gate!r}")
 
-    # bundle checks
+    # lock drift fails closed: cannot verify against a stale lockfile
+    drift = verify_lock(list(lib.values()))
+    if drift:
+        errors.extend(f"lock drift: {d}" for d in drift)
+        return errors
+
+    # bundle checks: the bundle is the RESOLVED set (the loaded contracts)
     b = att.get("bundle", {})
-    expected_receipt = bundle_receipt(lock)
+    loaded_ids = {e.get("contract_id") for e in att.get("loaded", []) if e.get("contract_id")}
+    expected_receipt = bundle_receipt(lock, loaded_ids)
     if b.get("receipt") != expected_receipt:
         errors.append(
-            f"attestation: bundle receipt mismatch (attested {b.get('receipt')!r}, current {expected_receipt!r}) — library changed or stale attestation"
+            f"attestation: bundle receipt mismatch (attested {b.get('receipt')!r}, current resolved-set receipt {expected_receipt!r}) — library changed, resolution changed, or stale attestation"
         )
+    if b.get("sha256") and b.get("sha256") != bundle_sha256(lock, loaded_ids):
+        errors.append("attestation: resolved-set bundle sha256 mismatch")
 
     loaded = att.get("loaded", [])
     if not loaded:
@@ -734,16 +775,23 @@ def _parse_attestation_text(raw: str) -> dict | None:
     loaded = []
     cur = None
     task_impact = []
-    bundle_rev = None
-    bundle_receipt = None
+    bundle = {"library_version": None, "library_revision": None,
+              "receipt": None, "sha256": None, "scope": None}
     conflicts = None
     gate = None
+    in_impact = False
     for line in raw.split("\n"):
         s = line.strip()
-        if s.startswith("revision:"):
-            bundle_rev = s.split(":", 1)[1].strip()
+        if s.startswith("library_version:") and cur is None:
+            bundle["library_version"] = s.split(":", 1)[1].strip()
+        elif s.startswith("library_revision:") and cur is None:
+            bundle["library_revision"] = s.split(":", 1)[1].strip()
         elif s.startswith("receipt:") and cur is None:
-            bundle_receipt = s.split(":", 1)[1].strip()
+            bundle["receipt"] = s.split(":", 1)[1].strip()
+        elif s.startswith("sha256:") and cur is None:
+            bundle["sha256"] = s.split(":", 1)[1].strip()
+        elif s.startswith("scope:") and cur is None:
+            bundle["scope"] = s.split(":", 1)[1].strip()
         elif re.match(r"^[a-z0-9-]+@\d+\.\d+\.\d+$", s):
             cid, ver = s.split("@")
             cur = {"contract_id": cid, "version": ver}
@@ -755,19 +803,20 @@ def _parse_attestation_text(raw: str) -> dict | None:
             cur["status"] = s.split(":", 1)[1].strip()
             loaded.append(cur)
             cur = None
-        elif s.startswith("- ") and task_impact is not None and gate is None and (
-            "conflicts:" not in raw.split(s)[0].rsplit("task-impact", 1)[-1][:0]
-        ):
-            task_impact.append(s[2:].strip())
+        elif s.startswith("task-impact:"):
+            in_impact = True
         elif s.startswith("conflicts:"):
+            in_impact = False
             conflicts = s.split(":", 1)[1].strip()
+        elif s.startswith("- ") and in_impact:
+            task_impact.append(s[2:].strip())
         elif s.startswith("CONTRACT GATE:"):
             gate = s.split(":", 1)[1].strip()
     if gate is None:
         return None
     return {
         "format": ATTESTATION_FORMAT,
-        "bundle": {"revision": bundle_rev or "unknown", "receipt": bundle_receipt or "unknown"},
+        "bundle": bundle,
         "loaded": loaded,
         "task_impact": task_impact,
         "conflicts": conflicts,
@@ -777,59 +826,110 @@ def _parse_attestation_text(raw: str) -> dict | None:
 
 # ---------------------------------------------------------------- commitment
 
-SESSION_ARTIFACT = REPO_ROOT / ".contract-commitment.json"
 COMMITMENT_FORMAT = "CONTRACT OPERATIONAL COMMITMENT v1"
 COMMITMENT_ACTIVE = "ACTIVE"
 COMMITMENT_INACTIVE = "INACTIVE"
 
 
+def default_artifact_path(role: str = "session", task: str = "") -> Path:
+    """Session/worktree-safe artifact path.
+
+    Artifacts are keyed by role+task fingerprint so parallel lanes in separate
+    worktrees never share one global mutable singleton. All artifacts live in
+    the library root's .contract-commitments/ (gitignored).
+    """
+    d = REPO_ROOT / ".contract-commitments"
+    d.mkdir(exist_ok=True)
+    slug = re.sub(r"[^a-z0-9-]+", "-", task.lower()).strip("-")[:48] or "untitled"
+    return d / f"{role}-{slug}.json"
+
+
 def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str],
                      revision: str = "uncommitted",
                      role: str = "session", parent_bundle: str | None = None,
+                     parent_manifest: Path | None = None,
                      worker: bool = False) -> tuple[dict, str]:
     """Build the operational commitment for a task.
 
     Returns (artifact_dict, text_block). Raises CTError on any failure that
     must prevent the ACTIVE state: resolution errors, missing task-impact,
-    conflicts, hash/lock problems, or (for workers) a missing parent bundle.
+    conflicts, lock drift, or (for workers) an unverifiable parent bundle.
     """
     manifest = load_adoption(manifest_path)
     res = resolve_set(manifest, task)
     if res["errors"]:
         raise CTError("commitment: resolution errors:\n  " + "\n  ".join(res["errors"]))
 
-    # A PASS attestation is a precondition; reuse its machinery
+    lib = {c["front_matter"]["contract_id"]: c for c in load_library()}
+    lock = load_lock()
+    selected_ids = set(res["selected"])
+
+    if worker:
+        # Real inheritance: the parent bundle must be a resolvable bundle in
+        # this library. The worker's resolved set is the UNION of the parent's
+        # applicable contracts and the worker's own task-triggered contracts —
+        # workers load inherited contracts, add task-specific ones, and therefore
+        # cannot silently drop a parent constraint.
+        if not parent_bundle:
+            raise CTError("commitment: worker commitment requires --parent-bundle (inherited bundle sha256)")
+        parent = find_commitment_by_bundle(parent_bundle)
+        if parent is None:
+            raise CTError(
+                "commitment: parent bundle not found — an orchestrator commitment "
+                "with this bundle_sha256 must exist under .contract-commitments/ "
+                "(workers inherit a real parent bundle, not an arbitrary hash)"
+            )
+        parent_contracts = set(parent.get("contracts", []))
+        inherited_only = parent_contracts - selected_ids
+        if inherited_only:
+            # inherited contracts join the worker's resolved set; the worker must
+            # acknowledge their impact too (attesting them, not merely inheriting)
+            missing_impact = [c for c in inherited_only if c not in task_impact]
+            if missing_impact:
+                raise CTError(
+                    "commitment: worker inherited contracts need task-impact "
+                    f"acknowledgement too ({', '.join(sorted(missing_impact))}) — "
+                    "a worker loads and attests the parent's applicable set, "
+                    "never silently drops it"
+                )
+            selected_ids |= inherited_only
+            res["selected"] = {cid: "inherited" if cid in inherited_only else why
+                               for cid, why in res["selected"].items()}
+            for cid in inherited_only:
+                res["selected"][cid] = "inherited"
+        role = "worker"
+
+    # every selected contract needs an impact acknowledgement (incl. inherited)
+    missing_all = [cid for cid in selected_ids if cid not in task_impact]
+    if missing_all:
+        raise CTError(
+            "commitment: missing task-impact acknowledgement for "
+            f"{', '.join(sorted(missing_all))}"
+        )
+
+    # A PASS attestation over the full (possibly unioned) set is a precondition;
+    # its machinery also fails closed on lock drift.
     att = make_attestation(manifest_path, task, task_impact, revision, format_text=False)
     if att["gate"] != "PASS":
         raise CTError(
             "commitment: contract gate is BLOCKED — conflicts prevent the ACTIVE state:\n  "
             + str(att["conflicts"])
         )
-    lib = {c["front_matter"]["contract_id"]: c for c in load_library()}
-    lock = load_lock()
-
-    # hash verification is already inside verify_lock via attestation; make it
-    # explicit here: every selected contract's current hash must match the lock
-    locked = {e["id"]: e for e in lock["contracts"]}
-    for cid in res["selected"]:
-        if cid in locked and lib[cid]["sha256"] != locked[cid]["sha256"]:
-            raise CTError(f"commitment: hash mismatch for '{cid}' — re-lock required")
-
-    if worker and not parent_bundle:
-        raise CTError("commitment: worker commitment requires --parent-bundle (inherited bundle hash)")
 
     artifact = {
         "format": COMMITMENT_FORMAT,
         "role": role,                      # session | orchestrator | worker
         "contract_gate": "PASS",
         "commitment": COMMITMENT_ACTIVE,
-        "bundle_receipt": bundle_receipt(lock),
-        "bundle_sha256": bundle_sha256(lock),
-        "revision": revision,
+        "library_version": library_version(),
+        "library_revision": revision,
+        "bundle_receipt": bundle_receipt(lock, selected_ids),
+        "bundle_sha256": bundle_sha256(lock, selected_ids),
+        "bundle_scope": "resolved-set",
         "task": task,
         "task_fingerprint": task,
-        "resolved_contracts": sorted(f"{cid}@{lib[cid]['front_matter']['version']}" for cid in res["selected"]),
-        "contracts": sorted(res["selected"]),
+        "resolved_contracts": sorted(f"{cid}@{lib[cid]['front_matter']['version']}" for cid in selected_ids),
+        "contracts": sorted(selected_ids),
         "inherited_bundle": parent_bundle,
         "activated_at": None,  # filled by caller with real timestamps if desired
     }
@@ -838,12 +938,33 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
     return artifact, text
 
 
+def find_commitment_by_bundle(bundle_sha: str) -> dict | None:
+    """Find a recorded commitment (orchestrator or session) by its bundle sha256.
+
+    Inheritance validates against recorded parent state, so a worker cannot
+    claim an invented parent.
+    """
+    d = REPO_ROOT / ".contract-commitments"
+    if not d.is_dir():
+        return None
+    for f in sorted(d.glob("*.json")):
+        try:
+            a = json.loads(f.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        if a.get("bundle_sha256") == bundle_sha and a.get("commitment") == COMMITMENT_ACTIVE:
+            if a.get("role") in ("orchestrator", "session"):
+                return a
+    return None
+
+
 def format_commitment_text(a: dict) -> str:
     lines = [COMMITMENT_FORMAT, ""]
     lines.append(COMMITMENT_BODY)
     lines.append("")
     lines.append(f"bundle: {a['bundle_receipt']}")
     lines.append(f"bundle_sha256: {a['bundle_sha256']}")
+    lines.append(f"bundle_scope: {a.get('bundle_scope', 'resolved-set')}")
     if a.get("inherited_bundle"):
         lines.append(f"INHERITED CONTRACT BUNDLE: {a['inherited_bundle']}")
         lines.append("PARENT CONTRACT COMMITMENT: ACTIVE")
@@ -854,46 +975,82 @@ def format_commitment_text(a: dict) -> str:
     return "\n".join(lines)
 
 
-def write_session_artifact(artifact: dict) -> Path:
-    """Persist the commitment as the session artifact (no secrets, by construction)."""
-    SESSION_ARTIFACT.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")
-    return SESSION_ARTIFACT
+def write_session_artifact(artifact: dict, path: Path | None = None) -> Path:
+    """Persist the commitment as a keyed session artifact (no secrets, by construction)."""
+    p = path or default_artifact_path(artifact.get("role", "session"), artifact.get("task", ""))
+    p.parent.mkdir(exist_ok=True)
+    p.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")
+    return p
 
 
-def session_status(manifest_path: Path | None = None) -> tuple[str, list[str]]:
+def load_session_artifact(path: Path | None = None, role: str = "session", task: str = "") -> dict | None:
+    """Load the artifact for this role+task key, or the newest artifact when
+    only a path/role is given. Returns None when absent."""
+    if path is not None:
+        if not path.is_file():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
+    d = REPO_ROOT / ".contract-commitments"
+    if not d.is_dir():
+        return None
+    candidates = sorted(d.glob(f"{role}-*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if task:
+        slug = re.sub(r"[^a-z0-9-]+", "-", task.lower()).strip("-")[:48] or "untitled"
+        exact = d / f"{role}-{slug}.json"
+        if exact.is_file():
+            candidates = [exact] + [c for c in candidates if c != exact]
+    for c in candidates:
+        try:
+            return json.loads(c.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+    return None
+
+
+def session_status(manifest_path: Path | None = None, artifact_path: Path | None = None,
+                   role: str = "session", task: str = "") -> tuple[str, list[str]]:
     """Report the current commitment state and any staleness.
 
     Returns (status_line, problems). Staleness rules:
-    - library changed → bundle receipt/sha no longer match → STALE
+    - library changed → resolved-set bundle receipt/sha no longer match → STALE
     - artifact task triggers additional contracts vs what was resolved → RE-RESOLVE
+    - worker artifacts: parent bundle must still be a real recorded commitment
     """
     problems: list[str] = []
-    if not SESSION_ARTIFACT.is_file():
+    artifact = load_session_artifact(artifact_path, role=role, task=task)
+    if artifact is None:
         return "CONTRACT COMMITMENT: INACTIVE (no session artifact)", ["no commitment recorded for this session"]
 
-    artifact = json.loads(SESSION_ARTIFACT.read_text(encoding="utf-8"))
     lock = load_lock()
-    cur_receipt = bundle_receipt(lock)
-    cur_sha = bundle_sha256(lock)
+    recorded = set(artifact.get("contracts", []))
+    cur_receipt = bundle_receipt(lock, recorded)
+    cur_sha = bundle_sha256(lock, recorded)
 
     if artifact.get("commitment") != COMMITMENT_ACTIVE:
         problems.append("recorded commitment is not ACTIVE")
     if artifact.get("bundle_receipt") != cur_receipt or artifact.get("bundle_sha256") != cur_sha:
         problems.append(
             f"stale bundle — commitment was made against {artifact.get('bundle_receipt')}/{str(artifact.get('bundle_sha256'))[:12]}, "
-            f"library is now {cur_receipt}/{cur_sha[:12]} — re-attest and re-commit"
+            f"library now yields {cur_receipt}/{cur_sha[:12]} for this resolved set — re-attest and re-commit"
         )
 
     if manifest_path is not None and artifact.get("task_fingerprint"):
         manifest = load_adoption(manifest_path)
         res = resolve_set(manifest, artifact["task_fingerprint"])
         now = set(res["selected"])
-        before = set(artifact.get("contracts", []))
-        missing = now - before
+        missing = now - recorded
         if missing:
             problems.append(
                 "task now triggers additional contracts not in the commitment "
                 f"({', '.join(sorted(missing))}) — re-resolution required"
+            )
+
+    if artifact.get("role") == "worker" and artifact.get("inherited_bundle"):
+        parent = find_commitment_by_bundle(artifact["inherited_bundle"])
+        if parent is None:
+            problems.append(
+                "parent commitment no longer recorded — inherited bundle "
+                f"{artifact['inherited_bundle'][:12]} cannot be verified — re-commit under a live parent"
             )
 
     state = "ACTIVE" if not problems else "STALE" if any("stale" in p for p in problems) else "INACTIVE"
@@ -903,7 +1060,7 @@ def session_status(manifest_path: Path | None = None) -> tuple[str, list[str]]:
         f"CONTRACT COMMITMENT: {state}\n"
         f"  bundle: {artifact.get('bundle_receipt')} ({str(artifact.get('bundle_sha256'))[:12]}...)\n"
         f"  task: {artifact.get('task')}\n"
-        f"  contracts: {len(artifact.get('contracts', []))} resolved\n"
+        f"  contracts: {len(recorded)} resolved\n"
         f"  role: {artifact.get('role', 'session')}"
     )
     for p in problems:
@@ -921,26 +1078,102 @@ def verify_commitment_artifact(artifact: dict, manifest_path: Path | None = None
     if artifact.get("commitment") != COMMITMENT_ACTIVE:
         errors.append("commitment: state is not ACTIVE")
     lock = load_lock()
-    if artifact.get("bundle_receipt") != bundle_receipt(lock):
-        errors.append("commitment: bundle receipt does not match current library (stale)")
-    if artifact.get("bundle_sha256") != bundle_sha256(lock):
-        errors.append("commitment: bundle sha256 does not match current library (stale)")
+    recorded = set(artifact.get("contracts", []))
+    if artifact.get("bundle_receipt") != bundle_receipt(lock, recorded):
+        errors.append("commitment: resolved-set bundle receipt does not match current library (stale)")
+    if artifact.get("bundle_sha256") != bundle_sha256(lock, recorded):
+        errors.append("commitment: resolved-set bundle sha256 does not match current library (stale)")
     if not artifact.get("contracts"):
         errors.append("commitment: no resolved contracts recorded")
     if not artifact.get("task"):
         errors.append("commitment: task not recorded")
-    if artifact.get("role") == "worker" and not artifact.get("inherited_bundle"):
-        errors.append("commitment: worker commitment missing inherited bundle")
+    if artifact.get("role") == "worker":
+        if not artifact.get("inherited_bundle"):
+            errors.append("commitment: worker commitment missing inherited bundle")
+        else:
+            parent = find_commitment_by_bundle(artifact["inherited_bundle"])
+            if parent is None:
+                errors.append("commitment: worker's inherited bundle has no recorded parent commitment")
+            else:
+                dropped = set(parent.get("contracts", [])) - recorded
+                if dropped:
+                    errors.append(
+                        f"commitment: worker dropped parent's applicable constraints ({', '.join(sorted(dropped))})"
+                    )
     # every recorded contract must exist and hash-match
     locked = {e["id"]: e for e in lock["contracts"]}
+    lib = {c["front_matter"]["contract_id"]: c for c in load_library()}
     for ref in artifact.get("contracts", []):
         if ref not in locked:
             errors.append(f"commitment: unknown contract '{ref}'")
-        elif locked[ref]["sha256"] != next(
-            (c["sha256"] for c in load_library() if c["front_matter"]["contract_id"] == ref), None
-        ):
+        elif ref in lib and locked[ref]["sha256"] != lib[ref]["sha256"]:
             errors.append(f"commitment: contract '{ref}' content changed since commitment")
     return errors
+
+
+# ---------------------------------------------------------------- question/help artifacts
+
+def validate_question(path: Path) -> list[str]:
+    """Validate a play-nice/question|help-request|help-response artifact
+    against schema/question.schema.json (structural subset enforcement)."""
+    if not path.is_file():
+        return [f"question: file not found: {path}"]
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        return [f"question: invalid JSON — {e}"]
+    schema = json.loads(QUESTION_SCHEMA.read_text(encoding="utf-8"))
+    errs: list[str] = []
+
+    allowed_schemas = schema["properties"]["schema"]["enum"]
+    if data.get("schema") not in allowed_schemas:
+        errs.append(f"question: schema must be one of {allowed_schemas}, got {data.get('schema')!r}")
+    for key in schema.get("required", []):
+        if key not in data:
+            errs.append(f"question: missing required field '{key}'")
+
+    statuses = schema["properties"]["status"]["enum"]
+    if data.get("status") not in statuses:
+        errs.append(f"question: invalid status {data.get('status')!r} (valid: {statuses})")
+
+    for pkey in ("requester", "target"):
+        p = data.get(pkey)
+        if p is None:
+            continue
+        if not isinstance(p, dict) or p.get("type") not in schema["$defs"]["participant"]["properties"]["type"]["enum"]:
+            errs.append(f"question: {pkey}.type must be one of {schema['$defs']['participant']['properties']['type']['enum']}")
+
+    if data.get("schema") == "play-nice/help-request-v1" and not data.get("needed_capability"):
+        errs.append("question: help-request-v1 requires 'needed_capability'")
+    if data.get("schema") == "play-nice/help-response-v1":
+        if not data.get("result"):
+            errs.append("question: help-response-v1 requires 'result'")
+        if data.get("status") not in ("answered", "ANSWERED", "DECLINED", "EXPIRED"):
+            errs.append("question: help-response status must be answered/ANSWERED/DECLINED/EXPIRED")
+
+    if data.get("blocking") is False and data.get("safe_to_continue_without_answer") is False:
+        errs.append("question: inconsistent — not blocking but not safe to continue")
+
+    # secret-shape hygiene: help artifacts must not carry credential-like values
+    blob = json.dumps(data).lower()
+    for shape in ("api_key\":", "token\":", "password\":", "secret\":"):
+        if shape in blob:
+            errs.append(f"question: possible inline secret near '{shape}' — help artifacts reference secrets symbolically, never inline")
+
+    # choices shape
+    choices = data.get("choices")
+    if choices is not None:
+        if not isinstance(choices, list) or len(choices) < 2:
+            errs.append("question: choices must be a list of at least 2 when present")
+        else:
+            for ch in choices:
+                if not isinstance(ch, dict) or not ch.get("id") or not ch.get("label"):
+                    errs.append("question: each choice needs 'id' and 'label'")
+    rec = data.get("recommended")
+    if rec is not None and choices is not None:
+        if not any(c.get("id") == rec for c in choices):
+            errs.append(f"question: recommended {rec!r} is not one of the choice ids")
+    return errs
 
 
 # ---------------------------------------------------------------- adoption
@@ -976,14 +1209,22 @@ def validate_adoption_manifest(manifest_path: Path) -> list[str]:
 
 def check_stale_pin(manifest_path: Path) -> list[str]:
     """Stale pin detection: the adoption revision must match this library's
-    recorded revision (VERSION file / git HEAD when available)."""
-    errors = []
+    current git revision. The sentinel '0000000' marks an example/unadopted
+    manifest and is reported as a reminder, not an error."""
+    errors: list[str] = []
     try:
         manifest = load_adoption(manifest_path)
     except CTError as e:
         return [str(e)]
     current = library_revision()
     pinned = (manifest.get("source", {}) or {}).get("revision", "")
+    if pinned == "0000000":
+        # example placeholder: valid shape, but cannot be used for real adoption
+        errors.append(
+            "adoption: placeholder revision 0000000 — pin the adopted commit SHA "
+            "before using this manifest in a project"
+        )
+        return errors
     if pinned and current and pinned != current:
         errors.append(
             f"adoption: stale pin — manifest pins revision {pinned}, library is at {current}"
@@ -991,12 +1232,29 @@ def check_stale_pin(manifest_path: Path) -> list[str]:
     return errors
 
 
-def library_revision() -> str:
+def library_version() -> str:
+    """Library semver (VERSION file). Independent from the adopted Git revision:
+    version describes contract content; revision pins the exact adopted commit."""
     if VERSION_FILE.is_file():
         v = VERSION_FILE.read_text(encoding="utf-8").strip()
         if v:
             return v
     return "unknown"
+
+
+def library_revision() -> str:
+    """Adopted Git revision of the library (commit SHA when available, else VERSION)."""
+    import subprocess
+    try:
+        sha = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"],
+            capture_output=True, text=True, timeout=10,
+        ).stdout.strip()
+        if SHA256_RE.match(sha) or (len(sha) >= 7 and all(c in "0123456789abcdef" for c in sha)):
+            return sha
+    except Exception:
+        pass
+    return library_version()
 
 
 # ---------------------------------------------------------------- commands
@@ -1076,21 +1334,7 @@ def cmd_resolve(args) -> int:
 
 def cmd_attest(args) -> int:
     manifest = Path(args.manifest)
-    impact: dict[str, str] = {}
-    for item in args.impact or []:
-        if "=" not in item:
-            raise CTError(f"--impact expects contract_id=sentence, got {item!r}")
-        k, v = item.split("=", 1)
-        impact[k.strip()] = v.strip()
-    if not impact and args.impact_file:
-        for line in Path(args.impact_file).read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "=" not in line:
-                raise CTError(f"impact file line needs 'id = sentence': {line!r}")
-            k, v = line.split("=", 1)
-            impact[k.strip()] = v.strip()
+    impact = _read_impact_args(args)
     revision = args.revision or library_revision()
     out = make_attestation(manifest, args.task, impact, revision)
     print(out)
@@ -1108,6 +1352,16 @@ def _read_impact_args(args) -> dict[str, str]:
             raise CTError(f"--impact expects contract_id=sentence, got {item!r}")
         k, v = item.split("=", 1)
         impact[k.strip()] = v.strip()
+    impact_file = getattr(args, "impact_file", None)
+    if impact_file:
+        for line in Path(impact_file).read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" not in line:
+                raise CTError(f"impact file line needs 'id = sentence': {line!r}")
+            k, v = line.split("=", 1)
+            impact[k.strip()] = v.strip()
     return impact
 
 
@@ -1124,7 +1378,7 @@ def cmd_commit(args) -> int:
     except CTError as e:
         print(f"CONTRACT GATE: BLOCKED\nCONTRACT COMMITMENT: INACTIVE\n\n{e}", file=sys.stderr)
         return 2
-    out = Path(args.output) if args.output else SESSION_ARTIFACT
+    out = Path(args.output) if args.output else default_artifact_path(role, args.task)
     if args.text_only:
         out.write_text(text + "\n", encoding="utf-8")
     else:
@@ -1137,9 +1391,24 @@ def cmd_commit(args) -> int:
 
 def cmd_session_status(args) -> int:
     manifest = Path(args.manifest) if args.manifest else None
-    summary, problems = session_status(manifest)
+    artifact_path = Path(args.artifact) if getattr(args, "artifact", None) else None
+    role = getattr(args, "role", "session") or "session"
+    task = getattr(args, "task", "") or ""
+    summary, problems = session_status(manifest, artifact_path, role=role, task=task)
     print(summary)
     return 0 if not problems else 1
+
+
+def cmd_validate_question(args) -> int:
+    errors = validate_question(Path(args.question))
+    if errors:
+        print(f"QUESTION INVALID — {len(errors)} problem(s):")
+        for e in errors:
+            print(f"  - {e}")
+        return 1
+    data = json.loads(Path(args.question).read_text(encoding="utf-8"))
+    print(f"QUESTION VALID — {data.get('schema')} ({data.get('question_id', data.get('request_id', '?'))}), status={data.get('status')}, blocking={data.get('blocking')}")
+    return 0
 
 
 def cmd_verify_attestation(args) -> int:
@@ -1234,7 +1503,15 @@ def main(argv=None) -> int:
     p = sub.add_parser("session-status", help="report current commitment state (ACTIVE/STALE/INACTIVE)")
     p.add_argument("--manifest", default=None,
                    help="adoption manifest; enables task-change re-resolution detection")
+    p.add_argument("--artifact", default=None,
+                   help="specific commitment artifact path (default: keyed .contract-commitments/)")
+    p.add_argument("--role", default="session", choices=["session", "orchestrator", "worker"])
+    p.add_argument("--task", default="", help="task key when looking up the keyed artifact")
     p.set_defaults(func=cmd_session_status)
+
+    p = sub.add_parser("validate-question", help="validate a play-nice question / help-request / help-response artifact")
+    p.add_argument("question", help="path to the JSON artifact (play-nice/question-v1 family)")
+    p.set_defaults(func=cmd_validate_question)
 
     p = sub.add_parser("verify-attestation", help="verify an attestation against the library")
     p.add_argument("attestation")
