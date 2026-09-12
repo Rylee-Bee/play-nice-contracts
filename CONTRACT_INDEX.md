@@ -17,7 +17,8 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | `portability-and-ownership` | Portability and Ownership | 1.0.0 | canonical | Leave any tool with your data; explicit ownership boundaries |
 | `explicit-state` | Explicit State | 1.0.0 | canonical | Shared status vocabulary; state never inferred from silence |
 | `ask-for-help` | Ask for Help | 1.0.0 | canonical | Ask the participant who owns the answer; never guess to keep moving |
-| `play-nice-together` | Play Nice Together | 1.1.0 | canonical | The constitution: everything plays nicely with everything else |
+| `project-context-and-participant-packs` | Project Context and Participant Packs | 1.0.0 | canonical | Durable project context + optional participant packs; mutual courtesy as architecture |
+| `play-nice-together` | Play Nice Together | 1.2.0 | canonical | The constitution: everything plays nicely with everything else |
 
 ## Human (experience floor)
 

@@ -125,7 +125,7 @@ def test_all_contracts_dual_use_structure(lib):
 
 
 def test_contract_count(lib):
-    assert len(lib.load_library()) == 61
+    assert len(lib.load_library()) == 62
 
 
 # --------------------------------------------------------------- validation failures (mutation tests)
@@ -164,7 +164,7 @@ def test_duplicate_receipt_fails(tmp_repo):
     target = tmp_repo / "contracts" / "core" / "PLAY_NICE_TOGETHER.md"
     text = target.read_text()
     # give PLAY_NICE_TOGETHER the same receipt as EXPLICIT_STATE
-    text = text.replace("cedar-basalt-vellum", "driftwood-thicket-jetty")
+    text = text.replace("glade-thicket-compass", "driftwood-thicket-jetty")
     target.write_text(text)
     errors = ct.validate_library()
     assert any("duplicate receipt" in e for e in errors), errors
@@ -537,7 +537,7 @@ def test_commitment_records_exact_bundle(tmp_repo):
     assert selected == {
         "truth-and-evidence", "explicit-state", "recovery-and-reversibility",
         "provenance-and-audit", "least-privilege", "ask-for-help"}
-    assert art["library_version"] == "0.2.1"  # semver from VERSION
+    assert art["library_version"] == "0.3.0"  # semver from VERSION
     # no secrets by construction: artifact only carries ids/hashes/words
     blob = json.dumps(art).lower()
     for bad in ("token", "secret", "password", "api_key"):
@@ -562,7 +562,7 @@ def test_resolved_set_bundle_differs_by_scope(tmp_repo):
 def test_library_version_vs_revision(tmp_repo):
     """Library semver and adopted git revision are distinct concepts (hardening #2)."""
     ct = _load_ct_from(tmp_repo)
-    assert ct.library_version() == "0.2.1"          # semver from VERSION file
+    assert ct.library_version() == "0.3.0"          # semver from VERSION file
     rev = ct.library_revision()
     assert rev != "unknown"
     assert rev != ct.library_version()              # git SHA when repo initialized
@@ -880,6 +880,248 @@ def test_session_status_inactive_when_no_artifact(tmp_repo):
     assert "INACTIVE" in s.stdout
 
 
+# --------------------------------------------------------------- project context / participant packs
+
+EXAMPLE_PROJECT = REPO / "examples" / "project-context" / ".project"
+
+
+def test_example_project_valid():
+    r = run_ct(["project", "validate", str(EXAMPLE_PROJECT)])
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "PROJECT VALID" in r.stdout
+
+
+def test_example_participant_figma_valid():
+    r = run_ct(["participant", "validate", str(EXAMPLE_PROJECT / "participants" / "figma")])
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "PARTICIPANT VALID" in r.stdout
+    assert "NOT authoritative for: product-policy" in r.stdout
+
+
+def test_invalid_project_manifest_rejected(tmp_path):
+    d = tmp_path / ".project"
+    d.mkdir()
+    (d / "project.yaml").write_text("schema: wrong\nid: x\n")
+    r = run_ct(["project", "validate", str(d)])
+    assert r.returncode != 0
+    assert "play-nice/project-v1" in r.stdout
+    # missing manifest entirely
+    d2 = tmp_path / ".project2"
+    d2.mkdir()
+    r2 = run_ct(["project", "validate", str(d2)])
+    assert r2.returncode != 0
+    assert "missing project.yaml" in r2.stdout
+
+
+def test_participant_missing_authoritative_boundary_rejected(tmp_path):
+    pack = tmp_path / "bad-participant"
+    pack.mkdir()
+    (pack / "participant.yaml").write_text(
+        "schema: play-nice/participant-v1\nid: bad\nname: Bad\ntype: agent\n"
+        "relationship:\n  role: x\n  optional: true\n"
+        "provenance:\n  supplied_by: test\n  observed_at: 2026-09-12T00:00:00Z\n"
+    )
+    r = run_ct(["participant", "validate", str(pack)])
+    assert r.returncode != 0
+    # authoritative_for AND not_authoritative_for both required; not-authoritative non-empty
+    assert any("authoritative_for" in line for line in r.stdout.split("\n"))
+
+
+def test_participant_secret_rejected(tmp_path):
+    pack = tmp_path / "leaky"
+    pack.mkdir()
+    (pack / "participant.yaml").write_text(
+        "schema: play-nice/participant-v1\nid: leaky\nname: Leaky\ntype: external-api\n"
+        "relationship:\n  role: api\n  optional: true\n"
+        "  authoritative_for: [enrichment]\n"
+        "  not_authoritative_for: [product-truth]\n"
+        "provenance:\n  supplied_by: test\n  observed_at: 2026-09-12T00:00:00Z\n"
+    )
+    (pack / "notes.txt").write_text('api_key = "sk-live-EXAMPLEKEY123456789012345"\n')
+    r = run_ct(["participant", "validate", str(pack)])
+    assert r.returncode != 0
+    assert "possible inline secret" in r.stdout
+
+
+def test_participant_capabilities_validation(tmp_path):
+    pack = tmp_path / "p"
+    pack.mkdir()
+    (pack / "participant.yaml").write_text(
+        "schema: play-nice/participant-v1\nid: p\nname: P\ntype: agent\n"
+        "relationship:\n  role: helper\n  optional: true\n"
+        "  authoritative_for: [analysis]\n"
+        "  not_authoritative_for: [product-truth]\n"
+        "provenance:\n  supplied_by: test\n  observed_at: 2026-09-12T00:00:00Z\n"
+    )
+    # capabilities: empty list + no limitations -> invalid
+    (pack / "capabilities.yaml").write_text(
+        "schema: play-nice/participant-capabilities-v1\nparticipant: p\n"
+        "capabilities: []\nlimitations: []\n"
+    )
+    r = run_ct(["participant", "validate", str(pack)])
+    assert r.returncode != 0
+    assert "real discovered capabilities" in r.stdout
+    assert "honest limitation" in r.stdout
+    # participant mismatch -> invalid
+    (pack / "capabilities.yaml").write_text(
+        "schema: play-nice/participant-capabilities-v1\nparticipant: someone-else\n"
+        "capabilities:\n  - id: x\n    description: does something useful\n"
+        "limitations:\n  - cannot be trusted beyond its scope\n"
+    )
+    r2 = run_ct(["participant", "validate", str(pack)])
+    assert r2.returncode != 0
+    assert "must match id" in r2.stdout
+
+
+def test_participant_canonicality_vocabulary(tmp_path):
+    pack = tmp_path / "p"
+    pack.mkdir()
+    (pack / "participant.yaml").write_text(
+        "schema: play-nice/participant-v1\nid: p\nname: P\ntype: forge\n"
+        "relationship:\n  role: mirror\n  optional: true\n"
+        "  authoritative_for: [mirror]\n"
+        "  not_authoritative_for: [product-truth]\n"
+        "provenance:\n  supplied_by: test\n  observed_at: 2026-09-12T00:00:00Z\n"
+    )
+    (pack / "references.yaml").write_text(
+        "schema: play-nice/references-v1\nparticipant: p\n"
+        "references:\n  - id: r1\n    type: file\n    status: super-authoritative\n"
+    )
+    r = run_ct(["participant", "validate", str(pack)])
+    assert r.returncode != 0
+    assert "canonicality vocabulary" in r.stdout
+
+
+def test_participant_id_uniqueness(tmp_path):
+    proj = tmp_path / ".project"
+    (proj / "participants").mkdir(parents=True)
+    base_manifest = (
+        "schema: play-nice/participant-v1\nid: {id}\nname: {id}\ntype: agent\n"
+        "relationship:\n  role: x\n  optional: true\n"
+        "  authoritative_for: [a]\n"
+        "  not_authoritative_for: [b]\n"
+        "provenance:\n  supplied_by: test\n  observed_at: 2026-09-12T00:00:00Z\n"
+    )
+    for dirname in ("dup", "dup-copy"):
+        p = proj / "participants" / dirname
+        p.mkdir()
+        (p / "participant.yaml").write_text(base_manifest.format(id="dup"))
+    # fix directory names to match the id (validator requires dir==id);
+    # two directories with the same id -> duplicate detection via project scan
+    r = run_ct(["participant", "validate", str(proj / "participants" / "dup")])
+    # single pack is fine
+    assert r.returncode == 0
+    # project-level: same id in two packs
+    errs = None
+    import contractctl as _ct  # noqa: F401  (not the copy; use file load)
+    sys.path.insert(0, str(REPO / "tools" / "contractctl"))
+    import importlib
+    spec = importlib.util.spec_from_file_location("ct_local", REPO / "tools" / "contractctl" / "contractctl.py")
+    ctm = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ctm)
+    errs = ctm.validate_participants(proj / "participants")
+    assert any("duplicate participant id" in e for e in errs), errs
+
+
+def test_machine_files_parse_without_markdown():
+    """All pack machine files are YAML-parseable standalone (no .md needed)."""
+    import yaml
+    for f in (EXAMPLE_PROJECT / "project.yaml",
+              EXAMPLE_PROJECT / "contracts" / "adoption.yaml",
+              EXAMPLE_PROJECT / "participants" / "figma" / "participant.yaml",
+              EXAMPLE_PROJECT / "participants" / "figma" / "capabilities.yaml",
+              EXAMPLE_PROJECT / "participants" / "figma" / "references.yaml",
+              EXAMPLE_PROJECT / "design" / "references.yaml"):
+        data = yaml.safe_load(f.read_text())
+        assert isinstance(data, dict), f
+    # and human context exists
+    assert (EXAMPLE_PROJECT / "README.md").is_file()
+    assert (EXAMPLE_PROJECT / "participants" / "README.md").is_file()
+    assert (EXAMPLE_PROJECT / "participants" / "figma" / "interaction.md").is_file()
+
+
+def test_optional_participant_deletion_preserves_project(tmp_path):
+    """Deleting the participants dir does not invalidate the core manifest."""
+    proj = tmp_path / "proj"
+    shutil.copytree(EXAMPLE_PROJECT, proj / ".project")
+    r = run_ct(["project", "validate", str(proj)])
+    assert r.returncode == 0
+    # adoption manifest pointer is .project/contracts/adoption.yaml; validate finds it
+    shutil.rmtree(proj / ".project" / "participants")
+    r2 = run_ct(["project", "validate", str(proj)])
+    assert r2.returncode == 0, r2.stdout  # core project still valid without packs
+
+
+def test_same_participant_different_projects(tmp_path):
+    """The same participant can appear in different projects with
+    project-specific relationship data."""
+    import yaml
+    results = []
+    for proj_id, role, authoritative in (("alpha", "design-source", ["visual-composition"]),
+                                          ("beta", "secondary-design-reference", ["historical-design"])):
+        proj = tmp_path / proj_id / ".project"
+        (proj / "participants" / "figma").mkdir(parents=True)
+        (proj / "contracts").mkdir()
+        (proj / "project.yaml").write_text(
+            f"schemas_placeholder\n" if False else
+            "schema: play-nice/project-v1\n"
+            f"id: {proj_id}\nname: {proj_id}\n"
+            "ownership:\n  type: human\n  role: owner\n"
+            "contracts:\n  manifest: .project/contracts/adoption.yaml\n"
+        )
+        (proj / "contracts" / "adoption.yaml").write_text(
+            "schema: play-nice/adoption-v1\nproject: %s\nsource:\n  repository: r\n  revision: x\nalways: []\ntriggers: {}\n" % proj_id
+        )
+        (proj / "README.md").write_text("x\n")
+        (proj / "participants" / "figma" / "participant.yaml").write_text(
+            "schema: play-nice/participant-v1\nid: figma\nname: Figma\ntype: design-service\n"
+            f"relationship:\n  role: {role}\n  optional: true\n"
+            f"  authoritative_for: {authoritative}\n"
+            "  not_authoritative_for: [product-truth]\n"
+            "provenance:\n  supplied_by: figma\n  observed_at: 2026-09-12T00:00:00Z\n"
+        )
+        r = run_ct(["participant", "validate", str(proj / "participants" / "figma")])
+        assert r.returncode == 0, r.stdout + r.stderr
+        pm = yaml.safe_load((proj / "participants" / "figma" / "participant.yaml").read_text())
+        results.append(pm["relationship"]["role"])
+    assert results == ["design-source", "secondary-design-reference"]
+
+
+def test_init_project_skeleton(tmp_path):
+    target = tmp_path / "newproj"
+    target.mkdir()
+    r = run_ct(["init-project", str(target), "--id", "new-thing", "--name", "New Thing"])
+    assert r.returncode == 0, r.stdout + r.stderr
+    d = target / ".project"
+    for f in ("project.yaml", "README.md", "CURRENT.md",
+              "contracts/adoption.yaml", "participants/README.md"):
+        assert (d / f).is_file(), f
+    # minimal skeleton: no empty forest
+    assert not (d / "context").exists()
+    assert not (d / "design").exists()
+    assert not (d / "handoffs").exists()
+    # idempotent
+    r2 = run_ct(["init-project", str(target), "--id", "new-thing", "--name", "New Thing"])
+    assert r2.returncode == 0
+    assert "no files changed" in r2.stdout
+    # validates
+    r3 = run_ct(["project", "validate", str(d)])
+    assert r3.returncode == 0, r3.stdout + r3.stderr
+    # multiple participants listing
+    shutil.copytree(EXAMPLE_PROJECT / "participants" / "figma", d / "participants" / "figma")
+    r4 = run_ct(["participant", "list", str(d)])
+    assert "figma" in r4.stdout
+
+
+def test_participant_help_routing_present():
+    import yaml
+    pm = yaml.safe_load((EXAMPLE_PROJECT / "participants" / "figma" / "participant.yaml").read_text())
+    help_ = pm.get("help", {})
+    assert "visual-composition" in help_.get("can_answer", [])
+    assert "product-priority" in help_.get("cannot_answer", [])
+    assert help_.get("preferred_question_format", {}).get("schema") == "play-nice/question-v1"
+
+
 # --------------------------------------------------------------- receipt rotation enforcement
 
 def test_receipt_rotation_enforced_for_meaningful_changes(tmp_repo):
@@ -890,8 +1132,8 @@ def test_receipt_rotation_enforced_for_meaningful_changes(tmp_repo):
     # version MINOR again WITHOUT rotating the receipt -> violation.
     target = tmp_repo / "contracts" / "core" / "PLAY_NICE_TOGETHER.md"
     text = target.read_text()
-    assert "version: 1.1.0" in text
-    target.write_text(text.replace("version: 1.1.0", "version: 1.2.0")
+    assert "version: 1.2.0" in text
+    target.write_text(text.replace("version: 1.2.0", "version: 1.3.0")
                       .replace("Make honesty cheap.", "Make honesty cheap and durable."))
     errors = ct.check_receipt_rotation(ct.load_library())
     assert any("receipt did not rotate" in e and "PLAY_NICE" in e for e in errors), errors
@@ -931,7 +1173,9 @@ def test_ask_for_help_contract_exists(lib):
 def test_play_nice_references_ask_for_help(lib):
     c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "play-nice-together"][0]
     assert "Ask for Help" in c["text"]
-    assert c["front_matter"]["version"] == "1.1.0"
+    assert "Project Context and Participant Packs" in c["text"]
+    assert c["front_matter"]["version"] == "1.2.0"
+    assert c["receipts"] == ["glade-thicket-compass"]
 
 
 GOOD_QUESTION = {
@@ -1080,7 +1324,7 @@ def test_offline_validation_works():
 def test_cli_status():
     r = run_ct(["status"])
     assert r.returncode == 0
-    assert "contracts: 61" in r.stdout
+    assert "contracts: 62" in r.stdout
 
 
 def test_cli_show():

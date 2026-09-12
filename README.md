@@ -29,8 +29,8 @@ Rylee's preferred experience is a first-class profile (`profiles/`), not a hidde
 ## What's here
 
 ```text
-schema/            contract, adoption, attestation, capability, status, question schemas
-contracts/         61 canonical contracts across 8 layers
+schema/            contract, adoption, attestation, capability, status, question, project, participant, references schemas
+contracts/         62 canonical contracts across 8 layers
 profiles/          baseline + example personal profiles
 tools/contractctl  the CLI (stdlib-only Python)
 tests/             full library test suite
@@ -67,6 +67,20 @@ contractctl validate-question q.json  # play-nice question / help-request / help
 Commitment artifacts are **consumer-context scoped** (project/worktree/session-safe by default): they live in `<your project>/.contracts/sessions/` next to your adoption manifest — parallel projects, worktrees, and workers never collide. Orchestration harnesses may pin a per-lane directory with `CONTRACTCTL_SESSION_DIR`; `--output` overrides explicitly. Artifacts are secret-free JSON, keyed by role+task, and record their own location.
 ```
 
+## Project context + participant packs
+
+`.project/` is the standard durable-context structure any project can adopt
+(`contractctl init-project .` creates a minimal skeleton): a project.yaml
+manifest, canonical pointers (CURRENT/DECISIONS), the Play-Nice adoption
+manifest, and optional **participant packs** — one directory per regular
+collaborator (Figma, GitHub, an agent, a team) describing capabilities,
+interaction guides, references, what the participant is authoritative for
+and NOT authoritative for, and which questions it can answer directly
+(ask-for-help routing). Packs are optional enrichment: deleting one never
+corrupts canonical project truth. See the
+`project-context-and-participant-packs` contract and the worked example under
+`examples/project-context/`.
+
 ## Asking for help is part of the architecture
 
 `ask-for-help` (core) encodes: **it is nice, polite, kind, and smart to ask.** Know → act; can safely discover → discover; another participant can answer cheaply → ask; high-risk/ambiguous → ask or escalate; unknown and nobody can answer → preserve UNKNOWN. Never guess to keep moving. Questions are resumable state (`play-nice/question-v1`), answers become provenance, and answers are never authorization. `WAITING_FOR_HELP` is a successful stop state.
@@ -95,7 +109,21 @@ Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR =
 python3 -m pytest tests/ -q
 ```
 
-67 tests covering: duplicate IDs/receipts, missing/invalid receipts and versions, index drift, lockfile drift and hash verification, adoption schema validation, unknown-contract rejection, ALWAYS-selection, trigger selection, irrelevant omission, bundle-receipt change on contract change, stale pins (git revision), wrong receipt/hash failures, missing-mandatory-contract failure, conflict-state representation, offline validation, full attestation pass/fail paths — the commitment machinery (resolved-set bundles, version-vs-revision separation, worker inheritance with exact-union attestation enforcement, invented-parent rejection, consumer-context session isolation across projects/worktrees, lock-drift fail-closed, impact-file support) — receipt-rotation enforcement via Git history (meaningful change → version change → receipt change; PATCH exempt) — and ask-for-help + the question schema family (canonical status vocabulary, secret-bearing rejection, help-request capability requirement).
+80 tests covering: library invariants, resolution, attestation/commitment machinery, receipt-rotation enforcement, ask-for-help + question schema, and the project-context/participant-pack framework (project + participant validation, secret-shape rejection, canonicality vocabulary, participant uniqueness, optional-deletion survival, init skeleton, help routing).
+
+## Project context + participant packs
+
+`.project/` is the standard durable-context structure any project can adopt
+(`contractctl init-project .` creates a minimal skeleton): a project.yaml
+manifest, canonical pointers (CURRENT/DECISIONS), the Play-Nice adoption
+manifest, and optional **participant packs** — one directory per regular
+collaborator (Figma, GitHub, an agent, a team) describing capabilities,
+interaction guides, references, what the participant is authoritative for
+and NOT authoritative for, and which questions it can answer directly
+(ask-for-help routing). Packs are optional enrichment: deleting one never
+corrupts canonical project truth. See the
+`project-context-and-participant-packs` contract and the worked example under
+`examples/project-context/`.
 
 ## Asking for help is part of the architecture
 
