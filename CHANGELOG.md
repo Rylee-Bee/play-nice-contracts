@@ -2,6 +2,32 @@
 
 All notable changes to the play-nice-contracts library. Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR = incompatible behavior change.
 
+## [0.2.0] — 2026-09-11
+
+Ask-for-help philosophy + v0.1 hardening.
+
+### Added
+- `ask-for-help` contract (core layer): asking as a first-class interoperability capability — the KNOW/DISCOVER/ASK/ESCALATE/PRESERVE-UNKNOWN ladder, ask-don't-guess prohibitions, discover-before-asking order, participant routing (human/service/agent/system), question quality contract, recommend-without-pretending, questions as resumable state with lifecycle, answers-become-provenance, interruption budget, service-to-service questions, delegate-don't-duplicate, `WAITING_FOR_HELP` as a successful stop state, and questions-are-never-authorization.
+- `schema/question.schema.json`: one generalized schema family — `play-nice/question-v1` (human-facing), `help-request-v1` / `help-response-v1` (agent-to-agent) — with lifecycle states, decision provenance fields, and structural secret exclusion.
+- `contractctl validate-question`: validates question/help artifacts (required fields, status vocabulary, participant types, help-request needs capability, help-response needs result, recommendation must be a real choice, inconsistent blocking flags, inline-secret rejection).
+- CI (`.github/workflows/ci.yml`): library validation, byte-identical lock determinism check, full test suite, secret/private-material scan.
+- `LICENSE` (MIT) and recommended branch-protection documentation.
+- Worker inheritance is now enforced by construction: a worker's resolved set is the UNION of the parent's applicable contracts and its own task-triggered ones, each acknowledged with task-impact — silently dropping a parent constraint is structurally impossible, and the parent bundle must exist as a recorded orchestrator/session commitment (invented hashes rejected).
+- Session-safe commitment artifacts: keyed by role+task under `.contract-commitments/` (gitignored) — parallel lanes/worktrees never share one global singleton.
+- Attestation now fails closed when the lockfile is drifted (cannot produce an attestation against stale hashes).
+- Bundle identity now represents the RESOLVED contract set (not the whole library): different task scopes produce different bundle receipts/SHA-256s; same scope is byte-stable.
+- Library semver (VERSION file) is now distinct from the adopted Git revision (commit SHA when the repo is initialized): `library_version()` vs `library_revision()`; adoption pins validate against the revision.
+- `contractctl commit --impact-file` (previously accepted but ignored).
+- `session-status --role/--task/--artifact` for keyed artifact lookup.
+- HELP IMPACT block in the standard session prefix (potential uncertainty points, available helpers, human-owned decisions, service-owned questions, safe stop state).
+
+### Changed
+- `play-nice-together` 1.0.0 → 1.1.0: knows when to act/discover/ask/preserve-uncertainty; well-formed questions reduce friction at boundaries.
+- `orchestration` 1.0.0 → 1.1.0: workers return `WORKER STATE: NEEDS_HELP` with a structured question; the foreman routes answers and reduces interruption noise.
+- `human-and-machine-parity` 1.0.0 → 1.1.0: questions carry parity (human + machine representations).
+- `discovery-and-negotiation` 1.0.0 → 1.1.0: asking is part of negotiation; prefer direct questions over silent semantic guesses.
+- Example adoption manifests: `ask-for-help` added to `always`.
+
 ## [0.1.0] — 2026-09-11
 
 Initial library.

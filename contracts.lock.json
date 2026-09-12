@@ -1,7 +1,7 @@
 {
   "schema": "play-nice/lock-v1",
   "generated_from": {
-    "contract_count": 60
+    "contract_count": 61
   },
   "contracts": [
     {
@@ -26,6 +26,14 @@
       "path": "contracts/interfaces/API.md",
       "sha256": "3987e89294e735f3506fc008dc4293ac1dc9f8a67e19d3132ad3756a19af83b1",
       "receipt": "jetty-window-urnfield",
+      "status": "canonical"
+    },
+    {
+      "id": "ask-for-help",
+      "version": "1.0.0",
+      "path": "contracts/core/ASK_FOR_HELP.md",
+      "sha256": "6bd351ab9a17a221d1979fcf283f6a797615a0311e8f2e8e257dd1c4397451a3",
+      "receipt": "vellum-harbor-quill",
       "status": "canonical"
     },
     {
@@ -134,9 +142,9 @@
     },
     {
       "id": "discovery-and-negotiation",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "contracts/interoperability/DISCOVERY_AND_NEGOTIATION.md",
-      "sha256": "4585e35919f364a2ba84e4168d29bdd458a89fcfea3267ebbe54c5d2aada29b4",
+      "sha256": "94808935fbaeffbf1434de49caf5b355949b011e48014923583554f1baf03521",
       "receipt": "nectar-heather-prairie",
       "status": "canonical"
     },
@@ -206,9 +214,9 @@
     },
     {
       "id": "human-and-machine-parity",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "contracts/interfaces/HUMAN_AND_MACHINE_PARITY.md",
-      "sha256": "2bf1f525ade5350177b171875eab8a637a52e6b43852e0a5d3575c8f20b5dea1",
+      "sha256": "5c2706063b81ea8984dd7aae5a250693737e6d7fbb395dd85adf25ad0bf67b27",
       "receipt": "lantern-latch-river",
       "status": "canonical"
     },
@@ -302,17 +310,17 @@
     },
     {
       "id": "orchestration",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "contracts/agents/ORCHESTRATION.md",
-      "sha256": "a90bf604943b4d488eb5f289d950bd026928966f059fb4355aba6907ee9d0d95",
+      "sha256": "478cebfacecb7f52c516ced49aecd1fbe364735580765ec63c8fab7f4eca0880",
       "receipt": "echo-quartz-hollow",
       "status": "canonical"
     },
     {
       "id": "play-nice-together",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "contracts/core/PLAY_NICE_TOGETHER.md",
-      "sha256": "8f65aa13e748787e35bb57d33f0ab5c3a79084664d3322948436cdfde3a704f9",
+      "sha256": "faa1472f1f15d2ad5445d0cc3758b9815431b1fe86303d9dd513dab8d64cbf6d",
       "receipt": "timber-juniper-velvet",
       "status": "canonical"
     },

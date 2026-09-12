@@ -1,7 +1,7 @@
 ---
 contract_id: orchestration
 title: Orchestration
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: agents
 applies: [agents, project-management]
@@ -42,6 +42,7 @@ Encode the strongest orchestration model learned: an Owner, an Architect/excepti
    inspect → implement → test → inspect diff → report evidence
    ```
 9. A worker stays in its lane: owned paths only, no surprise scope expansion, honest evidence in the report, stop conditions respected (see Worker Contract).
+10. A worker does not silently escalate scope or interrupt the human directly when blocked: it returns `WORKER STATE: NEEDS_HELP` with a structured question (play-nice/question-v1; see Ask for Help). The foreman decides whether to answer from known state, query another tool or service, ask a specialist agent, or ask the human owner. The foreman reduces interruption noise; workers help by asking good questions, not loud ones.
 
 ### The Deterministic gatekeeper
 

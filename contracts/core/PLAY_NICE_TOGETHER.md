@@ -1,7 +1,7 @@
 ---
 contract_id: play-nice-together
 title: Play Nice Together
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: core
 applies: [architecture, everything]
@@ -30,10 +30,13 @@ A good system should be understandable by a human, operable by automation, inspe
 5. Humans are part of the system. Bots are part of the system. Failure is part of the system. Interruption is part of the system. Replacement is part of the system. The next maintainer is part of the system. Design for all of them.
 6. Do not rely on invisible institutional knowledge: if understanding requires having been there, the design is unfinished.
 7. When two systems must interact, follow the Friend rules: learn the other system's documented contracts before acting; respect its limits; read before writing; leave it as you found it or better.
+8. A good participant knows when to act, when to discover, when to ask, and when to preserve uncertainty. Asking another participant for information they naturally own is often more interoperable than building machinery to infer it; every well-formed question is an opportunity to reduce friction at the boundary between systems (see Ask for Help).
+7. When two systems must interact, follow the Friend rules: learn the other system's documented contracts before acting; respect its limits; read before writing; leave it as you found it or better.
+8. A good participant knows when to act, when to discover, when to ask, and when to preserve uncertainty. Asking another participant for information they naturally own is often more interoperable than building machinery to infer it; every well-formed question is an opportunity to reduce friction at the boundary between systems (see Ask for Help).
 
 ## RATIONALE
 
-Systems that treat humans, machines, and each other as hostile strangers become brittle, hostile, and lonely. Systems designed for mutual legibility compound in value: each participant can verify the others, and none becomes a bottleneck. This principle survived every stack transition observed across this ecosystem.
+Systems that treat humans, machines, and each other as hostile strangers become brittle, hostile, and lonely. Systems designed for mutual legibility compound in value: each participant can verify the others, and none becomes a bottleneck. This principle survived every stack transition observed across this ecosystem. Asking for help belongs here too: a system that can formulate a good question is easier to integrate, and one that can answer is easier to use — every well-formed question reduces friction at the boundary between participants.
 
 ## HUMAN EXAMPLES
 

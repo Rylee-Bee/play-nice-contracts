@@ -1,7 +1,7 @@
 ---
 contract_id: discovery-and-negotiation
 title: Discovery and Negotiation
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: interoperability
 applies: [api, tools, integration]
@@ -26,10 +26,11 @@ Make capabilities discoverable and negotiable: a client should learn what a syst
 5. Discovery results are cacheable but refreshable; stale capability assumptions are re-negotiated when versions change.
 6. A minimal system with a small capability set is as legitimate as a maximal one; clients built against the vocabulary handle both.
 7. Negotation is honest: do not advertise capabilities you cannot honor; optional features report their real state (`disabled`, `not_configured`, `unavailable`) rather than silently vanishing.
+8. Asking is part of negotiation (see Ask for Help): when a fact is missing and the other system naturally owns it — capability support, API version, idempotency-key support, what a resource refers to, current limits — ask, don't assume. Prefer discovery and well-formed questions over hard-coded guesses; this is what lets integrations survive without complete foreknowledge of each other.
 
 ## RATIONALE
 
-Hard-coded assumptions about other tools are the source of the "works on my stack" class of integration failure. Negotiation lets small systems stay small, big systems grow, and clients survive both — and it is the machine-to-machine form of the same respect that drives the whole library: ask before assuming.
+Hard-coded assumptions about other tools are the source of the "works on my stack" class of integration failure. Negotiation lets small systems stay small, big systems grow, and clients survive both — and it is the machine-to-machine form of the same respect that drives the whole library: ask before assuming. Asking a system a direct question beats silently guessing its semantics.
 
 ## HUMAN EXAMPLES
 

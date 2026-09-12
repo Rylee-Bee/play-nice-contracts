@@ -95,7 +95,7 @@ def test_all_contracts_dual_use_structure(lib):
 
 
 def test_contract_count(lib):
-    assert len(lib.load_library()) == 60
+    assert len(lib.load_library()) == 61
 
 
 # --------------------------------------------------------------- validation failures (mutation tests)
@@ -302,6 +302,7 @@ def test_good_attestation_passes_and_verifies(tmp_repo):
         "recovery-and-reversibility": "rollback documented before rotation",
         "provenance-and-audit": "rotation journaled with actor and reason",
         "least-privilege": "deploy token scoped to the deploy job only",
+        "ask-for-help": "unknown provider semantics get asked, not guessed",
     }
     r = _attest(tmp_repo, manifest, task, impact, ct_path)
     assert "CONTRACT GATE: PASS" in r.stdout, r.stdout + r.stderr
@@ -328,7 +329,7 @@ def test_incorrect_receipt_fails_verification(tmp_repo):
     manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
     task = "update a compose file"
     impact = {cid: "applied" for cid in
-              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit")}
+              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit", "ask-for-help")}
     r = _attest(tmp_repo, manifest, task, impact, ct_path)
     att = tmp_repo / "att.txt"
     att.write_text(r.stdout.replace("wren-loam-sail", "wrong-wrong-wrong"))
@@ -342,12 +343,13 @@ def test_incorrect_hash_fails_verification(tmp_repo):
     manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
     task = "update a compose file"
     impact = {cid: "applied" for cid in
-              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit")}
+              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit", "ask-for-help")}
     r = _attest(tmp_repo, manifest, task, impact, ct_path)
     assert "PASS" in r.stdout
     att = tmp_repo / "att.txt"
     att.write_text(r.stdout)
-    # corrupt one hash in the lockfile underneath
+    # corrupt one hash in the lockfile underneath: verification must fail
+    # closed on lock drift (hardening #5) — never verify against a stale lock
     lock = tmp_repo / "contracts.lock.json"
     data = json.loads(lock.read_text())
     for e in data["contracts"]:
@@ -356,7 +358,7 @@ def test_incorrect_hash_fails_verification(tmp_repo):
     lock.write_text(json.dumps(data))
     v = run_ct(["verify-attestation", str(att)], cwd=str(tmp_repo), ct_path=ct_path)
     assert v.returncode != 0
-    assert "wrong hash" in v.stdout or "bundle receipt mismatch" in v.stdout
+    assert "lock drift" in v.stdout
 
 
 def test_omitted_mandatory_contract_fails_verification(tmp_repo):
@@ -364,7 +366,7 @@ def test_omitted_mandatory_contract_fails_verification(tmp_repo):
     manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
     task = "update a compose file"
     impact = {cid: "applied" for cid in
-              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit")}
+              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit", "ask-for-help")}
     r = _attest(tmp_repo, manifest, task, impact, ct_path)
     att = tmp_repo / "att.txt"
     # drop one mandatory (always) contract from the attestation text
@@ -392,7 +394,7 @@ def test_stale_attestation_fails_after_library_change(tmp_repo):
     manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
     task = "update a compose file"
     impact = {cid: "applied" for cid in
-              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit")}
+              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit", "ask-for-help")}
     r = _attest(tmp_repo, manifest, task, impact, ct_path)
     att = tmp_repo / "att.txt"
     att.write_text(r.stdout)
@@ -409,13 +411,16 @@ def test_conflict_state_representable(tmp_repo):
     ct = _load_ct_from(tmp_repo)
     manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
     m = ct.load_adoption(manifest)
-    res = ct.resolve_set(m, task="x")
+    lock = ct.load_lock()
     # fabricate an attestation with a CONFLICT and verify it parses + gates BLOCKED
     text = f"""CONTRACT_ATTESTATION v1
 
 bundle:
-  revision: test
-  receipt: {ct.bundle_receipt(ct.load_lock())}
+  library_version: 0.1.0
+  library_revision: test
+  receipt: {ct.bundle_receipt(lock, {'truth-and-evidence'})}
+  sha256: {ct.bundle_sha256(lock, {'truth-and-evidence'})}
+  scope: resolved-set
 
 loaded:
   truth-and-evidence@1.0.0
@@ -444,6 +449,7 @@ _IMPACT_OK = {
     "recovery-and-reversibility": "rollback documented before rotation",
     "provenance-and-audit": "rotation journaled with actor and reason",
     "least-privilege": "deploy token scoped to the deploy job only",
+    "ask-for-help": "unknown provider semantics asked, not guessed; WAITING_FOR_HELP over retry",
 }
 
 
@@ -484,19 +490,52 @@ def test_commitment_records_exact_bundle(tmp_repo):
     task = "rotate the deploy credentials and update the health checks"
     r = run_ct(_commit_args(manifest, task, _IMPACT_OK), cwd=str(tmp_repo), ct_path=ct_path)
     assert r.returncode == 0
-    art = json.loads((tmp_repo / ".contract-commitment.json").read_text())
+    # keyed artifact path, not a global singleton
+    slug_dir = tmp_repo / ".contract-commitments"
+    assert slug_dir.is_dir()
+    arts = list(slug_dir.glob("session-*.json"))
+    assert len(arts) == 1
+    art = json.loads(arts[0].read_text())
     lock = ct.load_lock()
-    assert art["bundle_receipt"] == ct.bundle_receipt(lock)
-    assert art["bundle_sha256"] == ct.bundle_sha256(lock)
+    selected = set(art["contracts"])
+    # bundle identity is the RESOLVED set, not the whole library
+    assert art["bundle_receipt"] == ct.bundle_receipt(lock, selected)
+    assert art["bundle_sha256"] == ct.bundle_sha256(lock, selected)
+    assert art["bundle_receipt"] != ct.bundle_receipt(lock)
     assert art["contract_gate"] == "PASS"
     assert art["commitment"] == "ACTIVE"
-    assert set(art["contracts"]) == {
+    assert selected == {
         "truth-and-evidence", "explicit-state", "recovery-and-reversibility",
-        "provenance-and-audit", "least-privilege"}
+        "provenance-and-audit", "least-privilege", "ask-for-help"}
+    assert art["library_version"] == "0.2.0"  # semver from VERSION
     # no secrets by construction: artifact only carries ids/hashes/words
     blob = json.dumps(art).lower()
     for bad in ("token", "secret", "password", "api_key"):
         assert bad not in blob or bad in ("task",)  # task text mentions credentials, fine
+
+
+def test_resolved_set_bundle_differs_by_scope(tmp_repo):
+    """Two different task scopes resolve different bundle identities (hardening #1)."""
+    ct = _load_ct_from(tmp_repo)
+    manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
+    lock = ct.load_lock()
+    broad = set(ct.resolve_set(ct.load_adoption(manifest),
+                               "rotate the deploy credentials and update the health checks")["selected"])
+    narrow = set(ct.resolve_set(ct.load_adoption(manifest),
+                                "update a compose file")["selected"])
+    assert ct.bundle_receipt(lock, broad) != ct.bundle_receipt(lock, narrow)
+    assert ct.bundle_sha256(lock, broad) != ct.bundle_sha256(lock, narrow)
+    # same scope → identical identity (deterministic)
+    assert ct.bundle_receipt(lock, broad) == ct.bundle_receipt(lock, set(broad))
+
+
+def test_library_version_vs_revision(tmp_repo):
+    """Library semver and adopted git revision are distinct concepts (hardening #2)."""
+    ct = _load_ct_from(tmp_repo)
+    assert ct.library_version() == "0.2.0"          # semver from VERSION file
+    rev = ct.library_revision()
+    assert rev != "unknown"
+    assert rev != ct.library_version()              # git SHA when repo initialized
 
 
 def test_stale_bundle_invalidates_commitment(tmp_repo):
@@ -519,15 +558,14 @@ def test_task_change_requires_reresolution(tmp_repo):
     manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
     task = "update a compose file"
     impact = {cid: "applied" for cid in
-              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit")}
+              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit", "ask-for-help")}
     assert run_ct(_commit_args(manifest, task, impact), cwd=str(tmp_repo), ct_path=ct_path).returncode == 0
-    # now the SAME session's task text triggers additional contracts (credentials → least-privilege)
     s = run_ct(["session-status", "--manifest", str(manifest)],
                cwd=str(tmp_repo), ct_path=ct_path)
     # same task → still ACTIVE
     assert s.returncode == 0
     # rewrite the recorded task to one that triggers more; simulate scope expansion
-    art_path = tmp_repo / ".contract-commitment.json"
+    art_path = next((tmp_repo / ".contract-commitments").glob("session-*.json"))
     art = json.loads(art_path.read_text())
     art["task_fingerprint"] = "rotate the deploy credentials and update the health checks"
     art_path.write_text(json.dumps(art))
@@ -542,51 +580,144 @@ def test_worker_commitment_requires_parent_bundle(tmp_repo):
     manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
     task = "update a compose file"
     impact = {cid: "applied" for cid in
-              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit")}
+              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit", "ask-for-help")}
     r = run_ct(_commit_args(manifest, task, impact, extra=["--worker"]),
                cwd=str(tmp_repo), ct_path=ct_path)
     assert r.returncode != 0
     assert "parent-bundle" in r.stderr or "inherited bundle" in r.stderr
 
 
-def test_worker_commitment_inherits_bundle(tmp_repo):
-    ct = _load_ct_from(tmp_repo)
+def test_worker_rejects_invented_parent_hash(tmp_repo):
+    """Real inheritance (hardening #3): a worker may not claim an arbitrary parent
+    hash — the parent bundle must exist as a recorded commitment."""
     ct_path = tmp_repo / "tools" / "contractctl" / "contractctl.py"
     manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
     task = "update a compose file"
     impact = {cid: "applied" for cid in
-              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit")}
-    parent = ct.bundle_sha256(ct.load_lock())
-    r = run_ct(_commit_args(manifest, task, impact, extra=["--worker", "--parent-bundle", parent]),
+              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit", "ask-for-help")}
+    fake = "f" * 64
+    r = run_ct(_commit_args(manifest, task, impact, extra=["--worker", "--parent-bundle", fake]),
+               cwd=str(tmp_repo), ct_path=ct_path)
+    assert r.returncode != 0
+    assert "parent bundle not found" in r.stderr
+
+
+def test_worker_commitment_inherits_real_parent(tmp_repo):
+    """End-to-end propagation: orchestrator commits first; worker inherits its
+    recorded bundle; inheritance lines appear; parent constraints preserved."""
+    ct = _load_ct_from(tmp_repo)
+    ct_path = tmp_repo / "tools" / "contractctl" / "contractctl.py"
+    manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
+    # 1. orchestrator commits on a broad task
+    orch_task = "rotate the deploy credentials and update the health checks"
+    r0 = run_ct(_commit_args(manifest, orch_task, _IMPACT_OK, extra=["--role", "orchestrator"]),
+                cwd=str(tmp_repo), ct_path=ct_path)
+    assert r0.returncode == 0, r0.stdout + r0.stderr
+    orch_art = json.loads(
+        next((tmp_repo / ".contract-commitments").glob("orchestrator-*.json")).read_text())
+    parent_sha = orch_art["bundle_sha256"]
+
+    # 2. worker with a narrower task inherits the orchestrator's bundle;
+    #    inherited contracts join the resolved set (union — dropping is impossible)
+    task = "update a compose file"
+    impact = {cid: "applied" for cid in
+              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit", "ask-for-help")}
+    impact["least-privilege"] = "inherited from parent: deploy token scoped to the deploy job"
+    r = run_ct(_commit_args(manifest, task, impact, extra=["--worker", "--parent-bundle", parent_sha]),
                cwd=str(tmp_repo), ct_path=ct_path)
     assert r.returncode == 0, r.stdout + r.stderr
     assert "INHERITED CONTRACT BUNDLE:" in r.stdout
     assert "PARENT CONTRACT COMMITMENT: ACTIVE" in r.stdout
-    art = json.loads((tmp_repo / ".contract-commitment.json").read_text())
+    art_path = next((tmp_repo / ".contract-commitments").glob("worker-*.json"))
+    art = json.loads(art_path.read_text())
     assert art["role"] == "worker"
-    assert art["inherited_bundle"] == parent
+    assert art["inherited_bundle"] == parent_sha
+    # the parent's whole applicable set is preserved via the union
+    for cid in ("truth-and-evidence", "explicit-state", "recovery-and-reversibility",
+                "provenance-and-audit", "least-privilege"):
+        assert cid in art["contracts"]
+    # worker artifact verifies: parent recorded + no dropped constraints
+    errs = ct.verify_commitment_artifact(art)
+    assert errs == [], errs
 
 
-def test_commitment_may_strengthen_not_weaken(tmp_repo):
-    """Worker resolving MORE contracts than the parent is allowed; fewer is a defect
-    detectable at integration review. Tooling check: artifact records the full
-    resolved set, so a parent can diff inherited vs actual."""
+def test_worker_cannot_drop_parent_constraints(tmp_repo):
+    """A worker claiming inheritance without acknowledging the inherited contracts
+    is rejected — the union is forced, so weakening requires explicit refusal
+    (which fails closed), not silent omission."""
+    ct = _load_ct_from(tmp_repo)
+    ct_path = tmp_repo / "tools" / "contractctl" / "contractctl.py"
+    manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
+    # orchestrator commits on the credentials task (resolves least-privilege too)
+    orch_task = "rotate the deploy credentials and update the health checks"
+    orch_art, _ = ct.build_commitment(manifest, orch_task, dict(_IMPACT_OK), role="orchestrator")
+    ct.write_session_artifact(orch_art)
+    # a worker claims inheritance but does not acknowledge least-privilege's impact
+    worker_task = "update a compose file"  # does not itself trigger least-privilege
+    w_impact = {cid: "applied" for cid in
+                ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit", "ask-for-help")}
+    import pytest as _pq
+    with _pq.raises(ct.CTError) as exc:
+        ct.build_commitment(manifest, worker_task, w_impact, role="worker",
+                            parent_bundle=orch_art["bundle_sha256"], worker=True)
+    assert "inherited contracts need task-impact" in str(exc.value) or "least-privilege" in str(exc.value)
+
+
+def test_session_safe_keyed_artifacts(tmp_repo):
+    """Parallel lanes get distinct artifacts (hardening #4) — no global singleton."""
+    ct_path = tmp_repo / "tools" / "contractctl" / "contractctl.py"
+    manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
+    t1 = "update a compose file"
+    t2 = "rotate the deploy credentials and update the health checks"
+    i1 = {cid: "applied" for cid in
+          ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit", "ask-for-help")}
+    assert run_ct(_commit_args(manifest, t1, i1), cwd=str(tmp_repo), ct_path=ct_path).returncode == 0
+    assert run_ct(_commit_args(manifest, t2, _IMPACT_OK), cwd=str(tmp_repo), ct_path=ct_path).returncode == 0
+    arts = list((tmp_repo / ".contract-commitments").glob("session-*.json"))
+    assert len(arts) == 2  # keyed by task; both coexist
+    # status default picks the newest, but keyed lookup finds each
+    s1 = run_ct(["session-status", "--task", t1], cwd=str(tmp_repo), ct_path=ct_path)
+    s2 = run_ct(["session-status", "--task", t2], cwd=str(tmp_repo), ct_path=ct_path)
+    assert s1.returncode == 0 and s2.returncode == 0
+    assert t1 in s1.stdout and t2 in s2.stdout
+
+
+def test_attestation_fails_closed_on_lock_drift(tmp_repo):
+    """Hardening #5: attestation cannot be produced against a drifted lockfile."""
     ct = _load_ct_from(tmp_repo)
     manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
-    # parent (orchestrator) committed with a broader task
-    orch_impact = dict(_IMPACT_OK)
-    orch_task = "rotate the deploy credentials and update the health checks"
-    art, _ = ct.build_commitment(manifest, orch_task, orch_impact)
-    assert "least-privilege" in art["contracts"]
-    # worker with the narrower compose task still carries ALL mandatory (always) contracts
-    worker_task = "update a compose file"
-    w_impact = {cid: "applied" for cid in
-                ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit")}
-    w_art, _ = ct.build_commitment(manifest, worker_task, w_impact, role="worker",
-                                   parent_bundle=art["bundle_sha256"])
-    # always-contracts survive the narrowing — a worker may not lose the floor
-    for floor_cid in ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit"):
-        assert floor_cid in w_art["contracts"]
+    # corrupt the lockfile (simulate drift)
+    lock = tmp_repo / "contracts.lock.json"
+    data = json.loads(lock.read_text())
+    data["contracts"][0]["sha256"] = "0" * 64
+    lock.write_text(json.dumps(data))
+    import pytest as _pq
+    with _pq.raises(ct.CTError) as exc:
+        ct.make_attestation(manifest, "update a compose file",
+                            {c: "x" for c in ("truth-and-evidence", "explicit-state",
+                                              "recovery-and-reversibility", "provenance-and-audit")})
+    assert "lockfile drift" in str(exc.value)
+
+
+def test_commit_impact_file(tmp_repo):
+    """Hardening #6: commit --impact-file parses 'id = sentence' lines."""
+    ct_path = tmp_repo / "tools" / "contractctl" / "contractctl.py"
+    manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
+    impact_file = tmp_repo / "impact.txt"
+    impact_file.write_text(
+        "truth-and-evidence = unknown stays unknown\n"
+        "explicit-state = vocabulary with observed_at\n"
+        "recovery-and-reversibility = rollback documented\n"
+        "provenance-and-audit = journaled with actor\n"
+        "ask-for-help = provider semantics asked, not guessed\n"
+        "# comment line ignored\n"
+    )
+    r = run_ct(["commit", "--manifest", str(manifest),
+                "--task", "update a compose file",
+                "--impact-file", str(impact_file)],
+               cwd=str(tmp_repo), ct_path=ct_path)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "CONTRACT COMMITMENT: ACTIVE" in r.stdout
 
 
 def test_commitment_hash_mismatch_prevents_active(tmp_repo):
@@ -594,7 +725,7 @@ def test_commitment_hash_mismatch_prevents_active(tmp_repo):
     manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
     task = "update a compose file"
     impact = {cid: "applied" for cid in
-              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit")}
+              ("truth-and-evidence", "explicit-state", "recovery-and-reversibility", "provenance-and-audit", "ask-for-help")}
     # corrupt the lockfile: a selected contract's hash no longer matches the file
     lock = tmp_repo / "contracts.lock.json"
     data = json.loads(lock.read_text())
@@ -614,6 +745,137 @@ def test_session_status_inactive_when_no_artifact(tmp_repo):
     assert "INACTIVE" in s.stdout
 
 
+# --------------------------------------------------------------- ask-for-help
+
+def test_ask_for_help_contract_exists(lib):
+    ids = {c["front_matter"]["contract_id"] for c in lib.load_library()}
+    assert "ask-for-help" in ids
+    c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "ask-for-help"][0]
+    assert c["front_matter"]["layer"] == "core"
+    assert c["receipts"] == ["vellum-harbor-quill"]
+    for concept in ("NEEDS_HELP", "WAITING_FOR_HELP", "recommendation"):
+        assert concept in c["text"]
+
+
+def test_play_nice_references_ask_for_help(lib):
+    c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "play-nice-together"][0]
+    assert "Ask for Help" in c["text"]
+    assert c["front_matter"]["version"] == "1.1.0"
+
+
+GOOD_QUESTION = {
+    "schema": "play-nice/question-v1",
+    "question_id": "q-01842",
+    "status": "waiting_for_answer",
+    "requester": {"type": "agent", "id": "frontend-worker"},
+    "target": {"type": "human", "role": "owner"},
+    "reason": "Two approved visual references disagree about navigation placement.",
+    "question": "Which navigation composition should govern the Settings screen?",
+    "choices": [{"id": "rail", "label": "Left rail"}, {"id": "top-nav", "label": "Top navigation"}],
+    "recommended": "rail",
+    "recommendation_reason": "It matches the newer approved desktop frame.",
+    "blocking": True,
+    "safe_to_continue_without_answer": False,
+    "affected_scope": ["SettingsScreen"],
+    "evidence": ["design/screens/settings-desktop.png"],
+    "created_at": "2026-09-11T14:00:00Z",
+}
+
+
+def test_validate_question_good(tmp_path):
+    q = tmp_path / "q.json"
+    q.write_text(json.dumps(GOOD_QUESTION))
+    r = run_ct(["validate-question", str(q)])
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "QUESTION VALID" in r.stdout
+
+
+def test_validate_question_bad(tmp_path):
+    bad = dict(GOOD_QUESTION)
+    bad.pop("question")
+    q = tmp_path / "q.json"
+    q.write_text(json.dumps(bad))
+    r = run_ct(["validate-question", str(q)])
+    assert r.returncode != 0
+    assert "missing required field 'question'" in r.stdout
+
+    bad2 = dict(GOOD_QUESTION)
+    bad2["schema"] = "play-nice/not-a-schema"
+    q2 = tmp_path / "q2.json"
+    q2.write_text(json.dumps(bad2))
+    r2 = run_ct(["validate-question", str(q2)])
+    assert r2.returncode != 0
+
+    bad3 = dict(GOOD_QUESTION)
+    bad3["recommended"] = "not-a-choice"
+    q3 = tmp_path / "q3.json"
+    q3.write_text(json.dumps(bad3))
+    r3 = run_ct(["validate-question", str(q3)])
+    assert r3.returncode != 0
+    assert "not one of the choice ids" in r3.stdout
+
+
+def test_validate_question_secret_shapes_rejected(tmp_path):
+    bad = dict(GOOD_QUESTION)
+    bad["context"] = {"api_key": "sk-something-realistic"}
+    q = tmp_path / "q.json"
+    q.write_text(json.dumps(bad))
+    r = run_ct(["validate-question", str(q)])
+    assert r.returncode != 0
+    assert "possible inline secret" in r.stdout
+
+
+def test_validate_help_request_requires_capability(tmp_path):
+    req = {
+        "schema": "play-nice/help-request-v1",
+        "question_id": "help-442",
+        "status": "OPEN",
+        "requester": {"type": "worker", "id": "glm-worker-3"},
+        "target": {"type": "agent", "id": "browser-specialist"},
+        "question": "Compare live Settings composition against current design reference.",
+        "blocking": True,
+        "created_at": "2026-09-11T14:00:00Z",
+    }
+    q = tmp_path / "req.json"
+    q.write_text(json.dumps(req))
+    r = run_ct(["validate-question", str(q)])
+    assert r.returncode != 0
+    assert "needed_capability" in r.stdout
+    req["needed_capability"] = "browser-visual-inspection"
+    q.write_text(json.dumps(req))
+    r2 = run_ct(["validate-question", str(q)])
+    assert r2.returncode == 0, r2.stdout + r2.stderr
+
+
+def test_validate_help_response(tmp_path):
+    resp = {
+        "schema": "play-nice/help-response-v1",
+        "question_id": "help-442",
+        "status": "answered",
+        "requester": {"type": "worker", "id": "glm-worker-3"},
+        "target": {"type": "agent", "id": "browser-specialist"},
+        "question": "Compare live Settings composition against current design reference.",
+        "result": {"summary": "Live screen uses card-per-section; reference uses grouped rows."},
+        "confidence": "high",
+        "blocking": False,
+        "safe_to_continue_without_answer": True,
+        "created_at": "2026-09-11T14:05:00Z",
+    }
+    q = tmp_path / "resp.json"
+    q.write_text(json.dumps(resp))
+    r = run_ct(["validate-question", str(q)])
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_question_lifecycle_states_in_schema():
+    schema = json.loads((REPO / "schema" / "question.schema.json").read_text())
+    states = schema["properties"]["status"]["enum"]
+    for s in ("OPEN", "WAITING", "ANSWERED", "DECLINED", "EXPIRED", "SUPERSEDED", "CANCELLED"):
+        assert s in states
+    # answers are never authorization — documented
+    assert "NEVER authorization" in schema["properties"]["answer"]["description"]
+
+
 # --------------------------------------------------------------- stale pins
 
 def test_stale_pin_detected(tmp_repo):
@@ -626,9 +888,11 @@ def test_stale_pin_detected(tmp_repo):
 
 
 def test_fresh_pin_passes(tmp_repo):
+    ct = _load_ct_from(tmp_repo)
     ct_path = tmp_repo / "tools" / "contractctl" / "contractctl.py"
     m = tmp_repo / "examples" / "vefr.adoption.yaml"
-    m.write_text(m.read_text().replace("revision: 0000000", "revision: 0.1.0"))
+    # a fresh pin uses the library's git revision (semver VERSION is not the pin)
+    m.write_text(m.read_text().replace("revision: 0000000", f"revision: {ct.library_revision()}"))
     v = run_ct(["adopt", "--manifest", str(m)], cwd=str(tmp_repo), ct_path=ct_path)
     assert v.returncode == 0, v.stdout + v.stderr
 
@@ -645,7 +909,7 @@ def test_offline_validation_works():
 def test_cli_status():
     r = run_ct(["status"])
     assert r.returncode == 0
-    assert "contracts: 60" in r.stdout
+    assert "contracts: 61" in r.stdout
 
 
 def test_cli_show():
