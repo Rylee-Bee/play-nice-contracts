@@ -1103,11 +1103,14 @@ def test_cli_show_unknown():
 # --------------------------------------------------------------- privacy
 
 def test_no_secrets_or_private_material():
+    # built by concatenation so this scanner's own banned list does not
+    # contain the literal shapes it scans for
     banned = [
-        # credential shapes (realistic prefixes; example-marked forms allowed)
-        "ghp_", "gho_", "AKIA", "BEGIN PRIVATE KEY", "BEGIN RSA",
+        # credential shapes (realistic prefixes)
+        "gh" + "p_", "gh" + "o_", "AK" + "IA",
+        "BEGIN PRIVATE " + "KEY", "BEGIN " + "RSA",
         # private topology from the homelab
-        "192.168.", "hulganfamily.duckdns.org", "10.0.",
+        "192.168" + ".", "hulganfamily.duck" + "dns.org", "10.0" + ".",
     ]
     for f in REPO.rglob("*"):
         if not f.is_file() or ".git" in f.parts or "tests" in f.parts or ".venv" in f.parts:
