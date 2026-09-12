@@ -96,3 +96,27 @@ python3 -m pytest tests/ -q
 ```
 
 67 tests covering: duplicate IDs/receipts, missing/invalid receipts and versions, index drift, lockfile drift and hash verification, adoption schema validation, unknown-contract rejection, ALWAYS-selection, trigger selection, irrelevant omission, bundle-receipt change on contract change, stale pins (git revision), wrong receipt/hash failures, missing-mandatory-contract failure, conflict-state representation, offline validation, full attestation pass/fail paths — the commitment machinery (resolved-set bundles, version-vs-revision separation, worker inheritance with exact-union attestation enforcement, invented-parent rejection, consumer-context session isolation across projects/worktrees, lock-drift fail-closed, impact-file support) — receipt-rotation enforcement via Git history (meaningful change → version change → receipt change; PATCH exempt) — and ask-for-help + the question schema family (canonical status vocabulary, secret-bearing rejection, help-request capability requirement).
+
+## Asking for help is part of the architecture
+
+`ask-for-help` (core) encodes: **it is nice, polite, kind, and smart to ask.** Know → act; can safely discover → discover; another participant can answer cheaply → ask; high-risk/ambiguous → ask or escalate; unknown and nobody can answer → preserve UNKNOWN. Never guess to keep moving. Questions are resumable state (`play-nice/question-v1`), answers become provenance, and answers are never authorization. `WAITING_FOR_HELP` is a successful stop state.
+
+## Privacy / repository state
+
+This repository is **public**. It is published sanitize-first: no credentials, private endpoints, personal topology, or private medical history — enforced by a canary test that runs locally and in CI. Sensory-safe/low-vision/attention requirements stand as engineering requirements with no personal context attached; the profile under `profiles/examples/` is a presentation-preferences example, not a personal record. Keep the repo publishable by construction, not by later scrub.
+
+## CI / branch protection
+
+CI (`.github/workflows/ci.yml`) runs on every push and PR. The job is named **`library`** and runs: workflow-YAML self-validation, `contractctl validate`, byte-identical lock determinism, the full test suite, and the secret/private-material scan.
+
+`main` branch protection is **configured** (verified live):
+
+- require pull request before merging; ≥1 approving review; stale reviews dismissed
+- require status check **`library`** (the actual job name) and branches up to date
+- force pushes disallowed; deletions disallowed
+
+Contract text changes: lockfile regeneration ships in the same commit (`contractctl lock`) — CI's determinism check fails otherwise. Meaningful contract changes (MINOR/MAJOR) must rotate the hidden receipt — `contractctl validate` enforces this from Git history.
+
+## License
+
+MIT (see `LICENSE`). GitHub recognizes the license.
