@@ -31,6 +31,7 @@ Rylee's preferred experience is a first-class profile (`profiles/`), not a hidde
 ```text
 schema/            contract, adoption, attestation, capability, status, question, project, participant, references schemas
 contracts/         65 canonical contracts across 8 layers
+docs/principles/   non-normative philosophy (e.g. trusted-translation)
 profiles/          baseline + example personal profiles
 tools/contractctl  the CLI (stdlib-only Python)
 tests/             full library test suite
@@ -38,6 +39,12 @@ examples/          adoption manifests (Personal World, VEFR, homelab) + session 
 CONTRACT_INDEX.md  the registry (routes, does not govern)
 contracts.lock.json pinned id/version/sha256/receipt for every contract
 ```
+
+## Design philosophy
+
+Non-normative mental model behind the contracts. **Inspirational, not authoritative** — where a metaphor conflicts with a contract, the contract wins.
+
+- [`docs/principles/trusted-translation.md`](docs/principles/trusted-translation.md) — *Different languages. Different systems. Shared understanding. Earned trust.* Why Play-Nice favors understanding across boundaries rather than forced uniformity.
 
 Each contract is dual-use: PURPOSE, NORMATIVE RULES, RATIONALE, HUMAN EXAMPLES, MACHINE IMPLICATIONS, GOOD EXAMPLES, ANTI-PATTERNS, ACCEPTANCE CHECKS — readable by a person, consumable by an agent.
 
