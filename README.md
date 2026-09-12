@@ -8,6 +8,10 @@ A good system should be understandable by a human, operable by automation, inspe
 
 This library preserves the lessons that keep being relearned, so that neither Rylee nor anyone else has to remember and restate them every time.
 
+## New here?
+
+Start with **[Trusted Translation](docs/principles/trusted-translation.md)** for the five-minute mental model, then use the [contract index](CONTRACT_INDEX.md) or `contractctl onboard --role <your-role>` for the rules that apply to your work. A [quick reference](docs/QUICK_REFERENCE.md) is available as a reminder after you have read the contracts.
+
 ## The layering
 
 Contracts are layered; a lower layer may never violate a requirement above it:
@@ -31,7 +35,8 @@ Rylee's preferred experience is a first-class profile (`profiles/`), not a hidde
 ```text
 schema/            contract, adoption, attestation, capability, status, question, project, participant, references schemas
 contracts/         65 canonical contracts across 8 layers
-docs/principles/   non-normative philosophy (e.g. trusted-translation)
+docs/             QUICK_REFERENCE.md (non-normative reminder card),
+                  principles/ (non-normative philosophy, e.g. trusted-translation)
 profiles/          baseline + example personal profiles
 tools/contractctl  the CLI (stdlib-only Python)
 tests/             full library test suite
@@ -51,6 +56,10 @@ Each contract is dual-use: PURPOSE, NORMATIVE RULES, RATIONALE, HUMAN EXAMPLES, 
 ## Quick start
 
 ```bash
+# orient yourself
+contractctl onboard --role orchestrator          # guided onboarding for your role
+contractctl onboard --role worker --json         # machine-readable onboarding plan
+
 # inspect the library
 python3 tools/contractctl/contractctl.py list
 python3 tools/contractctl/contractctl.py show truth-and-evidence

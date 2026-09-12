@@ -1633,3 +1633,82 @@ def test_no_medical_history():
         low = text.lower()
         for b in banned_words:
             assert b.lower() not in low, f"{f.relative_to(REPO)} contains {b!r}"
+
+
+# --------------------------------------------------------------- onboard
+
+def test_onboard_orchestrator(lib):
+    """Orchestrator role surfaces agent contracts as high-priority."""
+    import argparse
+    args = argparse.Namespace(role="orchestrator", json_output=False)
+    rc = lib.cmd_onboard(args)
+    assert rc == 0
+
+
+def test_onboard_worker(lib):
+    """Worker role surfaces agent and engineering contracts."""
+    import argparse
+    args = argparse.Namespace(role="worker", json_output=False)
+    rc = lib.cmd_onboard(args)
+    assert rc == 0
+
+
+def test_onboard_ui(lib):
+    """UI role surfaces human and experience contracts."""
+    import argparse
+    args = argparse.Namespace(role="ui", json_output=False)
+    rc = lib.cmd_onboard(args)
+    assert rc == 0
+
+
+def test_onboard_json_output(lib):
+    """JSON output is valid and contains expected structure."""
+    import argparse
+    args = argparse.Namespace(role="orchestrator", json_output=True)
+    import io, contextlib
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        rc = lib.cmd_onboard(args)
+    assert rc == 0
+    import json
+    data = json.loads(buf.getvalue())
+    assert data["role"] == "orchestrator"
+    assert "high_priority" in data
+    assert "applicable" in data
+    assert "remaining" in data
+    assert len(data["high_priority"]) > 0
+    # Total must equal library size
+    total = len(data["high_priority"]) + len(data["applicable"]) + len(data["remaining"])
+    assert total == 65
+
+
+def test_onboard_role_does_not_change_applicability(lib):
+    """Role changes ordering/emphasis, not which contracts exist."""
+    import argparse, io, contextlib, json
+    for role in ["orchestrator", "worker", "ui", "cli", "service", "human"]:
+        args = argparse.Namespace(role=role, json_output=True)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            lib.cmd_onboard(args)
+        data = json.loads(buf.getvalue())
+        total = len(data["high_priority"]) + len(data["applicable"]) + len(data["remaining"])
+        assert total == 65, f"role {role}: total {total} != 65"
+
+
+def test_onboard_invalid_role():
+    """Invalid role is rejected by argparse."""
+    r = run_ct(["onboard", "--role", "invalid"])
+    assert r.returncode != 0
+
+
+def test_onboard_play_nice_together_always_high(lib):
+    """play-nice-together is high-priority for every role."""
+    import argparse, io, contextlib, json
+    for role in ["orchestrator", "worker", "ui", "cli", "service", "human"]:
+        args = argparse.Namespace(role=role, json_output=True)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            lib.cmd_onboard(args)
+        data = json.loads(buf.getvalue())
+        ids = [c["id"] for c in data["high_priority"]]
+        assert "play-nice-together" in ids, f"role {role}: play-nice-together not in high_priority"
