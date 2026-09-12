@@ -1,7 +1,7 @@
 ---
 contract_id: orchestration
 title: Orchestration
-version: 1.1.0
+version: 1.2.0
 status: canonical
 layer: agents
 applies: [agents, project-management]
@@ -9,7 +9,7 @@ triggers: [agent-work, multi-agent, batch-work]
 rationale: The owner/architect/foreman/worker separation: expensive reasoning becomes durable constraints, the foreman owns current truth and integration, workers execute bounded tasks, and deterministic gatekeepers enforce what can be enforced. The foreman does not blindly trust workers.
 ---
 
-<!-- contract-receipt: maple-cedar-gatehouse -->
+<!-- contract-receipt: hollow-clover-sail -->
 
 # Orchestration
 
@@ -33,21 +33,23 @@ Encode the strongest orchestration model learned: an Owner, an Architect/excepti
 
 5. The foreman owns: current truth (fresh inspection, not stale reports), contract loading, decomposition, dependency ordering, worker assignment, model selection per task, branch/worktree ownership, integration, verification, progress state, stop conditions, and the final handoff.
 6. The foreman does not blindly trust workers: worker reports are evidence about the worker; integration and combined-state verification are the foreman's own responsibility (worker-green ≠ integration-green).
-7. The foreman assigns bounded tasks: base SHA, branch/worktree, owned files, objective, applicable contracts, context, acceptance criteria, tests, exclusions, and authority. Parallelism is granted only where ownership is clear; shared foundations (shell, router, tokens, core schema, shared clients, policy, canonical contracts) get one owner. Independent leaves may parallelize; integration is serial; combined state is tested.
+
+7. The foreman actively shapes conditions for participants to succeed: before assigning work it asks what this participant does well, what the smallest useful bounded contribution is, what context it needs, and what verification will compensate for its limitations — and it looks for ways for each participant (tiny model, fast worker, strong model, script, service, human) to contribute in the best way it genuinely can. No participant receives a task designed for it to fail; honest refusal states and partial contributions are preserved, not punished (see Participation and Contribution).
+8. The foreman assigns bounded tasks: base SHA, branch/worktree, owned files, objective, applicable contracts, context, acceptance criteria, tests, exclusions, and authority. Parallelism is granted only where ownership is clear; shared foundations (shell, router, tokens, core schema, shared clients, policy, canonical contracts) get one owner. Independent leaves may parallelize; integration is serial; combined state is tested.
 
 ### The Worker
 
-8. A worker receives the bounded instruction and executes:
+9. A worker receives the bounded instruction and executes:
    ```text
    inspect → implement → test → inspect diff → report evidence
    ```
-9. A worker stays in its lane: owned paths only, no surprise scope expansion, honest evidence in the report, stop conditions respected (see Worker Contract).
-10. A worker does not silently escalate scope or interrupt the human directly when blocked: it returns `WORKER STATE: NEEDS_HELP` with a structured question (play-nice/question-v1; see Ask for Help). The foreman decides whether to answer from known state, query another tool or service, ask a specialist agent, or ask the human owner. The foreman reduces interruption noise; workers help by asking good questions, not loud ones.
+10. A worker stays in its lane: owned paths only, no surprise scope expansion, honest evidence in the report, stop conditions respected (see Worker Contract).
+11. A worker does not silently escalate scope or interrupt the human directly when blocked: it returns `WORKER STATE: NEEDS_HELP` with a structured question (play-nice/question-v1; see Ask for Help). The foreman decides whether to answer from known state, query another tool or service, ask a specialist agent, or ask the human owner. The foreman reduces interruption noise; workers help by asking good questions, not loud ones.
 
 ### The Deterministic gatekeeper
 
-10. Tests, schemas, Git, validators, and CI enforce what can be enforced mechanically. Reasoning becomes tests where reasonable (see Deterministic First); what a machine can check, no human or model re-checks by eye.
-11. Human acceptance gates exist where consequences are real (release, destructive action, product acceptance — see Authorization): the machinery proposes; the human decides.
+12. Tests, schemas, Git, validators, and CI enforce what can be enforced mechanically. Reasoning becomes tests where reasonable (see Deterministic First); what a machine can check, no human or model re-checks by eye.
+13. Human acceptance gates exist where consequences are real (release, destructive action, product acceptance — see Authorization): the machinery proposes; the human decides.
 
 ## RATIONALE
 

@@ -16,9 +16,10 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | `recovery-and-reversibility` | Recovery and Reversibility | 1.0.0 | canonical | Previews, rollback, PROVE STALE → CLEAN; mistakes become guardrails |
 | `portability-and-ownership` | Portability and Ownership | 1.0.0 | canonical | Leave any tool with your data; explicit ownership boundaries |
 | `explicit-state` | Explicit State | 1.0.0 | canonical | Shared status vocabulary; state never inferred from silence |
-| `ask-for-help` | Ask for Help | 1.0.0 | canonical | Ask the participant who owns the answer; never guess to keep moving |
-| `project-context-and-participant-packs` | Project Context and Participant Packs | 1.0.0 | canonical | Durable project context + optional participant packs; mutual courtesy as architecture |
-| `play-nice-together` | Play Nice Together | 1.2.0 | canonical | The constitution: everything plays nicely with everything else |
+| `ask-for-help` | Ask for Help | 1.1.0 | canonical | Ask the participant who owns the answer; honest refusal states are always in-bounds |
+| `participation-and-contribution` | Participation and Contribution | 1.0.0 | canonical | Right-sized participation: smallest suitable participant, bounded contributions, no model castes |
+| `project-context-and-participant-packs` | Project Context and Participant Packs | 1.1.0 | canonical | Durable project context + optional participant packs; mutual courtesy as architecture |
+| `play-nice-together` | Play Nice Together | 1.3.0 | canonical | The constitution: everything plays nicely with everything else |
 
 ## Human (experience floor)
 
@@ -51,7 +52,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 
 | ID | Title | Ver | Status | Purpose |
 |---|---|---|---|---|
-| `capability-first` | Capability First | 1.0.0 | canonical | Intent → capability → policy → adapter → provider; vendors never own meaning |
+| `capability-first` | Capability First | 1.1.0 | canonical | Intent → capability → policy → adapter → provider; vendors never own meaning |
 | `friendly-api-client` | Friendly API Client | 1.0.0 | canonical | Learn, respect, read-before-write, retry intelligently, idempotent |
 | `provider-neutrality` | Provider Neutrality | 1.0.0 | canonical | Provider-neutral meaning; namespaced enrichment; no config looks "real" |
 | `discovery-and-negotiation` | Discovery and Negotiation | 1.1.0 | canonical | Ask what's supported; degrade gracefully on absence |
@@ -91,8 +92,8 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | ID | Title | Ver | Status | Purpose |
 |---|---|---|---|---|
 | `agent-behavior` | Agent Behavior | 1.0.0 | canonical | Inspect, preserve uncertainty, verify, stop at boundaries |
-| `orchestration` | Orchestration | 1.1.0 | canonical | Owner/architect/foreman/worker/gatekeeper; workers NEEDS_HELP to foreman; serial integration |
-| `model-routing` | Model Routing | 1.0.0 | canonical | Expensive judgment, cheap execution; no silent fallback |
+| `orchestration` | Orchestration | 1.2.0 | canonical | Owner/architect/foreman/worker/gatekeeper; workers NEEDS_HELP to foreman; foreman shapes winnable tasks; serial integration |
+| `model-routing` | Model Routing | 1.1.0 | canonical | Sufficient-for-the-contribution routing, never prestige or benchmark; no silent fallback |
 | `worker-contract` | Worker Contract | 1.0.0 | canonical | Bounded packets: SHA, paths, criteria, exclusions, authority |
 | `review-and-integration` | Review and Integration | 1.0.0 | canonical | Worker-green ≠ integration-green; review real diffs |
 | `handoff` | Handoff | 1.0.0 | canonical | Resumable truth reports; cold-start continuation |

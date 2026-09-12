@@ -125,7 +125,7 @@ def test_all_contracts_dual_use_structure(lib):
 
 
 def test_contract_count(lib):
-    assert len(lib.load_library()) == 62
+    assert len(lib.load_library()) == 63
 
 
 # --------------------------------------------------------------- validation failures (mutation tests)
@@ -164,7 +164,7 @@ def test_duplicate_receipt_fails(tmp_repo):
     target = tmp_repo / "contracts" / "core" / "PLAY_NICE_TOGETHER.md"
     text = target.read_text()
     # give PLAY_NICE_TOGETHER the same receipt as EXPLICIT_STATE
-    text = text.replace("glade-thicket-compass", "driftwood-thicket-jetty")
+    text = text.replace("amber-rill-orbit", "driftwood-thicket-jetty")
     target.write_text(text)
     errors = ct.validate_library()
     assert any("duplicate receipt" in e for e in errors), errors
@@ -537,7 +537,7 @@ def test_commitment_records_exact_bundle(tmp_repo):
     assert selected == {
         "truth-and-evidence", "explicit-state", "recovery-and-reversibility",
         "provenance-and-audit", "least-privilege", "ask-for-help"}
-    assert art["library_version"] == "0.3.0"  # semver from VERSION
+    assert art["library_version"] == "0.4.0"  # semver from VERSION
     # no secrets by construction: artifact only carries ids/hashes/words
     blob = json.dumps(art).lower()
     for bad in ("token", "secret", "password", "api_key"):
@@ -562,7 +562,7 @@ def test_resolved_set_bundle_differs_by_scope(tmp_repo):
 def test_library_version_vs_revision(tmp_repo):
     """Library semver and adopted git revision are distinct concepts (hardening #2)."""
     ct = _load_ct_from(tmp_repo)
-    assert ct.library_version() == "0.3.0"          # semver from VERSION file
+    assert ct.library_version() == "0.4.0"          # semver from VERSION file
     rev = ct.library_revision()
     assert rev != "unknown"
     assert rev != ct.library_version()              # git SHA when repo initialized
@@ -1122,6 +1122,113 @@ def test_participant_help_routing_present():
     assert help_.get("preferred_question_format", {}).get("schema") == "play-nice/question-v1"
 
 
+# --------------------------------------------------------------- participation and contribution
+
+def test_participation_contract_exists(lib):
+    c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "participation-and-contribution"]
+    assert len(c) == 1
+    c = c[0]
+    assert c["front_matter"]["version"] == "1.0.0"
+    assert c["front_matter"]["status"] == "canonical"
+    assert c["front_matter"]["layer"] == "core"
+    assert c["receipts"], "receipt present"
+
+
+def test_participation_core_principles(lib):
+    c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "participation-and-contribution"][0]
+    t = c["text"]
+    # right-sized ladder, not biggest-model
+    assert "SMALLEST SUITABLE PARTICIPANT" in t
+    assert "EVERY TASK → BIGGEST MODEL AVAILABLE" in t  # the anti-shape
+    # no castes / dignity / honest refusal
+    assert "Small capability is not no capability" in t
+    assert "No model castes" in t
+    assert "UNSUPPORTED" in t and "OUT_OF_SCOPE" in t and "INSUFFICIENT_CONTEXT" in t and "LOW_CONFIDENCE" in t
+    assert "designed for it to fail" in t
+    # partial contributions + failure preserves discoveries
+    assert "may still offer a smaller contribution" in t
+    assert "Failure does not erase useful contributions" in t
+    # right-sized not cheap-first (the explicitly forbidden misreading)
+    assert "Right-sized does not mean cheapest-first" in t
+    assert "Cheapness-as-ideology" in t
+    # cross-references to the mechanism contracts
+    for ref in ["Model Routing", "Orchestration", "Ask for Help", "Participation and Contribution rules 16"]:
+        pass  # refs checked loosely; the strong ones below
+    assert "see Model Routing" in t
+    assert "see Orchestration rule 5" in t
+    assert "see Ask for Help" in t
+    # pack vocabulary present
+    assert "good_task_shapes" in t and "avoid_task_shapes" in t
+    # no-token-burn
+    assert "No token burn for status" in t
+
+
+def test_participation_resolves_for_orchestration_tasks(lib):
+    manifest = lib._yaml_block_to_dict((REPO / "examples" / "personal-world.adoption.yaml").read_text().split("\n"))
+    res = lib.resolve_set(manifest, "decompose and delegate a batch of bounded implementation tasks to workers", ["agent"])
+    assert "participation-and-contribution" in res["selected"]
+    res2 = lib.resolve_set(manifest, "write documentation", [])
+    assert "participation-and-contribution" in res2["selected"]
+
+
+def test_model_routing_integrates_participation(lib):
+    c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "model-routing"][0]
+    t = c["text"]
+    assert c["front_matter"]["version"] == "1.1.0"
+    assert "sufficient for this bounded contribution" in t
+    assert "never excluded merely because a larger model exists" in t
+    assert "Participation and Contribution" in t
+    assert "cedar-basalt-vellum" not in t and "sable-fathom-orbit" not in t  # old receipt rotated out
+
+
+def test_orchestration_integrates_participation(lib):
+    c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "orchestration"][0]
+    t = c["text"]
+    assert c["front_matter"]["version"] == "1.2.0"
+    assert "shapes conditions for participants to succeed" in t
+    assert "designed for it to fail" in t
+    # renumbering is clean: rules 1..13 strictly increasing
+    import re as _re
+    nums = [int(n) for n in _re.findall(r"^(\d+)\. ", t, _re.M)]
+    assert nums == sorted(nums) and nums[0] == 1 and nums[-1] == 13
+
+
+def test_ask_for_help_and_capability_first_integrate(lib):
+    afh = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "ask-for-help"][0]
+    assert afh["front_matter"]["version"] == "1.1.0"
+    assert "Honest refusal is always in-bounds" in afh["text"]
+    cf = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "capability-first"][0]
+    assert cf["front_matter"]["version"] == "1.1.0"
+    assert "smallest suitable participant" in cf["text"]
+
+
+def test_packs_contract_integrates_participation(lib):
+    c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "project-context-and-participant-packs"][0]
+    assert c["front_matter"]["version"] == "1.1.0"
+    assert "Participation and Contribution rule 22" in c["text"]
+
+
+def test_play_nice_together_rule_10(lib):
+    c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "play-nice-together"][0]
+    t = c["text"]
+    assert "real capabilities" in t
+    assert "never from the price of the participant" in t
+    assert "Participation and Contribution" in t
+
+
+def test_participant_schema_allows_capability_shape():
+    schema = json.load(open(REPO / "schema" / "participant.schema.json"))
+    # no schema explosion: the participant schema must NOT grow new required
+    # fields for capability shapes — they live in pack content (capabilities.yaml)
+    # per the packs contract vocabulary, as observed versioned data
+    assert set(schema.get("required", [])) == {"schema", "id", "name", "type", "relationship", "provenance"}
+    assert "good_task_shapes" not in schema["properties"]
+    assert "avoid_task_shapes" not in schema["properties"]
+    # observed capability vocabulary lives in the capabilities schema instead
+    caps = json.load(open(REPO / "schema" / "participant-capabilities.schema.json"))
+    assert set(caps.get("required", [])) == {"schema", "participant", "capabilities", "limitations"}
+
+
 # --------------------------------------------------------------- receipt rotation enforcement
 
 def test_receipt_rotation_enforced_for_meaningful_changes(tmp_repo):
@@ -1132,8 +1239,8 @@ def test_receipt_rotation_enforced_for_meaningful_changes(tmp_repo):
     # version MINOR again WITHOUT rotating the receipt -> violation.
     target = tmp_repo / "contracts" / "core" / "PLAY_NICE_TOGETHER.md"
     text = target.read_text()
-    assert "version: 1.2.0" in text
-    target.write_text(text.replace("version: 1.2.0", "version: 1.3.0")
+    assert "version: 1.3.0" in text
+    target.write_text(text.replace("version: 1.3.0", "version: 1.4.0")
                       .replace("Make honesty cheap.", "Make honesty cheap and durable."))
     errors = ct.check_receipt_rotation(ct.load_library())
     assert any("receipt did not rotate" in e and "PLAY_NICE" in e for e in errors), errors
@@ -1165,7 +1272,7 @@ def test_ask_for_help_contract_exists(lib):
     assert "ask-for-help" in ids
     c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "ask-for-help"][0]
     assert c["front_matter"]["layer"] == "core"
-    assert c["receipts"] == ["vellum-harbor-quill"]
+    assert c["receipts"] == ["ember-gable-yarrow"]
     for concept in ("NEEDS_HELP", "WAITING_FOR_HELP", "recommendation"):
         assert concept in c["text"]
 
@@ -1174,8 +1281,8 @@ def test_play_nice_references_ask_for_help(lib):
     c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "play-nice-together"][0]
     assert "Ask for Help" in c["text"]
     assert "Project Context and Participant Packs" in c["text"]
-    assert c["front_matter"]["version"] == "1.2.0"
-    assert c["receipts"] == ["glade-thicket-compass"]
+    assert c["front_matter"]["version"] == "1.3.0"
+    assert c["receipts"] == ["amber-rill-orbit"]
 
 
 GOOD_QUESTION = {
@@ -1324,7 +1431,7 @@ def test_offline_validation_works():
 def test_cli_status():
     r = run_ct(["status"])
     assert r.returncode == 0
-    assert "contracts: 62" in r.stdout
+    assert "contracts: 63" in r.stdout
 
 
 def test_cli_show():

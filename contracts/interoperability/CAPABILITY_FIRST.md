@@ -1,7 +1,7 @@
 ---
 contract_id: capability-first
 title: Capability First
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: interoperability
 applies: [architecture, api, product, infrastructure]
@@ -9,7 +9,7 @@ triggers: [new-capability, new-provider, architecture, vendor-integration]
 rationale: User intent maps to capabilities; providers implement or enrich them. Vendors never own the meaning of concepts, so any provider can be swapped without redefining the user's world.
 ---
 
-<!-- contract-receipt: orchard-river-inkstone -->
+<!-- contract-receipt: jetty-prairie-dell -->
 
 # Capability First
 
@@ -36,13 +36,14 @@ Organize systems around intent-level capabilities instead of vendor products. A 
    VENDOR PRODUCT → VENDOR API SHAPE → OUR ENTIRE ARCHITECTURE
    ```
 2. A capability belongs to the system. A provider implements or enriches it. The provider does not define it.
-3. The failure mode this forbids: `source_control == Gitea`, such that removing Gitea removes the *concept* of source control from the world. Concepts survive their providers; a missing provider is `not_configured`, never conceptual void.
-4. Native baseline where practical: major capabilities have useful local meaning without third parties, or an explicit honest `not_configured` state.
-5. Providers declare a mode against a closed vocabulary: `native` / `enrichment` / `replacement`. Optional is the default; `required` is an explicit, rare, justified exception.
-6. Provider failure is not core failure: one provider's absence degrades its capability visibly and honestly, without corrupting state or breaking unrelated capabilities.
-7. User-facing meaning is provider-neutral: semantic vocabulary (`schema/capability.schema.json`, status vocabulary) governs; provider-specific data is namespaced detail, never canonical.
-8. Provider-specific actions do not pollute core actions: the generic action set stays generic; deep operations hand off to the specialist tool (which remains a valid escape hatch via deep links).
-9. Provider mode `replacement` swaps a native baseline and remains substitutable like any provider.
+3. The same shape governs participants: models, tools, services, scripts, and humans are optional providers of contributions (classification, bounded implementation, review, observation, acceptance); the task's need defines the capability required, and the smallest suitable participant provides it — a bigger, dearer, or more prestigious participant does not become the definition of the capability (see Participation and Contribution; Model Routing).
+4. The failure mode this forbids: `source_control == Gitea`, such that removing Gitea removes the *concept* of source control from the world. Concepts survive their providers; a missing provider is `not_configured`, never conceptual void.
+5. Native baseline where practical: major capabilities have useful local meaning without third parties, or an explicit honest `not_configured` state.
+6. Providers declare a mode against a closed vocabulary: `native` / `enrichment` / `replacement`. Optional is the default; `required` is an explicit, rare, justified exception.
+7. Provider failure is not core failure: one provider's absence degrades its capability visibly and honestly, without corrupting state or breaking unrelated capabilities.
+8. User-facing meaning is provider-neutral: semantic vocabulary (`schema/capability.schema.json`, status vocabulary) governs; provider-specific data is namespaced detail, never canonical.
+9. Provider-specific actions do not pollute core actions: the generic action set stays generic; deep operations hand off to the specialist tool (which remains a valid escape hatch via deep links).
+10. Provider mode `replacement` swaps a native baseline and remains substitutable like any provider.
 
 ## RATIONALE
 
