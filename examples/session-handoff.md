@@ -208,3 +208,64 @@ task: add-github-provider
 
 CONTRACT COMMITMENT: ACTIVE
 ```
+
+---
+
+## Example handoffs
+
+### Orchestrator → Worker (bounded task assignment)
+
+```text
+WORKER PACKET
+
+base: 70ab495
+branch: feat/t14-status-chip
+owned: [frontend/src/primitives/StatusChip.tsx, tests/StatusChip.test.tsx]
+objective: "StatusChip renders canonical statuses; word + luminance tint; no color-only meaning"
+acceptance: ["vitest run tests/StatusChip.test.tsx → green", "axe: 0 serious"]
+contracts: [accessibility-floor, explicit-state]
+exclusions: ["design/tokens.json", "shared shell"]
+authority: {push: branch, merge: false, deploy: false}
+budget: {model: fast-14b, max_tokens: 24000}
+INHERITED CONTRACT BUNDLE: dovetail-orchard-compass
+PARENT CONTRACT COMMITMENT: ACTIVE
+```
+
+### Worker → Orchestrator (task complete)
+
+```text
+CURRENT: feat/t14-status-chip @a1b2c3d, clean, pushed
+CHANGED: StatusChip.tsx + StatusChip.test.tsx
+VERIFIED: vitest run tests/StatusChip.test.tsx → 4 passed (CI TESTED)
+          axe: 0 serious, 0 moderate (BROWSER VERIFIED)
+CONTRACTS: accessibility-floor PASS; explicit-state PASS
+UNKNOWN: runtime behavior with real-world status data (not tested)
+DEFERRED: animation variants (issue #31, low value)
+NEXT: integration merge; combined suite at integration SHA
+```
+
+### Participant → Human (asking for help)
+
+```text
+QUESTION: Two approved visual references disagree about navigation placement.
+  The newer desktop reference uses the left rail.
+  Recommendation: left rail (matches the newer approved frame).
+  Blocking: yes (won't change Settings until resolved).
+  [Use left rail — recommended]  [Use top navigation]
+```
+
+### Session → Next session (cold resumption)
+
+```text
+CURRENT: main @20946c5, clean; Project Worlds API on :18080 (healthy)
+CHANGED: participant profiles published (hermes.md, qwen-local-bazzite.md)
+         contractctl onboard command added (7 tests)
+         docs/QUICK_REFERENCE.md created
+VERIFIED: 106 tests passed; contractctl validate VALID; CI green
+CONTRACTS: all 65 read; no modifications; no lockfile changes
+UNKNOWN: runtime behavior of agent-sync sensor (API not tested this session)
+         Big Pickle capabilities (profile exists but no observed tasks)
+DEFERRED: machine-readable changelog (generation feasibility TBD)
+          cross-reference map (needs deterministic link extraction)
+NEXT: nothing required (or: run agent-sync sensor verification if API is up)
+```

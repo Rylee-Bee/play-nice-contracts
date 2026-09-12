@@ -1986,6 +1986,181 @@ def cmd_adopt(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------- onboard
+
+ROLE_KEYWORDS = {
+    "orchestrator": {"agents", "orchestration", "project-management", "delegation"},
+    "worker": {"agents", "automation", "engineering"},
+    "ui": {"ui", "web", "product", "design"},
+    "cli": {"cli", "tools"},
+    "service": {"api", "infrastructure", "operations", "integration"},
+    "human": {"humans", "product", "ui"},
+}
+
+ROLE_HIGH_PRIORITY = {
+    "orchestrator": [
+        "play-nice-together", "truth-and-evidence", "ask-for-help",
+        "orchestration", "model-routing", "bounded-work", "handoff",
+        "contract-attestation", "agent-behavior", "worker-contract",
+        "review-and-integration", "participation-and-contribution",
+        "mutual-contribution", "collaborative-good-faith",
+    ],
+    "worker": [
+        "play-nice-together", "truth-and-evidence", "ask-for-help",
+        "agent-behavior", "bounded-work", "handoff", "worker-contract",
+        "contract-attestation", "testing-and-verification",
+    ],
+    "ui": [
+        "play-nice-together", "accessibility-floor", "human-reliability",
+        "attention-and-focus", "quiet-when-healthy", "copy-and-language",
+        "themes-and-personalization", "motion-and-feedback",
+        "migraine-and-sensory-safety", "low-vision-and-reflow",
+        "visual-fidelity-and-composition", "web-ui",
+    ],
+    "cli": [
+        "play-nice-together", "truth-and-evidence", "cli",
+        "machine-readable-output", "human-and-machine-parity",
+        "failure-and-degradation", "explicit-state",
+    ],
+    "service": [
+        "play-nice-together", "truth-and-evidence", "api",
+        "friendly-api-client", "idempotency", "failure-and-degradation",
+        "authorization", "authentication", "secrets",
+        "external-mutations", "versioning-and-compatibility",
+    ],
+    "human": [
+        "play-nice-together", "human-reliability", "ask-for-help",
+        "attention-and-focus", "progress-and-closure",
+        "collaborative-good-faith", "copy-and-language",
+    ],
+}
+
+
+def cmd_onboard(args) -> int:
+    lib = load_library()
+    errors = validate_library(lib)
+    if errors:
+        print("LIBRARY INVALID — fix before onboarding:", file=sys.stderr)
+        for e in errors:
+            print(f"  - {e}", file=sys.stderr)
+        return 1
+
+    role = args.role
+    keywords = ROLE_KEYWORDS.get(role, set())
+    high_ids = set(ROLE_HIGH_PRIORITY.get(role, []))
+
+    # Classify: high-priority (explicit list) vs applicable (by metadata match) vs remaining
+    high = []
+    applicable = []
+    remaining = []
+
+    for c in sorted(lib, key=lambda x: x["front_matter"]["contract_id"]):
+        fm = c["front_matter"]
+        cid = fm["contract_id"]
+        applies = set(fm.get("applies") or [])
+        triggers = set(fm.get("triggers") or [])
+        meta = applies | triggers
+
+        if cid in high_ids:
+            high.append(c)
+        elif keywords & meta or "always" in triggers or "always-applicable" in triggers:
+            applicable.append(c)
+        else:
+            remaining.append(c)
+
+    # Promote always-triggered from applicable to high if not already there
+    for c in list(applicable):
+        triggers = set(c["front_matter"].get("triggers") or [])
+        if "always" in triggers or "always-applicable" in triggers:
+            if c not in high:
+                high.append(c)
+                applicable.remove(c)
+
+    if getattr(args, "json_output", False):
+        out = {
+            "role": role,
+            "trusted_translation": "docs/principles/trusted-translation.md",
+            "quick_reference": "docs/QUICK_REFERENCE.md",
+            "high_priority": [
+                {"id": c["front_matter"]["contract_id"],
+                 "version": str(c["front_matter"]["version"]),
+                 "title": c["front_matter"]["title"]}
+                for c in high
+            ],
+            "applicable": [
+                {"id": c["front_matter"]["contract_id"],
+                 "version": str(c["front_matter"]["version"]),
+                 "title": c["front_matter"]["title"]}
+                for c in applicable
+            ],
+            "remaining": [
+                {"id": c["front_matter"]["contract_id"],
+                 "version": str(c["front_matter"]["version"]),
+                 "title": c["front_matter"]["title"]}
+                for c in remaining
+            ],
+            "note": "This is an onboarding plan, not an attestation. Reading order is a suggestion; all contracts remain applicable where their metadata matches your work.",
+        }
+        print(json.dumps(out, indent=2))
+        return 0
+
+    # Human-readable output
+    lib_ver = library_version()
+    print(f"PLAY-NICE ONBOARDING — role: {role}")
+    print(f"library: {lib_ver} ({len(lib)} contracts)")
+    print()
+
+    print("=== FIRST: READ THESE ===")
+    print()
+    print("  1. Trusted Translation (5-minute mental model)")
+    print("     docs/principles/trusted-translation.md")
+    print()
+    print("  2. Quick Reference (reminder card)")
+    print("     docs/QUICK_REFERENCE.md")
+    print()
+
+    print(f"=== HIGH-PRIORITY CONTRACTS FOR {role.upper()} ({len(high)}) ===")
+    print()
+    print("  Read these first. They are most likely to shape your work.")
+    print()
+    for i, c in enumerate(high, 1):
+        fm = c["front_matter"]
+        print(f"  {i:2d}. {fm['contract_id']}@{fm['version']}  — {fm['title']}")
+        print(f"      {c['rel_path']}")
+    print()
+
+    if applicable:
+        print(f"=== ALSO APPLICABLE ({len(applicable)}) ===")
+        print()
+        print("  These apply based on your role's triggers and metadata.")
+        print()
+        for c in applicable:
+            fm = c["front_matter"]
+            print(f"  - {fm['contract_id']}@{fm['version']}  — {fm['title']}")
+        print()
+
+    if remaining:
+        print(f"=== REMAINING ({len(remaining)}) ===")
+        print()
+        print("  These may apply to specific tasks. Consult the contract index.")
+        print()
+        for c in remaining:
+            fm = c["front_matter"]
+            print(f"  - {fm['contract_id']}@{fm['version']}  — {fm['title']}")
+        print()
+
+    print("=== NEXT ===")
+    print()
+    print("  After reading, produce a CONTRACT ATTESTATION v1 block:")
+    print(f"    contractctl attest --task 'your task' --impact ...")
+    print()
+    print("  This tool prepares onboarding; you perform it.")
+    print("  A role determines reading order and emphasis, not permission or exemptions.")
+    print("  All contracts remain applicable where their metadata matches your work.")
+
+    return 0
+
+
 def cmd_status(_args) -> int:
     lib = load_library()
     errors = validate_library(lib)
@@ -2095,6 +2270,14 @@ def main(argv=None) -> int:
     p = sub.add_parser("adopt", help="validate a project adoption manifest")
     p.add_argument("--manifest", required=True)
     p.set_defaults(func=cmd_adopt)
+
+    p = sub.add_parser("onboard", help="guided onboarding plan for a role")
+    p.add_argument("--role", required=True,
+                   choices=["orchestrator", "worker", "ui", "cli", "service", "human"],
+                   help="participant role determining reading order and emphasis")
+    p.add_argument("--json", action="store_true", dest="json_output",
+                   help="machine-readable JSON output")
+    p.set_defaults(func=cmd_onboard)
 
     p = sub.add_parser("status", help="one-line library health")
     p.set_defaults(func=cmd_status)

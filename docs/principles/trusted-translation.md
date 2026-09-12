@@ -553,6 +553,8 @@ None of the authors or creators above endorse Play-Nice. Their works appear here
 
 ## Core principles (one page)
 
+> **CORE MODEL ENDS HERE · RELATED WORKS / OPTIONAL READING BELOW**
+
 > **Different languages. Different systems. Shared understanding. Earned trust.**
 
 > **Translation should preserve meaning, not erase difference.**
