@@ -2,6 +2,27 @@
 
 All notable changes to the play-nice-contracts library. Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR = incompatible behavior change. Meaningful contract changes (MINOR/MAJOR) rotate the hidden receipt — enforced mechanically by `contractctl validate` via Git history.
 
+## [0.5.0] — 2026-09-12
+
+Contributions are agreed, not imposed. (Foundational companion to participation-and-contribution; bounded pass.)
+
+### Added
+- `mutual-contribution` contract (core, 1.0.0): the agreement loop — NEED -> OFFER A CONTRIBUTION -> PARTICIPANT EVALUATES -> ACCEPT / MODIFY / DECLINE / OFFER ALTERNATIVE -> AGREED CONTRIBUTION -> PERFORM -> VERIFY + INTEGRATE. Capability defines possibility, not obligation; assignment is never treated as automatically accepted. Mutual constraints from both sides shape the scope. Safety and usability are part of capability (technically possible + safe enough + usable enough + reliable enough + appropriately authorized). Human workload is negotiated ("I can tell you whether this feels right; I cannot review 3,000 lines of JSON" -> the system adapts: machine summarizes, human reviews three meaningful decisions). Services negotiate through their natural interfaces (no webhooks -> bounded conditional polling). No penalty for boundaries — DECLINE is not disobedience, MODIFY is not failure, "try harder" pressure is an anti-pattern. Partial participation and mid-work scope change when assumptions become false are compliant behavior. Agreements are observed state, never permanent castes. Authority remains separate: capability / participation / agreement / authorization / acceptance kept distinct. Mutual agreement never removes consequence-matched verification. Shared closed vocabulary (OFFERED / ACCEPTED / MODIFIED / DECLINED / NEEDS_CONTEXT / NEEDS_HELP / COMPLETED / PARTIAL). Explicitly lightweight: no negotiation server, marketplace, optimization engine, scheduler, or large schema family.
+- Play-nice founding rule 11: good cooperation is negotiated at the boundary.
+
+### Changed
+- `participation-and-contribution` 1.0.0 -> 1.1.0 (receipt rotated): the selected contribution is OFFERED and agreed, not imposed — links its companion contract.
+- `orchestration` 1.2.0 -> 1.3.0 (receipt rotated): rule 7 is now a negotiation loop (identify need -> offer -> receive counterproposal -> agree scope -> provide context -> verify -> integrate), richer than assignment.
+- `ask-for-help` 1.1.0 -> 1.2.0 (receipt rotated): scope negotiation uses the same structured-question machinery; agreed contributions can WAIT_FOR_HELP until missing conditions resolve.
+- `model-routing` 1.1.0 -> 1.2.0 (receipt rotated): participant-stated reliability conditions shape the task; context window / benchmark / price alone never justify assignment.
+- `project-context-and-participant-packs` 1.1.0 -> 1.2.0 (receipt rotated): packs may carry contribution-fit guidance (good_fits / workable_with_support / poor_fits / preferred_task_shape).
+- `human-reliability` 1.0.0 -> 1.1.0 (receipt rotated): the human's contribution is negotiated — machinery carries volume so the human carries judgment.
+- `play-nice-together` 1.3.0 -> 1.4.0 (receipt rotated: amber-rill-orbit -> dell-timber-clover).
+- Adoption example manifests now include `mutual-contribution` in `always`.
+
+### Tests
+- 94 passing (5 new: contract existence + receipt, core-principle coverage including authority separation and no-schema-explosion guard, cross-contract integration, always-resolution, negotiation-schema absence).
+
 ## [0.4.0] — 2026-09-12
 
 Everyone gets to participate. (Foundational philosophy + durable operating rules; bounded pass.)

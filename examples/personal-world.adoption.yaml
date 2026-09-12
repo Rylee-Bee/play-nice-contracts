@@ -11,6 +11,7 @@ source:
 always:
   - ask-for-help
   - participation-and-contribution
+  - mutual-contribution
   - truth-and-evidence
   - human-reliability
   - recovery-and-reversibility

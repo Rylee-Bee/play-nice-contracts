@@ -13,6 +13,7 @@ always:
   - ask-for-help
   - project-context-and-participant-packs
   - participation-and-contribution
+  - mutual-contribution
 
 triggers:
   ui:
