@@ -1,7 +1,7 @@
 {
   "schema": "play-nice/lock-v1",
   "generated_from": {
-    "contract_count": 63
+    "contract_count": 64
   },
   "contracts": [
     {
@@ -30,10 +30,10 @@
     },
     {
       "id": "ask-for-help",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "path": "contracts/core/ASK_FOR_HELP.md",
-      "sha256": "0a416476aae006312dea3f48f22d931a7b42f489be589dded4fc05798c82129c",
-      "receipt": "ember-gable-yarrow",
+      "sha256": "942e352c906e083b3fa545b3a492c74be47bbaafb3ae10938c841ab0e64cd9a1",
+      "receipt": "orchard-basalt-north",
       "status": "canonical"
     },
     {
@@ -222,10 +222,10 @@
     },
     {
       "id": "human-reliability",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "contracts/human/HUMAN_RELIABILITY.md",
-      "sha256": "854e5165520f7d9c3172bbea31f29d8510ba4614ecf67a833976e35e41f1f68d",
-      "receipt": "dell-maple-anchor",
+      "sha256": "b35216d85dcd2b53b9da1d21fdf76702a62cab51d6534faf2d9c65824a9e6ebf",
+      "receipt": "willow-north-yarrow",
       "status": "canonical"
     },
     {
@@ -286,10 +286,10 @@
     },
     {
       "id": "model-routing",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "path": "contracts/agents/MODEL_ROUTING.md",
-      "sha256": "2b270c11d690555514dc377c2287512c1e179430eb7419964fc4807a4d0ecc19",
-      "receipt": "orchard-timber-sail",
+      "sha256": "9fcb6fd4224482132d414a83b069f9372805c54bc3d590127261a4cf6261cb38",
+      "receipt": "loam-orbit-cinder",
       "status": "canonical"
     },
     {
@@ -298,6 +298,14 @@
       "path": "contracts/experience/MOTION_AND_FEEDBACK.md",
       "sha256": "ec40b904e085aa2260f6446cb9a06d34be9a0e2ff2380303c3023218bd0cab69",
       "receipt": "gable-fern-velvet",
+      "status": "canonical"
+    },
+    {
+      "id": "mutual-contribution",
+      "version": "1.0.0",
+      "path": "contracts/core/MUTUAL_CONTRIBUTION.md",
+      "sha256": "ed71606eb55158edd7d297f5d6a003d0a52238b2fe7efdf8d7cdb581b1039e5b",
+      "receipt": "ember-quay-compass",
       "status": "canonical"
     },
     {
@@ -310,26 +318,26 @@
     },
     {
       "id": "orchestration",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "path": "contracts/agents/ORCHESTRATION.md",
-      "sha256": "3949a933cf63eb95341a09234ab0888f6e3779f78ee6cd9d7e91324a3b03dda9",
-      "receipt": "hollow-clover-sail",
+      "sha256": "a86eb897ccd6be330b7a41f7769830efd241c776bbf45f20bfb199f8f9733670",
+      "receipt": "ridge-quartz-fable",
       "status": "canonical"
     },
     {
       "id": "participation-and-contribution",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "contracts/core/PARTICIPATION_AND_CONTRIBUTION.md",
-      "sha256": "3c08bff6fe3e8caac6a03f30cd3d76dcccfefbdd1d97220f6859ab50e6460008",
-      "receipt": "meadow-quay-wren",
+      "sha256": "aeede4c1fbdfc4452187d00b634ecb97ba6c58fdfa5b8677bbb058b33cf8795a",
+      "receipt": "harbor-vellum-aster",
       "status": "canonical"
     },
     {
       "id": "play-nice-together",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "path": "contracts/core/PLAY_NICE_TOGETHER.md",
-      "sha256": "db1293ecd8a28cc631a6f7e972f5f83ce28b8df3293df60e3a03a5e26c64ea48",
-      "receipt": "amber-rill-orbit",
+      "sha256": "495b29077fe26142f53ddb3daff46707a7cadcb8c29231d90234d8a4c9a22c1e",
+      "receipt": "dell-timber-clover",
       "status": "canonical"
     },
     {
@@ -366,10 +374,10 @@
     },
     {
       "id": "project-context-and-participant-packs",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "path": "contracts/core/PROJECT_CONTEXT_AND_PARTICIPANT_PACKS.md",
-      "sha256": "40fd121312adce8150b62ad6a271ff8cbcc9e403a83efe03d37a75d12832f7aa",
-      "receipt": "quartz-hollow-cedar",
+      "sha256": "17de115b230d33d9a0757c5bf9eed563ad84723a5021fe413e0c8e7e6e028bf2",
+      "receipt": "sail-dell-ember",
       "status": "canonical"
     },
     {

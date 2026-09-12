@@ -16,16 +16,17 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | `recovery-and-reversibility` | Recovery and Reversibility | 1.0.0 | canonical | Previews, rollback, PROVE STALE → CLEAN; mistakes become guardrails |
 | `portability-and-ownership` | Portability and Ownership | 1.0.0 | canonical | Leave any tool with your data; explicit ownership boundaries |
 | `explicit-state` | Explicit State | 1.0.0 | canonical | Shared status vocabulary; state never inferred from silence |
-| `ask-for-help` | Ask for Help | 1.1.0 | canonical | Ask the participant who owns the answer; honest refusal states are always in-bounds |
-| `participation-and-contribution` | Participation and Contribution | 1.0.0 | canonical | Right-sized participation: smallest suitable participant, bounded contributions, no model castes |
-| `project-context-and-participant-packs` | Project Context and Participant Packs | 1.1.0 | canonical | Durable project context + optional participant packs; mutual courtesy as architecture |
-| `play-nice-together` | Play Nice Together | 1.3.0 | canonical | The constitution: everything plays nicely with everything else |
+| `ask-for-help` | Ask for Help | 1.2.0 | canonical | Ask the participant who owns the answer; honest refusal + scope negotiation are always in-bounds |
+| `mutual-contribution` | Mutual Contribution by Agreement | 1.0.0 | canonical | Contributions are offered and agreed, not imposed; both sides state constraints; DECLINE is not disobedience |
+| `participation-and-contribution` | Participation and Contribution | 1.1.0 | canonical | Right-sized participation: smallest suitable participant, bounded contributions, no model castes |
+| `project-context-and-participant-packs` | Project Context and Participant Packs | 1.2.0 | canonical | Durable project context + optional participant packs; contribution-fit guidance routes offers |
+| `play-nice-together` | Play Nice Together | 1.4.0 | canonical | The constitution: everything plays nicely with everything else |
 
 ## Human (experience floor)
 
 | ID | Title | Ver | Status | Purpose |
 |---|---|---|---|---|
-| `human-reliability` | Human Reliability | 1.0.0 | canonical | No heroics; attention finite; resumable; "done for now" allowed |
+| `human-reliability` | Human Reliability | 1.1.0 | canonical | No heroics; attention finite; resumable; "done for now" allowed |
 | `accessibility-floor` | Accessibility Floor | 1.0.0 | canonical | Accessibility is architecture: keyboard, targets, labels, zoom, focus |
 | `migraine-and-sensory-safety` | Migraine and Sensory Safety | 1.0.0 | canonical | Low-glare, static-first, reduced-motion unconditional; no strobing |
 | `low-vision-and-reflow` | Low Vision and Reflow | 1.0.0 | canonical | 200% zoom/reflow gate; text scaling; forced-colors; coherent contrast |
@@ -92,8 +93,8 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | ID | Title | Ver | Status | Purpose |
 |---|---|---|---|---|
 | `agent-behavior` | Agent Behavior | 1.0.0 | canonical | Inspect, preserve uncertainty, verify, stop at boundaries |
-| `orchestration` | Orchestration | 1.2.0 | canonical | Owner/architect/foreman/worker/gatekeeper; workers NEEDS_HELP to foreman; foreman shapes winnable tasks; serial integration |
-| `model-routing` | Model Routing | 1.1.0 | canonical | Sufficient-for-the-contribution routing, never prestige or benchmark; no silent fallback |
+| `orchestration` | Orchestration | 1.3.0 | canonical | Owner/architect/foreman/worker/gatekeeper; assignment loop is a negotiation; serial integration |
+| `model-routing` | Model Routing | 1.2.0 | canonical | Sufficient-for-the-contribution routing, never prestige or benchmark; participant-stated conditions shape the task; no silent fallback |
 | `worker-contract` | Worker Contract | 1.0.0 | canonical | Bounded packets: SHA, paths, criteria, exclusions, authority |
 | `review-and-integration` | Review and Integration | 1.0.0 | canonical | Worker-green ≠ integration-green; review real diffs |
 | `handoff` | Handoff | 1.0.0 | canonical | Resumable truth reports; cold-start continuation |

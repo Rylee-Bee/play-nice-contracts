@@ -1,7 +1,7 @@
 ---
 contract_id: participation-and-contribution
 title: Participation and Contribution
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: core
 applies: [agents, orchestration, tools, services, humans, project-management]
@@ -9,7 +9,7 @@ triggers: [delegation, model-selection, orchestration, contribution-work, always
 rationale: Every participant should be allowed to contribute in the best way it genuinely can. Importance is not size, cost, intelligence, prestige, or autonomy — and the right question is never "which participant is the smartest?" but "what contribution does this task actually need, and who can provide it reliably?"
 ---
 
-<!-- contract-receipt: meadow-quay-wren -->
+<!-- contract-receipt: harbor-vellum-aster -->
 
 # Participation and Contribution
 
@@ -37,7 +37,7 @@ Make room for each participant to contribute according to its real capabilities.
    ```text
    EVERY TASK → BIGGEST MODEL AVAILABLE
    ```
-2. The selection question is: what contribution does this task actually need, and who can provide that contribution reliably — given consequence level, evidence requirements, cost, latency, privacy, locality, availability, context size, and tool access (see Model Routing). Not "which participant is the smartest?" and never solely by benchmark score (see Truth and Evidence).
+2. The selection question is: what contribution does this task actually need, and who can provide that contribution reliably — given consequence level, evidence requirements, cost, latency, privacy, locality, availability, context size, and tool access (see Model Routing). The selected contribution is then OFFERED and agreed with the participant — shaped around both sides' capabilities, constraints, safety boundaries, and usability needs — rather than imposed as assignment (see Mutual Contribution by Agreement). Not "which participant is the smartest?" and never solely by benchmark score (see Truth and Evidence).
 3. A participant deserves work shaped to the capabilities it actually has. A contribution does not become more valuable because the participant was expensive, large, or sophisticated. Small capability is not no capability.
 4. Right-sized does not mean cheapest-first (see ANTI-PATTERNS). Sometimes the correct participant costs nothing; sometimes it costs money; sometimes it is deterministic code; sometimes it is a human thought. The philosophy is: give the contribution to the participant that can make it well, then verify it according to its consequences.
 
