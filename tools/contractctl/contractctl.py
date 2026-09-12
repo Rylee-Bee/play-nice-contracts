@@ -152,35 +152,45 @@ def _yaml_block_to_dict(lines: list[str], indent_stack=None) -> dict:
 
 
 def _yaml_list(block: list[str]):
-    """Parse a list whose items are '- scalar' or '- key: val' (map start)."""
-    items: list[dict] | list = []
-    current: dict | None = None
-    for line in block:
+    """Parse a list whose items are '- scalar' or '- key: val' map items,
+    including nested lists/maps inside those items (indentation-based)."""
+    items: list = []
+    i = 0
+    n = len(block)
+    while i < n:
+        line = block[i]
         if not line.strip():
+            i += 1
             continue
         m = re.match(r"^(\s*)-\s+(.*)$", line)
-        if m:
-            dash_indent, rest = len(m.group(1)), m.group(2)
-            kv = re.match(r"^([A-Za-z0-9_-]+):\s*(.*)$", rest)
-            if kv:
-                if current is not None:
-                    items.append(current)
-                current = {kv.group(1): _parse_scalar(kv.group(2))}
-                base = dash_indent + 2
-                continue
-            if current is not None:
-                items.append(current)
-                current = None
-            items.append(_parse_scalar(rest))
-        else:
-            if current is not None:
-                kv = re.match(r"^([A-Za-z0-9_-]+):\s*(.*)$", line.strip())
-                if kv:
-                    current[kv.group(1)] = _parse_scalar(kv.group(2))
-                    continue
+        if not m:
             raise CTError(f"yaml: cannot parse list line: {line!r}")
-    if current is not None:
-        items.append(current)
+        dash_indent, rest = len(m.group(1)), m.group(2)
+        kv = re.match(r"^([A-Za-z0-9_-]+):\s*(.*)$", rest)
+        if not kv:
+            items.append(_parse_scalar(rest))
+            i += 1
+            continue
+        # map item: collect this item's lines (deeper than the dash, or
+        # continuation keys at the item's key indent) until the next dash item
+        item_indent = dash_indent + 2
+        item_lines = [rest]
+        j = i + 1
+        while j < n:
+            nxt = block[j]
+            if nxt.strip() == "":
+                j += 1
+                continue
+            nxt_indent = len(nxt) - len(nxt.lstrip())
+            if nxt_indent <= dash_indent and re.match(r"^\s*-\s", nxt):
+                break
+            if nxt_indent < item_indent:
+                break
+            item_lines.append(nxt)
+            j += 1
+        # parse the item as a mini-document starting at the key
+        items.append(_yaml_block_to_dict([" " * item_indent + l if k else l for k, l in enumerate(item_lines)]))
+        i = j
     return items
 
 
@@ -1409,6 +1419,305 @@ def library_revision() -> str:
     return library_version()
 
 
+# ---------------------------------------------------------------- project context / participant packs
+
+CANONICALITY_STATES = {"canonical", "reference", "observed", "generated",
+                       "historical", "superseded", "stale", "unknown"}
+PARTICIPANT_TYPES = {"design-service", "forge", "agent", "automation", "test-tool",
+                     "deployment-system", "database", "external-api", "monitoring",
+                     "identity", "human-team", "other"}
+SECRET_SHAPE_RE = re.compile(
+    r"(api[_-]?key|token|password|secret|cookie|credential)\s*[:=]\s*['\"]?[A-Za-z0-9_\-\.]{16,}",
+    re.IGNORECASE,
+)
+
+
+def _load_yaml_file(path: Path) -> dict:
+    if not path.is_file():
+        raise CTError(f"file not found: {path}")
+    try:
+        return _yaml_block_to_dict(path.read_text(encoding="utf-8").split("\n"))
+    except CTError as e:
+        raise CTError(f"{path}: {e}")
+
+
+def _check_no_secrets(root: Path, errs: list[str]) -> None:
+    """Scan every file under a participant pack / project dir for secret shapes."""
+    for f in sorted(root.rglob("*")):
+        if not f.is_file():
+            continue
+        try:
+            text = f.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, ValueError):
+            continue
+        for m in SECRET_SHAPE_RE.finditer(text):
+            # allow symbolic references (values like 'vault: figma/oauth' won't
+            # match the long-literal pattern; bare key: <long-literal> does)
+            errs.append(
+                f"{f}: possible inline secret near '{m.group(0)[:30]}...' — packs "
+                "reference secrets symbolically (secret_reference:), never inline"
+            )
+            break  # one report per file is enough to act on
+
+
+def validate_project(project_dir: Path) -> list[str]:
+    """Validate a .project/ directory: manifest, adoption pointer, participants."""
+    errs: list[str] = []
+    d = Path(project_dir)
+    if not d.is_dir():
+        return [f"project: directory not found: {d}"]
+    manifest = d / "project.yaml"
+    if not manifest.is_file():
+        errs.append("project: missing project.yaml (run: contractctl init-project)")
+        return errs
+    try:
+        pm = _load_yaml_file(manifest)
+    except CTError as e:
+        return [str(e)]
+
+    if pm.get("schema") != "play-nice/project-v1":
+        errs.append(f"project: schema must be 'play-nice/project-v1', got {pm.get('schema')!r}")
+    for key in ("id", "name"):
+        if not pm.get(key):
+            errs.append(f"project: missing required field '{key}'")
+    own = pm.get("ownership")
+    if not isinstance(own, dict) or not own.get("type"):
+        errs.append("project: ownership.type is required")
+    ctr = pm.get("contracts")
+    if not isinstance(ctr, dict) or not ctr.get("manifest"):
+        errs.append("project: contracts.manifest pointer is required")
+    else:
+        candidate = Path(d.parent / str(ctr["manifest"]))
+        if not candidate.is_file() and (d / ctr["manifest"]).is_file():
+            candidate = d / ctr["manifest"]
+        if not candidate.is_file():
+            errs.append(f"project: adoption manifest not found at {ctr['manifest']}")
+    # README explains the model (required once, per framework rule 28)
+    if not (d / "README.md").is_file():
+        errs.append("project: missing README.md (durable-context explanation)")
+    # secret hygiene
+    _check_no_secrets(d, errs)
+    # participants
+    pdir = pm.get("participants", {})
+    pdir_path = d / (pdir.get("directory", "participants") if isinstance(pdir, dict) else "participants")
+    if pdir_path.is_dir():
+        errs.extend(validate_participants(pdir_path))
+    return [e for e in errs if e]
+
+
+def validate_participants(participants_dir: Path) -> list[str]:
+    """Validate every participant pack under a participants/ directory.
+    Enforces ID uniqueness per project."""
+    errs: list[str] = []
+    d = Path(participants_dir)
+    if not d.is_dir():
+        return [f"participants: directory not found: {d}"]
+    seen_ids: dict[str, str] = {}
+    packs = sorted(p for p in d.iterdir() if p.is_dir())
+    if not packs:
+        return []  # no participants is valid
+    for pack in packs:
+        errs.extend(validate_participant(pack, seen_ids))
+    return errs
+
+
+def validate_participant(pack_dir: Path, seen_ids: dict[str] | None = None) -> list[str]:
+    """Validate one participant pack directory (play-nice/participant-v1)."""
+    errs: list[str] = []
+    d = Path(pack_dir)
+    if seen_ids is None:
+        seen_ids = {}
+    if not d.is_dir():
+        return [f"participant: not a directory: {d}"]
+
+    pman = d / "participant.yaml"
+    if not pman.is_file():
+        return [f"{d.name}: missing participant.yaml"]
+    try:
+        pm = _load_yaml_file(pman)
+    except CTError as e:
+        return [str(e)]
+
+    pid = str(pm.get("id", ""))
+    if pm.get("schema") != "play-nice/participant-v1":
+        errs.append(f"{d.name}: schema must be 'play-nice/participant-v1', got {pm.get('schema')!r}")
+    if not pid:
+        errs.append(f"{d.name}: missing required field 'id'")
+    if pid and pid != d.name:
+        errs.append(f"{d.name}: directory name must match participant id '{pid}'")
+    if pid and seen_ids is not None:
+        if pid in seen_ids:
+            errs.append(f"{d.name}: duplicate participant id '{pid}' (also {seen_ids[pid]})")
+        else:
+            seen_ids[pid] = d.name
+    if not pm.get("name"):
+        errs.append(f"{d.name}: missing required field 'name'")
+    if pm.get("type") not in PARTICIPANT_TYPES:
+        errs.append(f"{d.name}: invalid type {pm.get('type')!r} (valid: {sorted(PARTICIPANT_TYPES)})")
+
+    rel = pm.get("relationship")
+    if not isinstance(rel, dict):
+        errs.append(f"{d.name}: relationship block is required")
+    else:
+        if not rel.get("role"):
+            errs.append(f"{d.name}: relationship.role is required")
+        if rel.get("optional") is not True:
+            errs.append(f"{d.name}: relationship.optional must be true — required participants are an explicit, project-level justified exception, not a pack-level default")
+        af = rel.get("authoritative_for")
+        naf = rel.get("not_authoritative_for")
+        if not isinstance(af, list) or not af:
+            errs.append(f"{d.name}: relationship.authoritative_for list is required (may be narrow)")
+        if not isinstance(naf, list) or not naf:
+            errs.append(f"{d.name}: relationship.not_authoritative_for is required and non-empty — no participant owns everything")
+
+    auth = pm.get("authentication")
+    if isinstance(auth, dict):
+        if "secret_reference" not in auth or "token" in str(auth).lower() and "vault" not in str(auth):
+            errs.append(f"{d.name}: authentication must use symbolic secret_reference, never values")
+    prov = pm.get("provenance")
+    if not isinstance(prov, dict) or not prov.get("supplied_by") or not prov.get("observed_at"):
+        errs.append(f"{d.name}: provenance (supplied_by, observed_at) is required")
+
+    # capabilities (referenced or inline-required)
+    caps_file = d / "capabilities.yaml"
+    if caps_file.is_file():
+        try:
+            caps = _load_yaml_file(caps_file)
+        except CTError as e:
+            errs.append(str(e))
+            caps = None
+        if caps is not None:
+            if caps.get("schema") != "play-nice/participant-capabilities-v1":
+                errs.append(f"{d.name}: capabilities.schema must be 'play-nice/participant-capabilities-v1'")
+            if caps.get("participant") != (pid or None):
+                errs.append(f"{d.name}: capabilities.participant must match id '{pid}'")
+            clist = caps.get("capabilities")
+            if not isinstance(clist, list) or not clist:
+                errs.append(f"{d.name}: capabilities list is required and non-empty (use real discovered capabilities)")
+            else:
+                for c in clist:
+                    if not isinstance(c, dict) or not c.get("id") or not c.get("description"):
+                        errs.append(f"{d.name}: each capability needs 'id' and 'description'")
+            lims = caps.get("limitations")
+            if not isinstance(lims, list) or not lims:
+                errs.append(f"{d.name}: at least one honest limitation is required")
+
+    # references
+    refs_file = d / "references.yaml"
+    if refs_file.is_file():
+        try:
+            refs = _load_yaml_file(refs_file)
+        except CTError as e:
+            errs.append(str(e))
+            refs = None
+        if refs is not None:
+            if refs.get("schema") != "play-nice/references-v1":
+                errs.append(f"{d.name}: references.schema must be 'play-nice/references-v1'")
+            if refs.get("participant") != (pid or None):
+                errs.append(f"{d.name}: references.participant must match id '{pid}'")
+            rlist = refs.get("references")
+            if not isinstance(rlist, list) or not rlist:
+                errs.append(f"{d.name}: references list is required and non-empty")
+            else:
+                for r in rlist:
+                    if not isinstance(r, dict) or not r.get("id") or not r.get("type"):
+                        errs.append(f"{d.name}: each reference needs 'id' and 'type'")
+                        continue
+                    if r.get("status") not in CANONICALITY_STATES:
+                        errs.append(f"{d.name}: reference '{r.get('id')}' status {r.get('status')!r} not in canonicality vocabulary {sorted(CANONICALITY_STATES)}")
+
+    # secret hygiene across the whole pack
+    _check_no_secrets(d, errs)
+    return errs
+
+
+PROJECT_INIT_FILES = {
+    "project.yaml": """schema: play-nice/project-v1
+
+id: {id}
+name: {name}
+
+purpose:
+  summary: >
+    (One or two sentences: what is this project for?)
+
+ownership:
+  type: human
+  role: owner
+
+contracts:
+  manifest: {adoption_path}
+
+participants:
+  directory: participants
+
+status:
+  vocabulary: play-nice/status-v1
+""",
+    "README.md": """# Project Context
+
+This directory contains durable context that helps humans, bots, tools, and
+external services work with this project without rediscovering the same
+information each session.
+
+- **Contracts** define how participants behave together.
+- **Project context** defines what this project is.
+- **Participant packs** describe how optional collaborators interact with it.
+
+Participant data may enrich project truth but does not silently replace it.
+See the `project-context-and-participant-packs` contract in the Play-Nice
+library for the full model. No secrets here — ever.
+""",
+    "CURRENT.md": """# Current State
+
+(Where things stand right now: what works, what is in flight, what is next.)
+""",
+    "contracts/adoption.yaml": """# Play-Nice adoption manifest. Pin the revision to the commit you adopt.
+schema: play-nice/adoption-v1
+project: {id}
+source:
+  repository: burgeswe/play-nice-contracts
+  revision: PIN-TO-ADOPTED-SHA
+
+always:
+  - truth-and-evidence
+  - explicit-state
+  - ask-for-help
+
+triggers: {{}}
+
+notes: >-
+  Start minimal; add trigger surfaces as the project grows.
+""",
+    "participants/README.md": """# Participants
+
+Each subdirectory is a participant pack: a shared boundary document describing
+how this project and one collaborator (service, agent, team, tool) work
+together. See the `project-context-and-participant-packs` contract.
+
+Create a pack with: participant.yaml, capabilities.yaml, interaction.md,
+references.yaml — only the sections that earn their place.
+""",
+}
+
+
+def init_project(target: Path, project_id: str, name: str, adoption_path: str = ".project/contracts/adoption.yaml") -> list[str]:
+    """Create a minimal useful .project/ skeleton. No forest of empty dirs."""
+    created: list[str] = []
+    d = Path(target) / ".project"
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "contracts").mkdir(exist_ok=True)
+    (d / "participants").mkdir(exist_ok=True)
+    for rel, template in PROJECT_INIT_FILES.items():
+        p = d / rel
+        if p.is_file():
+            continue
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(template.format(id=project_id, name=name, adoption_path=adoption_path), encoding="utf-8")
+        created.append(str(p))
+    return created
+
+
 # ---------------------------------------------------------------- commands
 
 def cmd_list(_args) -> int:
@@ -1566,6 +1875,91 @@ def cmd_validate_question(args) -> int:
     return 0
 
 
+def _resolve_project_dir(path: str) -> Path:
+    p = Path(path)
+    if p.name == ".project" or (p / "project.yaml").is_file():
+        return p
+    candidate = p / ".project"
+    if candidate.is_dir():
+        return candidate
+    return p  # let validate report the miss clearly
+
+
+def cmd_init_project(args) -> int:
+    created = init_project(Path(args.target), args.id, args.name)
+    if created:
+        print("created:")
+        for c in created:
+            print(f"  {c}")
+        print("\nnext: edit project.yaml purpose; pin adoption revision; add participant packs as needed")
+        return 0
+    print(".project/ already initialized (no files changed)")
+    return 0
+
+
+def cmd_project_validate(args) -> int:
+    d = _resolve_project_dir(args.path)
+    errors = validate_project(d)
+    if errors:
+        print(f"PROJECT INVALID — {len(errors)} problem(s):")
+        for e in errors:
+            print(f"  - {e}")
+        return 1
+    pm = _load_yaml_file(d / "project.yaml")
+    packs = sorted(p.name for p in (d / "participants").iterdir() if p.is_dir()) if (d / "participants").is_dir() else []
+    print(f"PROJECT VALID — {pm.get('id')} ({pm.get('name')}): {len(packs)} participant pack(s)")
+    for name in packs:
+        print(f"  - {name}")
+    return 0
+
+
+def cmd_participant_validate(args) -> int:
+    errors = validate_participant(Path(args.path))
+    if errors:
+        print(f"PARTICIPANT INVALID — {len(errors)} problem(s):")
+        for e in errors:
+            print(f"  - {e}")
+        return 1
+    pm = _load_yaml_file(Path(args.path) / "participant.yaml")
+    af = pm.get("relationship", {}).get("authoritative_for", [])
+    naf = pm.get("relationship", {}).get("not_authoritative_for", [])
+    print(f"PARTICIPANT VALID — {pm.get('id')} ({pm.get('type')})")
+    print(f"  authoritative for: {', '.join(af)}")
+    print(f"  NOT authoritative for: {', '.join(naf)}")
+    return 0
+
+
+def cmd_participant_list(args) -> int:
+    d = _resolve_project_dir(args.path)
+    pdir = d / "participants"
+    if not pdir.is_dir():
+        print("no participants directory")
+        return 0
+    packs = sorted(p for p in pdir.iterdir() if p.is_dir())
+    if not packs:
+        print("no participant packs")
+        return 0
+    for pack in packs:
+        pman = pack / "participant.yaml"
+        if not pman.is_file():
+            print(f"{pack.name}: (missing participant.yaml)")
+            continue
+        try:
+            pm = _load_yaml_file(pman)
+        except CTError:
+            print(f"{pack.name}: (unparseable manifest)")
+            continue
+        rel = pm.get("relationship", {})
+        help_ = pm.get("help", {})
+        pid = str(pm.get("id", pack.name))
+        ptype = str(pm.get("type", "?"))
+        prole = str(rel.get("role", "?"))
+        print(f"{pid:20s} {ptype:18s} role={prole}")
+        if isinstance(help_, dict) and help_.get("can_answer"):
+            print(f"{'':20s} can answer: {', '.join(help_['can_answer'])}")
+    return 0
+
+
 def cmd_verify_attestation(args) -> int:
     att_path = Path(args.attestation)
     manifest = Path(args.manifest) if args.manifest else None
@@ -1667,6 +2061,27 @@ def main(argv=None) -> int:
     p.add_argument("--role", default="session", choices=["session", "orchestrator", "worker"])
     p.add_argument("--task", default="", help="task key when looking up the keyed artifact")
     p.set_defaults(func=cmd_session_status)
+
+    p = sub.add_parser("init-project", help="create a minimal .project/ skeleton (no empty directory forest)")
+    p.add_argument("target", nargs="?", default=".", help="project root (default: current directory)")
+    p.add_argument("--id", required=True, help="stable machine id (e.g. personal-world)")
+    p.add_argument("--name", required=True, help="human name")
+    p.set_defaults(func=cmd_init_project)
+
+    p = sub.add_parser("project", help="project-context subcommands")
+    psub = p.add_subparsers(dest="project_command", required=True)
+    pv = psub.add_parser("validate", help="validate a .project/ directory")
+    pv.add_argument("path", help="path to the .project/ directory (or its parent)")
+    pv.set_defaults(func=cmd_project_validate)
+
+    p = sub.add_parser("participant", help="participant-pack subcommands")
+    psub2 = p.add_subparsers(dest="participant_command", required=True)
+    pav = psub2.add_parser("validate", help="validate one participant pack directory")
+    pav.add_argument("path", help="path to the participant pack directory")
+    pav.set_defaults(func=cmd_participant_validate)
+    pal = psub2.add_parser("list", help="list participant packs in a project")
+    pal.add_argument("path", help="path to the .project/ directory (or its parent)")
+    pal.set_defaults(func=cmd_participant_list)
 
     p = sub.add_parser("validate-question", help="validate a play-nice question / help-request / help-response artifact")
     p.add_argument("question", help="path to the JSON artifact (play-nice/question-v1 family)")

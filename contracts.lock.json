@@ -1,7 +1,7 @@
 {
   "schema": "play-nice/lock-v1",
   "generated_from": {
-    "contract_count": 61
+    "contract_count": 62
   },
   "contracts": [
     {
@@ -318,10 +318,10 @@
     },
     {
       "id": "play-nice-together",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "path": "contracts/core/PLAY_NICE_TOGETHER.md",
-      "sha256": "44a9666e98a78eef1c79f5c7334ade8e0b6df90d4b8eb88d044d17d8eee65bb6",
-      "receipt": "cedar-basalt-vellum",
+      "sha256": "2419ccfce5cc4cf221bb12670e24129eb18ee0991da1671b08a4733d1063b818",
+      "receipt": "glade-thicket-compass",
       "status": "canonical"
     },
     {
@@ -354,6 +354,14 @@
       "path": "contracts/experience/PROGRESSIVE_DISCLOSURE.md",
       "sha256": "9ef9f7270b41d6b10acc0929f56c03c4c850cf424bfd3ea0bb053456cdeb055e",
       "receipt": "timber-compass-willow",
+      "status": "canonical"
+    },
+    {
+      "id": "project-context-and-participant-packs",
+      "version": "1.0.0",
+      "path": "contracts/core/PROJECT_CONTEXT_AND_PARTICIPANT_PACKS.md",
+      "sha256": "2d50e82a5313deb374e47593499885f1499635b72a4986b416aed34efbf21c9b",
+      "receipt": "haven-clover-gatehouse",
       "status": "canonical"
     },
     {

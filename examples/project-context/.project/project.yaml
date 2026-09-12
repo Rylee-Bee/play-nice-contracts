@@ -1,0 +1,25 @@
+schema: play-nice/project-v1
+
+id: example-project
+name: Example Project
+
+purpose:
+  summary: >
+    A generic example showing how a project keeps durable context and
+    participant packs. Replace this summary with your project's real one.
+
+ownership:
+  type: human
+  role: owner
+
+contracts:
+  manifest: .project/contracts/adoption.yaml
+
+participants:
+  directory: participants
+
+status:
+  vocabulary: play-nice/status-v1
+
+# No secrets in this file. Authentication material lives in a secret store
+# and is referenced symbolically from participant packs (secret_reference).

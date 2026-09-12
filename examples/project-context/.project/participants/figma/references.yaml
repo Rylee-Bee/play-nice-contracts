@@ -1,0 +1,20 @@
+schema: play-nice/references-v1
+
+participant: figma
+
+canonical:
+  current_design_pointer:
+    path: .project/design/CURRENT.md
+
+references:
+  - id: today-screen
+    type: frame
+    external_id: "<figma-frame-id>"
+    export: .project/design/exports/today.png
+    status: canonical
+    provenance:
+      participant: figma
+      source: design-file
+      observed_at: "2026-09-12T00:00:00Z"
+      method: mcp
+      canonical_status: canonical

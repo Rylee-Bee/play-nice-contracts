@@ -2,6 +2,23 @@
 
 All notable changes to the play-nice-contracts library. Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR = incompatible behavior change. Meaningful contract changes (MINOR/MAJOR) rotate the hidden receipt — enforced mechanically by `contractctl validate` via Git history.
 
+## [0.3.0] — 2026-09-12
+
+Project Context + Participant Pack framework. (Structure, schemas, validation, templates, Figma example, documentation — bounded pass; no migrations, no API calls, no UI/server.)
+
+### Added
+- `project-context-and-participant-packs` contract (core, 1.0.0): the three-layer model (contracts → project context → participant packs); packs never silently become canonical truth; standard `.project/` directory; participant acceptance flow; bidirectional boundary documents; human/agent participants; discovery over hand-maintenance; session bootstrap; ask-for-help routing; canonicality vocabulary; provenance; no-lock-in; symbolic secrets only.
+- Schemas: `project.schema.json` (play-nice/project-v1), `participant.schema.json` (participant-v1: authoritative_for + not_authoritative_for, help routing, symbolic authentication), `participant-capabilities.schema.json` (real capabilities + mandatory honest limitations), `references.schema.json` (canonicality statuses + provenance).
+- `contractctl init-project` — minimal useful skeleton (no empty directory forest, idempotent); `contractctl project validate`; `contractctl participant validate/list`.
+- Example under `examples/project-context/.project/`: generic project manifest, adoption manifest, design CURRENT pointer, and a complete Figma participant pack (capabilities, interaction guide, references with provenance, help routing) — no private design data.
+- YAML-subset parser upgraded to full list-of-maps support (nested blocks inside list items), verified equivalent to PyYAML on all example files.
+
+### Changed
+- `play-nice-together` 1.1.0 → 1.2.0, receipt rotated (cedar-basalt-vellum → glade-thicket-compass): rule 9 — mutual courtesy encoded as architecture; friendly participants offer what makes cooperation easier, friendly projects remember it.
+
+### Tests
+- 80 passing (13 new: project/participant validation, invalid manifests rejected, secret-shape rejection, capability + canonicality vocabulary checks, participant ID uniqueness, optional-deletion survival, same-participant-different-projects, minimal init skeleton, machine files parse without Markdown, help routing present).
+
 ## [0.2.1] — 2026-09-12
 
 Fix-only hardening pass (no new philosophy, no scope expansion).

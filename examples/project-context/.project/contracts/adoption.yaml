@@ -1,0 +1,24 @@
+# Play-Nice adoption manifest (example)
+# Pin the revision to the commit you adopt. '0000000' is the documented
+# placeholder — contractctl adopt reports it as "pin before use".
+schema: play-nice/adoption-v1
+project: example-project
+source:
+  repository: burgeswe/play-nice-contracts
+  revision: 0000000
+
+always:
+  - truth-and-evidence
+  - explicit-state
+  - ask-for-help
+  - project-context-and-participant-packs
+
+triggers:
+  ui:
+    - accessibility-floor
+    - visual-fidelity-and-composition
+    - design-source-and-fidelity
+
+notes: >-
+  Example adoption for the project-context structure. Real projects pin a
+  real SHA and add trigger surfaces as they grow.
