@@ -25,7 +25,7 @@ Demonstrated in the estate-source-control-truth-repair pass:
   tests using bare repos: BEHIND, TRUE DIVERGENCE, REMOTE SHA
   UNFETCHED, MATCH. 13 total self-tests pass.
 - **Configuration drift repair** — identified and removed the stale
-  `gitea` remote on homelab (retired host `192.168.2.216`).
+  `gitea` remote pointing at the retired local Gitea host.
 - **Multi-repo maintenance** — operated across 8 project checkouts
   plus Play-Nice and rylee_lore without cross-contamination.
 - **Dirty work preservation** — homelab (1 modified + 2 untracked),
