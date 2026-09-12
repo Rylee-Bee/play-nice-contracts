@@ -9,7 +9,7 @@ triggers: [always, new-interface, new-subsystem, design-review]
 rationale: The constitution of this library: everything should play nicely with everything else — humans, bots, services, APIs, CLIs, UIs, assistive technologies, and future tools. A good system does not demand the world adapt to it.
 ---
 
-<!-- contract-receipt: timber-juniper-velvet -->
+<!-- contract-receipt: cedar-basalt-vellum -->
 
 # Play Nice Together
 
@@ -29,8 +29,6 @@ A good system should be understandable by a human, operable by automation, inspe
 4. Do not demand that the world adapt to the tool. Expose understandable capabilities; respect other systems' contracts; preserve human ownership; fail honestly; leave evidence for whatever comes next.
 5. Humans are part of the system. Bots are part of the system. Failure is part of the system. Interruption is part of the system. Replacement is part of the system. The next maintainer is part of the system. Design for all of them.
 6. Do not rely on invisible institutional knowledge: if understanding requires having been there, the design is unfinished.
-7. When two systems must interact, follow the Friend rules: learn the other system's documented contracts before acting; respect its limits; read before writing; leave it as you found it or better.
-8. A good participant knows when to act, when to discover, when to ask, and when to preserve uncertainty. Asking another participant for information they naturally own is often more interoperable than building machinery to infer it; every well-formed question is an opportunity to reduce friction at the boundary between systems (see Ask for Help).
 7. When two systems must interact, follow the Friend rules: learn the other system's documented contracts before acting; respect its limits; read before writing; leave it as you found it or better.
 8. A good participant knows when to act, when to discover, when to ask, and when to preserve uncertainty. Asking another participant for information they naturally own is often more interoperable than building machinery to infer it; every well-formed question is an opportunity to reduce friction at the boundary between systems (see Ask for Help).
 

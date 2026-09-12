@@ -9,7 +9,7 @@ triggers: [new-integration, tool-interop, capability-check]
 rationale: Tools should discover what other tools can actually do, and degrade gracefully when an optional capability is absent. One missing optional feature must never sink the whole integration.
 ---
 
-<!-- contract-receipt: nectar-heather-prairie -->
+<!-- contract-receipt: clover-dovetail-maple -->
 
 # Discovery and Negotiation
 

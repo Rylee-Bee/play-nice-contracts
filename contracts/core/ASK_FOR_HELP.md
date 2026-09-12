@@ -169,7 +169,7 @@ Machine form:
 
 ```json
 {"schema": "play-nice/question-v1", "question_id": "q-01842",
- "status": "waiting_for_answer",
+ "status": "WAITING",
  "requester": {"type": "agent", "id": "frontend-worker"},
  "target": {"type": "human", "role": "owner"},
  "reason": "Two approved visual references disagree about navigation placement.",

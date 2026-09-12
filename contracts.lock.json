@@ -32,7 +32,7 @@
       "id": "ask-for-help",
       "version": "1.0.0",
       "path": "contracts/core/ASK_FOR_HELP.md",
-      "sha256": "6bd351ab9a17a221d1979fcf283f6a797615a0311e8f2e8e257dd1c4397451a3",
+      "sha256": "24fb30eca1b66b13a866ddbfb13b134aac85f20508f3828c34178fc7fe796cf0",
       "receipt": "vellum-harbor-quill",
       "status": "canonical"
     },
@@ -144,8 +144,8 @@
       "id": "discovery-and-negotiation",
       "version": "1.1.0",
       "path": "contracts/interoperability/DISCOVERY_AND_NEGOTIATION.md",
-      "sha256": "94808935fbaeffbf1434de49caf5b355949b011e48014923583554f1baf03521",
-      "receipt": "nectar-heather-prairie",
+      "sha256": "c2512aed52d3a7cf51881888396ba2d5b8035bdbf92bf1df270a93547be17841",
+      "receipt": "clover-dovetail-maple",
       "status": "canonical"
     },
     {
@@ -216,8 +216,8 @@
       "id": "human-and-machine-parity",
       "version": "1.1.0",
       "path": "contracts/interfaces/HUMAN_AND_MACHINE_PARITY.md",
-      "sha256": "5c2706063b81ea8984dd7aae5a250693737e6d7fbb395dd85adf25ad0bf67b27",
-      "receipt": "lantern-latch-river",
+      "sha256": "0235f7739c80a0c4827e1172473140e52c5f8fc916f15eea6d1e7f6aabcb3107",
+      "receipt": "window-sail-ember",
       "status": "canonical"
     },
     {
@@ -312,16 +312,16 @@
       "id": "orchestration",
       "version": "1.1.0",
       "path": "contracts/agents/ORCHESTRATION.md",
-      "sha256": "478cebfacecb7f52c516ced49aecd1fbe364735580765ec63c8fab7f4eca0880",
-      "receipt": "echo-quartz-hollow",
+      "sha256": "f50c073db99078707a5af7617b9f9893cbf380972961d7fd39ceeb05076ce0f2",
+      "receipt": "maple-cedar-gatehouse",
       "status": "canonical"
     },
     {
       "id": "play-nice-together",
       "version": "1.1.0",
       "path": "contracts/core/PLAY_NICE_TOGETHER.md",
-      "sha256": "faa1472f1f15d2ad5445d0cc3758b9815431b1fe86303d9dd513dab8d64cbf6d",
-      "receipt": "timber-juniper-velvet",
+      "sha256": "44a9666e98a78eef1c79f5c7334ade8e0b6df90d4b8eb88d044d17d8eee65bb6",
+      "receipt": "cedar-basalt-vellum",
       "status": "canonical"
     },
     {

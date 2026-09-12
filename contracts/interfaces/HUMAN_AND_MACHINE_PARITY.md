@@ -9,7 +9,7 @@ triggers: [interface-design, always-for-surfaces]
 rationale: Important state has both a human representation and a machine representation. Human friendliness must not destroy machine precision; machine precision must not force humans to read raw JSON.
 ---
 
-<!-- contract-receipt: lantern-latch-river -->
+<!-- contract-receipt: window-sail-ember -->
 
 # Human and Machine Parity
 
