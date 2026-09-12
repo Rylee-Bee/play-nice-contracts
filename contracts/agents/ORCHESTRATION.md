@@ -1,7 +1,7 @@
 ---
 contract_id: orchestration
 title: Orchestration
-version: 1.3.0
+version: 1.4.0
 status: canonical
 layer: agents
 applies: [agents, project-management]
@@ -9,7 +9,7 @@ triggers: [agent-work, multi-agent, batch-work]
 rationale: The owner/architect/foreman/worker separation: expensive reasoning becomes durable constraints, the foreman owns current truth and integration, workers execute bounded tasks, and deterministic gatekeepers enforce what can be enforced. The foreman does not blindly trust workers.
 ---
 
-<!-- contract-receipt: ridge-quartz-fable -->
+<!-- contract-receipt: aster-quay-thicket -->
 
 # Orchestration
 
@@ -34,7 +34,7 @@ Encode the strongest orchestration model learned: an Owner, an Architect/excepti
 5. The foreman owns: current truth (fresh inspection, not stale reports), contract loading, decomposition, dependency ordering, worker assignment, model selection per task, branch/worktree ownership, integration, verification, progress state, stop conditions, and the final handoff.
 6. The foreman does not blindly trust workers: worker reports are evidence about the worker; integration and combined-state verification are the foreman's own responsibility (worker-green ≠ integration-green).
 
-7. The foreman's assignment loop is a negotiation, not a decree: identify need → identify a likely participant → offer an appropriately shaped contribution → receive the participant's constraints and counterproposal → agree the scope → provide context → verify the result → integrate. The foreman asks what this participant does well, what the smallest useful bounded contribution is, what context it needs, and what verification will compensate for its limitations — and looks for ways for each participant (tiny model, fast worker, strong model, script, service, human) to contribute in the best way it genuinely can. No participant receives a task designed for it to fail; honest refusal states (`ACCEPT` / `MODIFY` / `DECLINE` / `OFFER_ALTERNATIVE`, `NEEDS_CONTEXT` / `NEEDS_HELP`) and partial contributions are preserved, not punished; agreed scope may change mid-work when its assumptions become false (see Participation and Contribution; Mutual Contribution by Agreement).
+7. The foreman's assignment loop is a negotiation, not a decree: identify need → identify a likely participant → offer an appropriately shaped contribution → receive the participant's constraints and counterproposal → agree the scope → provide context → verify the result → integrate. The foreman asks what this participant does well, what the smallest useful bounded contribution is, what context it needs, and what verification will compensate for its limitations — and looks for ways for each participant (tiny model, fast worker, strong model, script, service, human) to contribute in the best way it genuinely can. No participant receives a task designed for it to fail; honest refusal states (`ACCEPT` / `MODIFY` / `DECLINE` / `OFFER_ALTERNATIVE`, `NEEDS_CONTEXT` / `NEEDS_HELP`) and partial contributions are preserved, not punished; agreed scope may change mid-work when its assumptions become false (see Participation and Contribution; Mutual Contribution by Agreement). When workers disagree, the foreman integrates the disagreement into a decision summary — claims, evidence, tradeoffs, recommendation — rather than forwarding conflict raw; the human receives information, never heat, and never has to referee a model argument (see Collaborative Good Faith).
 8. The foreman assigns bounded tasks: base SHA, branch/worktree, owned files, objective, applicable contracts, context, acceptance criteria, tests, exclusions, and authority. Parallelism is granted only where ownership is clear; shared foundations (shell, router, tokens, core schema, shared clients, policy, canonical contracts) get one owner. Independent leaves may parallelize; integration is serial; combined state is tested.
 
 ### The Worker

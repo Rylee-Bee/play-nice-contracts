@@ -1,7 +1,7 @@
 ---
 contract_id: participation-and-contribution
 title: Participation and Contribution
-version: 1.1.0
+version: 1.2.0
 status: canonical
 layer: core
 applies: [agents, orchestration, tools, services, humans, project-management]
@@ -9,7 +9,7 @@ triggers: [delegation, model-selection, orchestration, contribution-work, always
 rationale: Every participant should be allowed to contribute in the best way it genuinely can. Importance is not size, cost, intelligence, prestige, or autonomy — and the right question is never "which participant is the smartest?" but "what contribution does this task actually need, and who can provide it reliably?"
 ---
 
-<!-- contract-receipt: harbor-vellum-aster -->
+<!-- contract-receipt: compass-yarrow-latch -->
 
 # Participation and Contribution
 
@@ -53,7 +53,7 @@ Make room for each participant to contribute according to its real capabilities.
    DOES A HUMAN NATURALLY OWN THE
    JUDGMENT?                               → ask the human
    ```
-   Use the least costly participant that can perform the job reliably enough for the consequence level. This is good system design, not merely cost optimization.
+   Use the least costly participant that can perform the job reliably enough for the consequence level. This is good system design, not merely cost optimization. Hearing a contribution is not agreeing with it, and agreeing is not adopting it — every useful contribution gets a fair hearing and honest evaluation, never status-based dismissal (see Collaborative Good Faith rule 13).
 6. Local execution can be a feature, not a fallback: privacy, low latency, offline operation, zero marginal cost, predictability, availability, and simple specialization are real capabilities.
 7. Expensive reasoning has a legitimate place — architecture, cross-system contradictions, difficult debugging, security reasoning, product convergence, ambiguous design judgment, exception auditing — and its kindest use is: solve the hard problem once, then encode the result into durable constraints (schema, test, validator, script, contract, decision rule) so every smaller participant can reuse it (see Stable Truth, Replaceable Machinery; Orchestration rules 2–3). Do not repurchase expensive reasoning for work already written down.
 

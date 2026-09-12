@@ -2,6 +2,25 @@
 
 All notable changes to the play-nice-contracts library. Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR = incompatible behavior change. Meaningful contract changes (MINOR/MAJOR) rotate the hidden receipt — enforced mechanically by `contractctl validate` via Git history.
 
+## [0.6.0] — 2026-09-12
+
+Be useful without being cruel. (Foundational principle; bounded pass. Internal project shorthand: the Butthole Clause — the canonical contract keeps a professional name.)
+
+### Added
+- `collaborative-good-faith` contract (core, 1.0.0): the system should never require someone to spend unnecessary time repairing damage from needless hostility, contempt, gatekeeping, or ego. CLEAR + HONEST + RESPECTFUL + USEFUL over hostile honesty or dishonest politeness. Criticize toward repair (WHAT I OBSERVED -> WHY IT MATTERS -> EVIDENCE -> WHAT I SUGGEST -> WHAT I CAN HELP WITH). Correct without humiliating. Failure is evidence, not moral judgment. Good-faith disagreement is a contribution (claim/evidence/tradeoff/decision — never status/identity); HEARD != AGREED != ADOPTED. No gotcha culture; no status games; no gatekeeping knowledge. Ideas travel with provenance (borrow, don't appropriate); credit is ordinary and proportional. Safe uncertainty is a prerequisite of truth ("I don't know" -> "Thanks — who or what is most likely to know?"). Good faith with firm boundaries: no endless tolerance of abuse; disengagement preserves technical state. Humans keep their own voice; no tone policing; humor welcome. Foreman integrates disagreement into decision summaries rather than forwarding conflict raw — the human never referees a model argument. Critique and credit scale with consequence. Explicitly NOT a politeness police: no sentiment scoring, tone classifiers, civility points, moderation machinery — deterministic checks only where objective (provenance/attribution fields).
+- Play-nice founding rule 12: help make collaboration worth continuing.
+
+### Changed
+- `play-nice-together` 1.4.0 -> 1.5.0 (receipt rotated: dell-timber-clover -> gatehouse-meadow-juniper).
+- `orchestration` 1.3.0 -> 1.4.0 (receipt rotated): foreman's rule 7 gains disagreement-integration duty.
+- `ask-for-help` 1.2.0 -> 1.3.0 (receipt rotated): asking must feel safe; uncertainty is never ridiculed.
+- `mutual-contribution` 1.0.0 -> 1.1.0 (receipt rotated): collaborative good faith named as the social prerequisite.
+- `participation-and-contribution` 1.1.0 -> 1.2.0 (receipt rotated): fair-hearing + HEARD/AGREED/ADOPTED distinction.
+- Adoption example manifests now include `collaborative-good-faith` in `always`.
+
+### Tests
+- 99 passing (5 new: contract existence + receipt, core-principle coverage including no-politeness-police guard, cross-contract integration, always-resolution, moderation-machinery absence).
+
 ## [0.5.0] — 2026-09-12
 
 Contributions are agreed, not imposed. (Foundational companion to participation-and-contribution; bounded pass.)

@@ -125,7 +125,7 @@ def test_all_contracts_dual_use_structure(lib):
 
 
 def test_contract_count(lib):
-    assert len(lib.load_library()) == 64
+    assert len(lib.load_library()) == 65
 
 
 # --------------------------------------------------------------- validation failures (mutation tests)
@@ -164,7 +164,7 @@ def test_duplicate_receipt_fails(tmp_repo):
     target = tmp_repo / "contracts" / "core" / "PLAY_NICE_TOGETHER.md"
     text = target.read_text()
     # give PLAY_NICE_TOGETHER the same receipt as EXPLICIT_STATE
-    text = text.replace("dell-timber-clover", "driftwood-thicket-jetty")
+    text = text.replace("gatehouse-meadow-juniper", "driftwood-thicket-jetty")
     target.write_text(text)
     errors = ct.validate_library()
     assert any("duplicate receipt" in e for e in errors), errors
@@ -537,7 +537,7 @@ def test_commitment_records_exact_bundle(tmp_repo):
     assert selected == {
         "truth-and-evidence", "explicit-state", "recovery-and-reversibility",
         "provenance-and-audit", "least-privilege", "ask-for-help"}
-    assert art["library_version"] == "0.5.0"  # semver from VERSION
+    assert art["library_version"] == "0.6.0"  # semver from VERSION
     # no secrets by construction: artifact only carries ids/hashes/words
     blob = json.dumps(art).lower()
     for bad in ("token", "secret", "password", "api_key"):
@@ -562,7 +562,7 @@ def test_resolved_set_bundle_differs_by_scope(tmp_repo):
 def test_library_version_vs_revision(tmp_repo):
     """Library semver and adopted git revision are distinct concepts (hardening #2)."""
     ct = _load_ct_from(tmp_repo)
-    assert ct.library_version() == "0.5.0"          # semver from VERSION file
+    assert ct.library_version() == "0.6.0"          # semver from VERSION file
     rev = ct.library_revision()
     assert rev != "unknown"
     assert rev != ct.library_version()              # git SHA when repo initialized
@@ -1128,7 +1128,7 @@ def test_participation_contract_exists(lib):
     c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "participation-and-contribution"]
     assert len(c) == 1
     c = c[0]
-    assert c["front_matter"]["version"] == "1.1.0"
+    assert c["front_matter"]["version"] == "1.2.0"
     assert c["front_matter"]["status"] == "canonical"
     assert c["front_matter"]["layer"] == "core"
     assert c["receipts"], "receipt present"
@@ -1184,7 +1184,7 @@ def test_model_routing_integrates_participation(lib):
 def test_orchestration_integrates_participation(lib):
     c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "orchestration"][0]
     t = c["text"]
-    assert c["front_matter"]["version"] == "1.3.0"
+    assert c["front_matter"]["version"] == "1.4.0"
     assert "negotiation, not a decree" in t and "contribute in the best way it genuinely can" in t
     assert "designed for it to fail" in t
     # renumbering is clean: rules 1..13 strictly increasing
@@ -1195,7 +1195,7 @@ def test_orchestration_integrates_participation(lib):
 
 def test_ask_for_help_and_capability_first_integrate(lib):
     afh = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "ask-for-help"][0]
-    assert afh["front_matter"]["version"] == "1.2.0"
+    assert afh["front_matter"]["version"] == "1.3.0"
     assert "Honest refusal is always in-bounds" in afh["text"]
     cf = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "capability-first"][0]
     assert cf["front_matter"]["version"] == "1.1.0"
@@ -1235,7 +1235,7 @@ def test_mutual_contribution_contract_exists(lib):
     c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "mutual-contribution"]
     assert len(c) == 1
     c = c[0]
-    assert c["front_matter"]["version"] == "1.0.0"
+    assert c["front_matter"]["version"] == "1.1.0"
     assert c["front_matter"]["layer"] == "core"
     assert c["receipts"]
 
@@ -1271,7 +1271,7 @@ def test_mutual_contribution_core_principles(lib):
 
 def test_mutual_contribution_integrates(lib):
     pn = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "play-nice-together"][0]
-    assert pn["front_matter"]["version"] == "1.4.0"
+    assert pn["front_matter"]["version"] == "1.5.0"
     assert "optimize for the contribution both sides can successfully sustain" in pn["text"]
     orc = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "orchestration"][0]
     assert "negotiation, not a decree" in orc["text"]
@@ -1307,6 +1307,76 @@ def test_mutual_contribution_no_schema_explosion():
     assert q["properties"]["status"]["enum"]  # closed lifecycle vocabulary exists
 
 
+# --------------------------------------------------------------- collaborative good faith
+
+def test_collaborative_good_faith_contract_exists(lib):
+    c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "collaborative-good-faith"]
+    assert len(c) == 1
+    c = c[0]
+    assert c["front_matter"]["version"] == "1.0.0"
+    assert c["front_matter"]["layer"] == "core"
+    assert c["receipts"]
+
+
+def test_collaborative_good_faith_core_principles(lib):
+    t = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "collaborative-good-faith"][0]["text"]
+    # founding principles
+    assert "Be useful without being cruel" in t
+    assert "Critique the work without diminishing the participant" in t
+    assert "Do not create unnecessary interpersonal cleanup work" in t
+    # not nice-at-all-costs: the quadrant
+    assert "CLEAR + HONEST + RESPECTFUL + USEFUL" in t
+    assert "hostile honesty and dishonest politeness" in t
+    assert "Truth and kindness are not competing goals" in t
+    # criticize toward repair pattern
+    assert "WHAT I OBSERVED" in t and "WHAT I CAN HELP WITH" in t
+    # disagreement discipline
+    assert "Good-faith disagreement is a contribution" in t
+    assert "HEARD ≠ AGREED ≠ ADOPTED" in t
+    # no gotchas / status / gatekeeping
+    assert "No gotcha culture" in t
+    assert "No status games" in t
+    assert "No gatekeeping knowledge" in t
+    # boundaries and human voice
+    assert "does NOT require endless tolerance" in t
+    assert "Humans keep their own voice" in t
+    assert "Do not tone-police users" in t
+    # foreman normalizes disagreement
+    assert "integrates disagreement rather than forwarding conflict raw" in t
+    assert "never has to referee a model argument" in t or "referee agent arguments" in t
+    # no-politeness-police guard
+    assert "Do NOT build in its name: sentiment scoring, tone classifiers, civility points, automated punishment, social ranking, forced phrases, banned-word bureaucracies, or moderation infrastructure" in t
+
+
+def test_collaborative_good_faith_integrates(lib):
+    pn = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "play-nice-together"][0]
+    assert pn["front_matter"]["version"] == "1.5.0"
+    assert "candid without being needlessly cruel" in pn["text"]
+    orc = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "orchestration"][0]
+    assert "resolves the disagreement into a decision summary" in orc["text"] or "decision summary" in orc["text"]
+    afh = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "ask-for-help"][0]
+    assert "Asking must also feel safe" in afh["text"]
+    mc = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "mutual-contribution"][0]
+    assert "social prerequisite" in mc["text"]
+    part = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "participation-and-contribution"][0]
+    assert "Hearing a contribution is not agreeing with it" in part["text"]
+
+
+def test_collaborative_good_faith_resolves_always(lib):
+    manifest = lib._yaml_block_to_dict((REPO / "examples" / "personal-world.adoption.yaml").read_text().split("\n"))
+    res = lib.resolve_set(manifest, "write documentation", [])
+    assert "collaborative-good-faith" in res["selected"]
+
+
+def test_collaborative_good_faith_no_moderation_machinery():
+    # the contract must not spawn enforcement tooling
+    import json
+    schemas = [f.name for f in (REPO / "schema").glob("*.schema.json")]
+    assert not any(x in schemas for x in ("tone.schema.json", "civility.schema.json", "sentiment.schema.json"))
+    src = (REPO / "tools" / "contractctl" / "contractctl.py").read_text()
+    assert "sentiment" not in src.lower() and "civility" not in src.lower()
+
+
 # --------------------------------------------------------------- receipt rotation enforcement
 
 def test_receipt_rotation_enforced_for_meaningful_changes(tmp_repo):
@@ -1317,8 +1387,8 @@ def test_receipt_rotation_enforced_for_meaningful_changes(tmp_repo):
     # version MINOR again WITHOUT rotating the receipt -> violation.
     target = tmp_repo / "contracts" / "core" / "PLAY_NICE_TOGETHER.md"
     text = target.read_text()
-    assert "version: 1.4.0" in text
-    target.write_text(text.replace("version: 1.4.0", "version: 1.5.0")
+    assert "version: 1.5.0" in text
+    target.write_text(text.replace("version: 1.5.0", "version: 1.6.0")
                       .replace("Make honesty cheap.", "Make honesty cheap and durable."))
     errors = ct.check_receipt_rotation(ct.load_library())
     assert any("receipt did not rotate" in e and "PLAY_NICE" in e for e in errors), errors
@@ -1350,7 +1420,7 @@ def test_ask_for_help_contract_exists(lib):
     assert "ask-for-help" in ids
     c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "ask-for-help"][0]
     assert c["front_matter"]["layer"] == "core"
-    assert c["receipts"] == ["orchard-basalt-north"]
+    assert c["receipts"] == ["velvet-orchard-wren"]
     for concept in ("NEEDS_HELP", "WAITING_FOR_HELP", "recommendation"):
         assert concept in c["text"]
 
@@ -1359,8 +1429,8 @@ def test_play_nice_references_ask_for_help(lib):
     c = [x for x in lib.load_library() if x["front_matter"]["contract_id"] == "play-nice-together"][0]
     assert "Ask for Help" in c["text"]
     assert "Project Context and Participant Packs" in c["text"]
-    assert c["front_matter"]["version"] == "1.4.0"
-    assert c["receipts"] == ["dell-timber-clover"]
+    assert c["front_matter"]["version"] == "1.5.0"
+    assert c["receipts"] == ["gatehouse-meadow-juniper"]
 
 
 GOOD_QUESTION = {
@@ -1509,7 +1579,7 @@ def test_offline_validation_works():
 def test_cli_status():
     r = run_ct(["status"])
     assert r.returncode == 0
-    assert "contracts: 64" in r.stdout
+    assert "contracts: 65" in r.stdout
 
 
 def test_cli_show():
