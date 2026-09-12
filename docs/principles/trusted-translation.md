@@ -366,7 +366,7 @@ This document deliberately **links** rather than **duplicates**. The following c
 | Coordinator = Saru-like, not owner | [Orchestration](../contracts/agents/ORCHESTRATION.md), [Project Context and Participant Packs](../contracts/core/PROJECT_CONTEXT_AND_PARTICIPANT_PACKS.md) |
 | Future Rylee should not have to remember | [Documentation and Continuity](../contracts/engineering/DOCUMENTATION_AND_CONTINUITY.md), [Provenance and Audit](../contracts/core/PROVENANCE_AND_AUDIT.md), [Handoff](../contracts/agents/HANDOFF.md) |
 
-No duplicate contracts are introduced by this document. Adding `docs/principles/trusted-translation.md` does not change the contract count (66), the lockfile, or any contract receipt.
+No duplicate contracts are introduced by this document. Adding `docs/principles/trusted-translation.md` does not change the contract count (65), the lockfile, or any contract receipt.
 
 ---
 
