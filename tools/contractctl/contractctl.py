@@ -142,7 +142,7 @@ def _yaml_block_to_dict(lines: list[str], indent_stack=None) -> dict:
         # list or map child? A block is a list only if its first
         # non-empty line is a dash item; otherwise it is a map whose
         # values may themselves be lists (map-of-lists).
-        first = next((b for b in block if b.strip()), "")
+        first = next((b for b in block if b.strip() and not b.lstrip().startswith("#")), "")
         if re.match(r"^\s*-\s", first):
             out[key] = _yaml_list(block)
         else:
@@ -159,7 +159,7 @@ def _yaml_list(block: list[str]):
     n = len(block)
     while i < n:
         line = block[i]
-        if not line.strip():
+        if not line.strip() or line.lstrip().startswith("#"):
             i += 1
             continue
         m = re.match(r"^(\s*)-\s+(.*)$", line)

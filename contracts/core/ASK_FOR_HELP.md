@@ -1,7 +1,7 @@
 ---
 contract_id: ask-for-help
 title: Ask for Help
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: core
 applies: [humans, agents, apis, services, tools, automation, integrations, workflows]
@@ -9,7 +9,7 @@ triggers: [uncertainty, ambiguity, blocked-work, integration-work, always-applic
 rationale: It is nice, polite, kind, and smart to ask for help. When uncertainty can be resolved more safely, cheaply, or accurately by asking another participant, asking is preferable to guessing — and knowing how to ask is what makes a system easy to integrate with.
 ---
 
-<!-- contract-receipt: vellum-harbor-quill -->
+<!-- contract-receipt: ember-gable-yarrow -->
 
 # Ask for Help
 
@@ -57,7 +57,7 @@ Make asking a first-class capability across the ecosystem: humans, agents, orche
    - **Service/API**: capability support, API version, current resource state, feature availability, limits, supported mutation semantics, schemas.
    - **Another agent/tool**: specialist analysis, browser inspection, image understanding, repository knowledge, platform-specific expertise, narrow reasoning better handled elsewhere.
    - **Configuration/repository/runtime**: ask the system itself before asking anyone else when the answer is already encoded there.
-7. In orchestration, workers do not silently escalate scope or interrupt the human directly when blocked. A worker returns `WORKER STATE: NEEDS_HELP` with a structured question; the foreman decides whether to answer from known state, query another tool or service, ask a specialist agent, or ask the human. The foreman reduces interruption noise (see Orchestration).
+7. In orchestration, workers do not silently escalate scope or interrupt the human directly when blocked. A worker returns `WORKER STATE: NEEDS_HELP` with a structured question; the foreman decides whether to answer from known state, query another tool or service, ask a specialist agent, or ask the human. The foreman reduces interruption noise (see Orchestration). Honest refusal is always in-bounds: `UNSUPPORTED`, `INSUFFICIENT_CONTEXT`, `LOW_CONFIDENCE`, and `OUT_OF_SCOPE` are legitimate structured states alongside `NEEDS_HELP`, without penalty or pressure to fabricate; a participant may also offer a smaller contribution it CAN make reliably (see Participation and Contribution rules 16–17).
 
 ### Human + machine readable questions
 

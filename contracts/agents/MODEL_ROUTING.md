@@ -1,7 +1,7 @@
 ---
 contract_id: model-routing
 title: Model Routing
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: agents
 applies: [agents, infrastructure]
@@ -9,17 +9,17 @@ triggers: [agent-work, model-selection, provider-setup]
 rationale: Use expensive intelligence for expensive judgment; use cheap fast models for constrained execution. The orchestrator can always reject worker output, and there is never a silent paid/provider fallback.
 ---
 
-<!-- contract-receipt: sable-fathom-orbit -->
+<!-- contract-receipt: orchard-timber-sail -->
 
 # Model Routing
 
 ## Purpose
 
-Route each piece of work to the right grade of intelligence — expensive judgment where judgment is expensive, fast constrained execution where execution is bounded — with the routing explicit and overridable.
+Route each piece of work to the right grade of intelligence — expensive judgment where judgment is expensive, fast constrained execution where execution is bounded — with the routing explicit and overridable. The routing question is not "which model is best?" but "which available participant is sufficient for this bounded contribution, given risk, evidence requirements, latency, cost, privacy, locality, availability, context size, and tool access?" (see Participation and Contribution).
 
 ## NORMATIVE RULES
 
-1. Use stronger models for: architecture, difficult contradictions, browser UAT/taste, complex debugging, security boundaries, final convergence. Use faster/cheaper models for: bounded implementation, mechanical refactors, repetitive fixes, test additions, documentation propagation.
+1. Use stronger models for: architecture, difficult contradictions, browser UAT/taste, complex debugging, security boundaries, final convergence. Use faster/cheaper models for: bounded implementation, mechanical refactors, repetitive fixes, test additions, documentation propagation. Deterministic machinery is a routing destination too: when work can be a schema, test, validator, or script, it stops being model work at all (see Deterministic First). Small/local participants are selected by sufficiency for the bounded contribution — never excluded merely because a larger model exists, and never selected merely because they are cheap; consequence level and evidence requirements govern (see Participation and Contribution rules 5–6, 12).
 2. Routing is configuration, not hard-coded policy: provider and model choice per task class is data the owner can inspect and change (see Provider Neutrality).
 3. The orchestrator can always reject worker output; rejection is a normal outcome, never an emergency (see Orchestration).
 4. No silent paid/provider fallback: a job configured for the local model does not quietly upgrade itself to a paid cloud API. Any fallback that exists is explicit, configured, and visible in the run record.

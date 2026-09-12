@@ -2,6 +2,26 @@
 
 All notable changes to the play-nice-contracts library. Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR = incompatible behavior change. Meaningful contract changes (MINOR/MAJOR) rotate the hidden receipt — enforced mechanically by `contractctl validate` via Git history.
 
+## [0.4.0] — 2026-09-12
+
+Everyone gets to participate. (Foundational philosophy + durable operating rules; bounded pass.)
+
+### Added
+- `participation-and-contribution` contract (core, 1.0.0): right-sized participation — the ladder NEED -> CAPABILITY -> SMALLEST SUITABLE PARTICIPANT -> BOUNDED CONTRIBUTION -> VERIFICATION; no model castes (authority comes from role, evidence, contracts, ownership, verification — never size/price/prestige); contribution is not all-or-nothing (observation, idea, classification, lookup, draft, test, comparison, review, contradiction, question are all real contributions); consequence-matched capability; participant dignity (no tasks designed to fail; honest refusal states without penalty; partial contributions preserved and passed onward); capability-ladder pipelines; local-first as feature; expensive reasoning's kindest use is durable constraints others reuse; ideas are participation; provenance per contribution; credit without authority confusion; orchestrator shapes winnable tasks; no token burn for status; failure preserves useful discoveries. Explicitly NOT cheapness-as-ideology: right-sized, never cheapest-first.
+- Play-nice founding rule 10: making room for each participant according to real capabilities is part of playing nicely.
+
+### Changed
+- `model-routing` 1.0.0 -> 1.1.0 (receipt rotated): routing question is "which available participant is sufficient for this bounded contribution?" — never prestige/benchmark; small/local selected by sufficiency, never excluded because a larger model exists.
+- `orchestration` 1.1.0 -> 1.2.0 (receipt rotated): new rule 7 — the foreman actively shapes conditions for participants to succeed; no task designed to fail; refusal/partial contributions preserved, not punished.
+- `ask-for-help` 1.0.0 -> 1.1.0 (receipt rotated): honest refusal always in-bounds (UNSUPPORTED / INSUFFICIENT_CONTEXT / LOW_CONFIDENCE / OUT_OF_SCOPE alongside NEEDS_HELP); participants may offer a smaller contribution they CAN make reliably.
+- `capability-first` 1.0.0 -> 1.1.0 (receipt rotated): participants are providers of contributions too; the smallest suitable participant provides the capability — a bigger/dearer participant never becomes the definition of the capability.
+- `project-context-and-participant-packs` 1.0.0 -> 1.1.0 (receipt rotated): rule 13 gains the observed-capability vocabulary (strengths / limitations / good_task_shapes / avoid_task_shapes) as versioned observation data that routes delegation but never becomes authority.
+- `play-nice-together` 1.2.0 -> 1.3.0 (receipt rotated: glade-thicket-compass -> amber-rill-orbit).
+- Adoption example manifests now include `participation-and-contribution` in `always`.
+
+### Tests
+- 89 passing (9 new: contract existence + receipt, core-principle coverage, resolution for orchestration tasks + always-resolution, model-routing/orchestration/ask-for-help/capability-first/packs integration, play-nice rule 10, no-schema-explosion check for capability shapes).
+
 ## [0.3.0] — 2026-09-12
 
 Project Context + Participant Pack framework. (Structure, schemas, validation, templates, Figma example, documentation — bounded pass; no migrations, no API calls, no UI/server.)

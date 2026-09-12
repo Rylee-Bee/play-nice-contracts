@@ -1,7 +1,7 @@
 ---
 contract_id: project-context-and-participant-packs
 title: Project Context and Participant Packs
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: core
 applies: [projects, agents, tools, services, documentation, onboarding]
@@ -9,7 +9,7 @@ triggers: [project-onboarding, participant-integration, new-session, project-mem
 rationale: Every new session should not have to rediscover how a particular project, service, tool, or collaborator works. After accepting Play-Nice contracts, a participant should be able to say: I agree — and here is useful information you can retain with this project. Mutual courtesy encoded as durable, structured project context.
 ---
 
-<!-- contract-receipt: haven-clover-gatehouse -->
+<!-- contract-receipt: quartz-hollow-cedar -->
 
 # Project Context and Participant Packs
 
@@ -104,7 +104,14 @@ A new human, bot, tool, or service should not need to rediscover the relationshi
 ### Human and agent participants
 
 12. Human/team packs describe working relationships — role, ownership boundaries, preferred review flow, escalation path, artifact expectations — not dossiers. No sensitive personal profiles.
-13. Agent packs may describe strengths, approved roles, task shapes, tools, evidence expectations — but must not encode temporary model folklore as eternal truth: separate the stable role contract from observed behavior, and version/refresh observations.
+13. Agent packs may describe strengths, approved roles, task shapes, tools, evidence expectations — but must not encode temporary model folklore as eternal truth: separate the stable role contract from observed behavior, and version/refresh observations. The observed-capability vocabulary (see Participation and Contribution rule 22):
+    ```yaml
+    strengths: [classification, bounded-code-generation]
+    limitations: [no-browser, weak-long-context]
+    good_task_shapes: [small-independent-files, structured-input-output]
+    avoid_task_shapes: [architecture-convergence, visual-judgment]
+    ```
+    is versioned, dated observation data — it routes delegation; it never becomes authority or an eternal property of the participant.
 
 ### Discovery and updates
 
