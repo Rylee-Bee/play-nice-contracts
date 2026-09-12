@@ -174,9 +174,9 @@
     },
     {
       "id": "external-mutations",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "path": "contracts/interoperability/EXTERNAL_MUTATIONS.md",
-      "sha256": "37b020f4cd026eaf38beebfadf2c8fa12d186d7f2b4860e4743bfe8efd60b643",
+      "sha256": "726bc2fde167c10e6589c2976b47bdbccf8c420577e185083c329c9728c2c44b",
       "receipt": "heather-rill-hollow",
       "status": "canonical"
     },
