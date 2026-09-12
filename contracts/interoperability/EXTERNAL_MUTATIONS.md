@@ -1,7 +1,7 @@
 ---
 contract_id: external-mutations
 title: External Mutations
-version: 1.0.0
+version: 1.0.1
 status: canonical
 layer: interoperability
 applies: [integration, api, agents, operations]
@@ -40,7 +40,7 @@ The most expensive incidents in this ecosystem came from acting on external syst
 
 ## HUMAN EXAMPLES
 
-- An agent proposes: "Add label `needs-review` to 3 PRs in burgeswe/personal-world. No other changes." — human approves — agent applies, verifies each PR now has the label, records provenance.
+- An agent proposes: "Add label `needs-review` to 3 PRs in Rylee-Bee/personal-world. No other changes." — human approves — agent applies, verifies each PR now has the label, records provenance.
 - An automation updates DNS records by ensuring desired state; reruns change nothing.
 
 ## MACHINE / IMPLEMENTATION IMPLICATIONS

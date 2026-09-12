@@ -23,7 +23,7 @@
       "properties": {
         "repository": {
           "type": "string",
-          "description": "Repository identifier the library is consumed from, e.g. burgeswe/play-nice-contracts."
+          "description": "Repository identifier the library is consumed from, e.g. Rylee-Bee/play-nice-contracts."
         },
         "revision": {
           "type": "string",

@@ -1676,7 +1676,7 @@ library for the full model. No secrets here — ever.
 schema: play-nice/adoption-v1
 project: {id}
 source:
-  repository: burgeswe/play-nice-contracts
+  repository: Rylee-Bee/play-nice-contracts
   revision: PIN-TO-ADOPTED-SHA
 
 always:
