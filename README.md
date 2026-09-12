@@ -36,7 +36,8 @@ Rylee's preferred experience is a first-class profile (`profiles/`), not a hidde
 schema/            contract, adoption, attestation, capability, status, question, project, participant, references schemas
 contracts/         65 canonical contracts across 8 layers
 docs/             QUICK_REFERENCE.md (non-normative reminder card),
-                  principles/ (non-normative philosophy, e.g. trusted-translation)
+                  principles/ (non-normative philosophy, e.g. trusted-translation),
+                  roles/ (non-normative role docs, e.g. trusted-steward)
 profiles/          baseline + example personal profiles
 tools/contractctl  the CLI (stdlib-only Python)
 tests/             full library test suite
@@ -50,6 +51,7 @@ contracts.lock.json pinned id/version/sha256/receipt for every contract
 Non-normative mental model behind the contracts. **Inspirational, not authoritative** — where a metaphor conflicts with a contract, the contract wins.
 
 - [`docs/principles/trusted-translation.md`](docs/principles/trusted-translation.md) — *Different languages. Different systems. Shared understanding. Earned trust.* Why Play-Nice favors understanding across boundaries rather than forced uniformity.
+- [`docs/roles/trusted-steward.md`](docs/roles/trusted-steward.md) — *A Trusted Steward carries continuity without claiming ownership.* The executive-assistant / thought-offloading role, composed entirely from existing contracts (Hermod/VEFR is one implementation).
 
 Each contract is dual-use: PURPOSE, NORMATIVE RULES, RATIONALE, HUMAN EXAMPLES, MACHINE IMPLICATIONS, GOOD EXAMPLES, ANTI-PATTERNS, ACCEPTANCE CHECKS — readable by a person, consumable by an agent.
 
