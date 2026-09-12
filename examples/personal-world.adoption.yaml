@@ -10,6 +10,7 @@ source:
 
 always:
   - ask-for-help
+  - participation-and-contribution
   - truth-and-evidence
   - human-reliability
   - recovery-and-reversibility

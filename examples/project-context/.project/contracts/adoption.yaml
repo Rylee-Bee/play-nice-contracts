@@ -12,6 +12,7 @@ always:
   - explicit-state
   - ask-for-help
   - project-context-and-participant-packs
+  - participation-and-contribution
 
 triggers:
   ui:
