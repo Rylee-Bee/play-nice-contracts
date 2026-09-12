@@ -30,7 +30,7 @@ Rylee's preferred experience is a first-class profile (`profiles/`), not a hidde
 
 ```text
 schema/            contract, adoption, attestation, capability, status, question, project, participant, references schemas
-contracts/         63 canonical contracts across 8 layers
+contracts/         64 canonical contracts across 8 layers
 profiles/          baseline + example personal profiles
 tools/contractctl  the CLI (stdlib-only Python)
 tests/             full library test suite
@@ -109,7 +109,7 @@ Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR =
 python3 -m pytest tests/ -q
 ```
 
-89 tests covering: library invariants, resolution, attestation/commitment machinery, receipt-rotation enforcement, ask-for-help + question schema, the project-context/participant-pack framework (project + participant validation, secret-shape rejection, canonicality vocabulary, participant uniqueness, optional-deletion survival, init skeleton, help routing), and participation-and-contribution (right-sized participation, honest-refusal vocabulary, integration across orchestration/model-routing/ask-for-help/capability-first/packs, no schema explosion).
+94 tests covering: library invariants, resolution, attestation/commitment machinery, receipt-rotation enforcement, ask-for-help + question schema, the project-context/participant-pack framework, participation-and-contribution (right-sized participation, honest refusal, cross-contract integration), and mutual-contribution (the agreement loop, mutual constraints, authority-separation, negotiation via existing question machinery, no schema explosion).
 
 ## Project context + participant packs
 
