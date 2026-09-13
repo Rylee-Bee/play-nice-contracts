@@ -50,6 +50,7 @@ contracts.lock.json pinned id/version/sha256/receipt for every contract
 Non-normative mental model behind the contracts. **Inspirational, not authoritative** — where a metaphor conflicts with a contract, the contract wins.
 
 - [`docs/principles/trusted-translation.md`](docs/principles/trusted-translation.md) — *Different languages. Different systems. Shared understanding. Earned trust.* Why Play-Nice favors understanding across boundaries rather than forced uniformity.
+- [`docs/principles/world-with-manners.md`](docs/principles/world-with-manners.md) — *The world knows how loudly to exist.* The Project Worlds Workshop v3 story: sixteen viable explorations, convergence without flattening, respectful attention, real provenance and a deliberate handoff and STOP.
 
 Each contract is dual-use: PURPOSE, NORMATIVE RULES, RATIONALE, HUMAN EXAMPLES, MACHINE IMPLICATIONS, GOOD EXAMPLES, ANTI-PATTERNS, ACCEPTANCE CHECKS — readable by a person, consumable by an agent.
 

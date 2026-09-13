@@ -2,6 +2,11 @@
 
 All notable changes to the play-nice-contracts library. Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR = incompatible behavior change. Meaningful contract changes (MINOR/MAJOR) rotate the hidden receipt — enforced mechanically by `contractctl validate` via Git history.
 
+## [Unreleased]
+
+### Added
+- Non-normative Project Worlds Workshop v3 story in `docs/principles/world-with-manners.md`, linked from the README: emotional volume, sixteen-frame convergence, provenance, notification persistence, known normalization gaps and the deliberate design-to-implementation handoff. Audit outcomes remain attributed historical evidence; no contract, lockfile, product behavior or implementation claim changes.
+
 ## [0.6.0] — 2026-09-12
 
 Be useful without being cruel. (Foundational principle; bounded pass. Internal project shorthand: the Butthole Clause — the canonical contract keeps a professional name.)
