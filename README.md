@@ -54,6 +54,8 @@ Non-normative mental model behind the contracts. **Inspirational, not authoritat
 - [`docs/roles/trusted-steward.md`](docs/roles/trusted-steward.md) — *A Trusted Steward carries continuity without claiming ownership.* The executive-assistant / thought-offloading role, composed entirely from existing contracts (Hermod/VEFR is one implementation).
 - [`docs/PLAY-NICE-OPUS.md`](docs/PLAY-NICE-OPUS.md) — *The long-form why.* Non-normative philosophy, the Small Model Olympics case study, and the closing promises; a one-page [TLDR](docs/PLAY-NICE-OPUS-TLDR.md). Inspirational, not authoritative.
 
+- [`docs/participant-notes/`](docs/participant-notes/) — *Letters back from participants who worked under Play-Nice.* Non-normative experience reports from agents and operators who used these contracts. New entries are welcome; no special mechanism required.
+
 Each contract is dual-use: PURPOSE, NORMATIVE RULES, RATIONALE, HUMAN EXAMPLES, MACHINE IMPLICATIONS, GOOD EXAMPLES, ANTI-PATTERNS, ACCEPTANCE CHECKS — readable by a person, consumable by an agent.
 
 ## Quick start
