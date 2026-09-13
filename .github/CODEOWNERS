@@ -1,0 +1,23 @@
+# CODEOWNERS for Play Nice Contracts
+#
+# CODEOWNERS is informational here: the repository has a single
+# maintainer (Rylee). The pattern below expresses "any change in
+# these areas wants explicit human review" so future co-maintainers
+# inherit the intent.
+#
+# This file is NOT access control. Branch protection rules enforce
+# the actual review requirement.
+
+# Licensing, identity, security, contracts, tooling.
+/LICENSE                   @Rylee-Bee
+/TRADEMARKS.md              @Rylee-Bee
+/SECURITY.md                @Rylee-Bee
+/CODEOWNERS                 @Rylee-Bee
+/CONTRIBUTING.md            @Rylee-Bee
+/contracts/                 @Rylee-Bee
+/contracts.lock.json        @Rylee-Bee
+/tools/contractctl/         @Rylee-Bee
+/schema/                    @Rylee-Bee
+/tests/                     @Rylee-Bee
+/.github/workflows/         @Rylee-Bee
+/.github/dependabot.yml     @Rylee-Bee

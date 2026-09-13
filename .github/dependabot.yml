@@ -1,0 +1,28 @@
+# Dependabot configuration for Play Nice Contracts
+#
+# The library is stdlib-only at runtime. PyYAML is a test-only
+# dependency (used by the workflow YAML self-check). GitHub Actions
+# are pinned by SHA in .github/workflows/*.yml.
+
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    groups:
+      test-deps:
+        patterns:
+          - "pytest"
+          - "pyyaml"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      actions:
+        patterns:
+          - "*"
