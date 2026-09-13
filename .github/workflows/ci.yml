@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   library:
-    name: validate + lock determinism + tests + private-material scan
+    name: library
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -37,6 +37,7 @@ jobs:
           assert isinstance(doc, dict), "workflow root must be a mapping"
           jobs = doc.get("jobs") or {}
           assert "library" in jobs, "expected job 'library' missing"
+          assert jobs["library"].get("name", "library") == "library", "protected check name must be library"
           steps = jobs["library"].get("steps") or []
           names = [s.get("name") or s.get("uses") or "?" for s in steps]
           for expected in ["Validate library", "Full test suite",
