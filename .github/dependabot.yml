@@ -1,0 +1,23 @@
+# Dependabot configuration for Play Nice Contracts
+#
+# The library is stdlib-only at runtime. PyYAML is a test-only
+# dependency (used by the workflow YAML self-check) and is not
+# pinned in this repository - the workflow installs it on demand
+# via `pip install pyyaml`. Dependabot tracks only GitHub
+# Actions here; no pip manifest exists.
+#
+# When the test-only dependencies are pinned in this repo (e.g.
+# via requirements-dev.txt), add a pip updater with the same
+# grouping style as the GitHub Actions updater below.
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    groups:
+      actions:
+        patterns:
+          - "*"

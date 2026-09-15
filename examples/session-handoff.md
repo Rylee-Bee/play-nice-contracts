@@ -104,6 +104,19 @@ Inspect current state before planning mutations:
 
 Current evidence outranks historical reports. Unknown is a valid state.
 
+PHASE 1B — DISCONFIRM BEFORE DEPENDENT EXECUTION
+
+For assume-unknown, record in task-impact or a linked decision:
+  AUTHORITY / EVIDENCE / INTERPRETATION / DECISION
+  claims: OBSERVED / INFERRED / ASSUMED / UNKNOWN
+  highest-impact unproven belief
+  what observation would make the interpretation wrong
+  cheapest reasonable check performed, result, and limits
+  reservations, resulting action, and recovery path
+An unavailable or inconclusive check preserves UNKNOWN and stops or narrows the
+dependent action; independent authorized work may continue. Gate PASS and ACTIVE
+record process, not comprehension. Revisit when contradictory evidence appears.
+
 PHASE 2 — WORK
 
 Perform the bounded task under the accepted, committed contracts:

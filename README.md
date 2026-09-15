@@ -34,9 +34,10 @@ Rylee's preferred experience is a first-class profile (`profiles/`), not a hidde
 
 ```text
 schema/            contract, adoption, attestation, capability, status, question, project, participant, references schemas
-contracts/         65 canonical contracts across 8 layers
+contracts/         66 canonical contracts across 8 layers
 docs/             QUICK_REFERENCE.md (non-normative reminder card),
-                  principles/ (non-normative philosophy, e.g. trusted-translation)
+                  principles/ (non-normative philosophy, e.g. trusted-translation),
+                  roles/ (non-normative role docs, e.g. trusted-steward)
 profiles/          baseline + example personal profiles
 tools/contractctl  the CLI (stdlib-only Python)
 tests/             full library test suite
@@ -50,6 +51,10 @@ contracts.lock.json pinned id/version/sha256/receipt for every contract
 Non-normative mental model behind the contracts. **Inspirational, not authoritative** — where a metaphor conflicts with a contract, the contract wins.
 
 - [`docs/principles/trusted-translation.md`](docs/principles/trusted-translation.md) — *Different languages. Different systems. Shared understanding. Earned trust.* Why Play-Nice favors understanding across boundaries rather than forced uniformity.
+- [`docs/roles/trusted-steward.md`](docs/roles/trusted-steward.md) — *A Trusted Steward carries continuity without claiming ownership.* The executive-assistant / thought-offloading role, composed entirely from existing contracts (Hermod/VEFR is one implementation).
+- [`docs/PLAY-NICE-OPUS.md`](docs/PLAY-NICE-OPUS.md) — *The long-form why.* Non-normative philosophy, the Small Model Olympics case study, and the closing promises; a one-page [TLDR](docs/PLAY-NICE-OPUS-TLDR.md). Inspirational, not authoritative.
+
+- [`docs/participant-notes/`](docs/participant-notes/) — *Letters back from participants who worked under Play-Nice.* Non-normative experience reports from agents and operators who used these contracts. New entries are welcome; no special mechanism required.
 
 Each contract is dual-use: PURPOSE, NORMATIVE RULES, RATIONALE, HUMAN EXAMPLES, MACHINE IMPLICATIONS, GOOD EXAMPLES, ANTI-PATTERNS, ACCEPTANCE CHECKS — readable by a person, consumable by an agent.
 
@@ -101,6 +106,16 @@ corrupts canonical project truth. See the
 
 `ask-for-help` (core) encodes: **it is nice, polite, kind, and smart to ask.** Know → act; can safely discover → discover; another participant can answer cheaply → ask; high-risk/ambiguous → ask or escalate; unknown and nobody can answer → preserve UNKNOWN. Never guess to keep moving. Questions are resumable state (`play-nice/question-v1`), answers become provenance, and answers are never authorization. `WAITING_FOR_HELP` is a successful stop state.
 
+## Assume UNKNOWN before assuming understood
+
+[Assume UNKNOWN](contracts/core/ASSUME_UNKNOWN.md) requires a cheap, relevant
+disconfirmation check before consequential execution. Separate authority, evidence,
+interpretation, and decision; preserve UNKNOWN when understanding is insufficient.
+See the [reported Workshop case](docs/research/workshop-v3-v1-shell.md) and
+[adoption decision](docs/decisions/2026-09-13-assume-unknown.md). Existing consumers
+add `assume-unknown` to `always`, pin the reviewed revision, resolve and re-attest;
+updating the library alone does not force new core contracts into old manifests.
+
 ## The contract gate (session prefix)
 
 Substantial work starts with the complete preflight:
@@ -125,7 +140,7 @@ Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR =
 python3 -m pytest tests/ -q
 ```
 
-99 tests covering: library invariants, resolution, attestation/commitment machinery, receipt-rotation enforcement, ask-for-help + question schema, the project-context/participant-pack framework, participation-and-contribution (right-sized participation, honest refusal), mutual-contribution (the agreement loop, authority separation), and collaborative-good-faith (critique toward repair, safe uncertainty, foreman disagreement integration, no moderation machinery).
+The full suite covers: library invariants, resolution, attestation/commitment machinery, receipt-rotation enforcement, ask-for-help + question schema, the project-context/participant-pack framework, participation-and-contribution (right-sized participation, honest refusal), mutual-contribution (the agreement loop, authority separation), and collaborative-good-faith (critique toward repair, safe uncertainty, foreman disagreement integration, no moderation machinery).
 
 ## Project context + participant packs
 
