@@ -10,6 +10,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 
 | ID | Title | Ver | Status | Purpose |
 |---|---|---|---|---|
+| `assume-unknown` | Assume UNKNOWN — Epistemic Humility Before Execution | 1.0.0 | canonical | Challenge unproven interpretations before execution; authority and evidence do not guarantee understanding |
 | `truth-and-evidence` | Truth and Evidence | 1.0.0 | canonical | Honesty cheaper than fabrication; UNKNOWN is valid; evidence over reports |
 | `stable-truth-replaceable-machinery` | Stable Truth, Replaceable Machinery | 1.0.0 | canonical | Truth survives tool replacement; derived ≠ canonical |
 | `provenance-and-audit` | Provenance and Audit | 1.0.0 | canonical | Who/what changed it, when, why; generated labeled; history recoverable |
@@ -21,7 +22,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | `mutual-contribution` | Mutual Contribution by Agreement | 1.1.0 | canonical | Contributions are offered and agreed, not imposed; both sides state constraints; DECLINE is not disobedience |
 | `participation-and-contribution` | Participation and Contribution | 1.2.0 | canonical | Right-sized participation: smallest suitable participant, bounded contributions, no model castes |
 | `project-context-and-participant-packs` | Project Context and Participant Packs | 1.2.0 | canonical | Durable project context + optional participant packs; contribution-fit guidance routes offers |
-| `play-nice-together` | Play Nice Together | 1.5.0 | canonical | The constitution: everything plays nicely with everything else |
+| `play-nice-together` | Play Nice Together | 1.6.0 | canonical | The constitution: everything plays nicely with everything else |
 
 ## Human (experience floor)
 

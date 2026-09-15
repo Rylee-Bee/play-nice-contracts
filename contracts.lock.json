@@ -1,7 +1,7 @@
 {
   "schema": "play-nice/lock-v1",
   "generated_from": {
-    "contract_count": 65
+    "contract_count": 66
   },
   "contracts": [
     {
@@ -34,6 +34,14 @@
       "path": "contracts/core/ASK_FOR_HELP.md",
       "sha256": "d4c46b8f83a03ff8213d425aad0a6bb04d547a06439aac5086fd393bf1e2cd6e",
       "receipt": "velvet-orchard-wren",
+      "status": "canonical"
+    },
+    {
+      "id": "assume-unknown",
+      "version": "1.0.0",
+      "path": "contracts/core/ASSUME_UNKNOWN.md",
+      "sha256": "11e3c9abecc63c6a3280ee6770449d00f1be90717fa4aaccda34ca93c7b2c8cd",
+      "receipt": "lantern-thicket-opal",
       "status": "canonical"
     },
     {
@@ -342,10 +350,10 @@
     },
     {
       "id": "play-nice-together",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "path": "contracts/core/PLAY_NICE_TOGETHER.md",
-      "sha256": "aaafbaee9f16b94128cff2b68dfad0462a29e0f8cbd87ad5fc2b5d8ef49220b3",
-      "receipt": "gatehouse-meadow-juniper",
+      "sha256": "d8ccf68bd963848875c596cd9a10cdf8b0699deccd4a9200f001097ee1e4e958",
+      "receipt": "compass-fern-harbor",
       "status": "canonical"
     },
     {
