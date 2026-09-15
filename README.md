@@ -51,6 +51,7 @@ contracts.lock.json pinned id/version/sha256/receipt for every contract
 Non-normative mental model behind the contracts. **Inspirational, not authoritative** — where a metaphor conflicts with a contract, the contract wins.
 
 - [`docs/principles/trusted-translation.md`](docs/principles/trusted-translation.md) — *Different languages. Different systems. Shared understanding. Earned trust.* Why Play-Nice favors understanding across boundaries rather than forced uniformity.
+- [`docs/principles/world-with-manners.md`](docs/principles/world-with-manners.md) — *The world knows how loudly to exist.* The Project Worlds Workshop v3 story: sixteen viable explorations, convergence without flattening, respectful attention, real provenance and a deliberate handoff and STOP.
 - [`docs/roles/trusted-steward.md`](docs/roles/trusted-steward.md) — *A Trusted Steward carries continuity without claiming ownership.* The executive-assistant / thought-offloading role, composed entirely from existing contracts (Hermod/VEFR is one implementation).
 - [`docs/PLAY-NICE-OPUS.md`](docs/PLAY-NICE-OPUS.md) — *The long-form why.* Non-normative philosophy, the Small Model Olympics case study, and the closing promises; a one-page [TLDR](docs/PLAY-NICE-OPUS-TLDR.md). Inspirational, not authoritative.
 
