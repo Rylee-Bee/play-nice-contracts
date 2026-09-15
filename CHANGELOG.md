@@ -2,6 +2,19 @@
 
 All notable changes to the play-nice-contracts library. Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR = incompatible behavior change. Meaningful contract changes (MINOR/MAJOR) rotate the hidden receipt — enforced mechanically by `contractctl validate` via Git history.
 
+## [0.7.0] — 2026-09-13
+
+### Added
+- `assume-unknown` (core, 1.0.0): epistemic claim classification, separate authority/evidence/interpretation/decision, and consequence-scaled disconfirmation before dependent execution. Honest uncertainty and practical recovery are successful outcomes.
+- Generalized, attributed Workshop v3 / V1-shell case study and adoption decision; no claim of independently verified runtime causality.
+
+### Changed
+- `play-nice-together` 1.5.0 -> 1.6.0, new founding rule; receipt rotated from gatehouse-meadow-juniper to compass-fern-harbor.
+- All adoption examples include `assume-unknown` in `always`; registry, quick reference, session protocol, and lock updated. Consumers intentionally update their pins and re-attest; no schema or CLI semantics changed.
+- CI emits the required `library` check name, matching the live branch protection context.
+- Lock generation uses portable forward-slash paths and LF bytes on Windows and Linux.
+- Regression coverage checks adoption, onboarding, omitted impacts, stale bundles, and public provenance boundaries.
+
 ## [0.6.0] — 2026-09-12
 
 Be useful without being cruel. (Foundational principle; bounded pass. Internal project shorthand: the Butthole Clause — the canonical contract keeps a professional name.)

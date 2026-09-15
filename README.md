@@ -34,7 +34,7 @@ Rylee's preferred experience is a first-class profile (`profiles/`), not a hidde
 
 ```text
 schema/            contract, adoption, attestation, capability, status, question, project, participant, references schemas
-contracts/         65 canonical contracts across 8 layers
+contracts/         66 canonical contracts across 8 layers
 docs/             QUICK_REFERENCE.md (non-normative reminder card),
                   principles/ (non-normative philosophy, e.g. trusted-translation),
                   roles/ (non-normative role docs, e.g. trusted-steward)
@@ -106,6 +106,16 @@ corrupts canonical project truth. See the
 
 `ask-for-help` (core) encodes: **it is nice, polite, kind, and smart to ask.** Know → act; can safely discover → discover; another participant can answer cheaply → ask; high-risk/ambiguous → ask or escalate; unknown and nobody can answer → preserve UNKNOWN. Never guess to keep moving. Questions are resumable state (`play-nice/question-v1`), answers become provenance, and answers are never authorization. `WAITING_FOR_HELP` is a successful stop state.
 
+## Assume UNKNOWN before assuming understood
+
+[Assume UNKNOWN](contracts/core/ASSUME_UNKNOWN.md) requires a cheap, relevant
+disconfirmation check before consequential execution. Separate authority, evidence,
+interpretation, and decision; preserve UNKNOWN when understanding is insufficient.
+See the [reported Workshop case](docs/research/workshop-v3-v1-shell.md) and
+[adoption decision](docs/decisions/2026-09-13-assume-unknown.md). Existing consumers
+add `assume-unknown` to `always`, pin the reviewed revision, resolve and re-attest;
+updating the library alone does not force new core contracts into old manifests.
+
 ## The contract gate (session prefix)
 
 Substantial work starts with the complete preflight:
@@ -130,7 +140,7 @@ Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR =
 python3 -m pytest tests/ -q
 ```
 
-99 tests covering: library invariants, resolution, attestation/commitment machinery, receipt-rotation enforcement, ask-for-help + question schema, the project-context/participant-pack framework, participation-and-contribution (right-sized participation, honest refusal), mutual-contribution (the agreement loop, authority separation), and collaborative-good-faith (critique toward repair, safe uncertainty, foreman disagreement integration, no moderation machinery).
+The full suite covers: library invariants, resolution, attestation/commitment machinery, receipt-rotation enforcement, ask-for-help + question schema, the project-context/participant-pack framework, participation-and-contribution (right-sized participation, honest refusal), mutual-contribution (the agreement loop, authority separation), and collaborative-good-faith (critique toward repair, safe uncertainty, foreman disagreement integration, no moderation machinery).
 
 ## Project context + participant packs
 
