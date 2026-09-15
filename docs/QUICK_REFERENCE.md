@@ -29,6 +29,14 @@
    [Collaborative Good Faith](../contracts/core/COLLABORATIVE_GOOD_FAITH.md)
 10. Keep inspiration non-normative; canonical contracts remain authoritative
 
+## Before consequential execution
+
+[Assume UNKNOWN](../contracts/core/ASSUME_UNKNOWN.md): classify OBSERVED / INFERRED /
+ASSUMED / UNKNOWN; separate AUTHORITY / EVIDENCE / INTERPRETATION / DECISION. Name
+the highest-impact unproven belief, specify what would contradict it, and perform
+the cheapest reasonable check before the dependent action. Record result, limits,
+reservations, decision, and recovery. An inconclusive check leaves UNKNOWN.
+
 ## Evidence grades ([Testing and Verification](../contracts/engineering/TESTING_AND_VERIFICATION.md))
 
 ```text

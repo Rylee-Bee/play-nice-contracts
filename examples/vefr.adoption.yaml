@@ -10,6 +10,7 @@ source:
   revision: 0000000   # pin to the adopted commit SHA
 
 always:
+  - assume-unknown
   - ask-for-help
   - truth-and-evidence
   - provenance-and-audit

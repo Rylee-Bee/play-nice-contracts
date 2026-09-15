@@ -1,7 +1,7 @@
 ---
 contract_id: play-nice-together
 title: Play Nice Together
-version: 1.5.0
+version: 1.6.0
 status: canonical
 layer: core
 applies: [architecture, everything]
@@ -9,7 +9,7 @@ triggers: [always, new-interface, new-subsystem, design-review]
 rationale: The constitution of this library: everything should play nicely with everything else — humans, bots, services, APIs, CLIs, UIs, assistive technologies, and future tools. A good system does not demand the world adapt to it.
 ---
 
-<!-- contract-receipt: gatehouse-meadow-juniper -->
+<!-- contract-receipt: compass-fern-harbor -->
 
 # Play Nice Together
 
@@ -35,6 +35,8 @@ A good system should be understandable by a human, operable by automation, inspe
 10. Making room for each participant to contribute according to its real capabilities is part of playing nicely: importance is not size, cost, or prestige, every bounded contribution is welcome, and authority comes from role, evidence, and verification — never from the price of the participant (see Participation and Contribution).
 11. Good cooperation is negotiated at the boundary: offer useful work, let each participant state its capabilities and constraints, and agree on a contribution that is safe, usable, and worthwhile for both sides. Do not optimize for the maximum contribution a participant can be made to provide; optimize for the contribution both sides can successfully sustain (see Mutual Contribution by Agreement).
 12. Help make collaboration worth continuing. Be candid without being needlessly cruel, share useful ideas generously, preserve meaningful credit, and turn disagreement toward repair rather than status or humiliation — the same truth, communicated with less harm, leaves the next participant willing to keep working with you (see Collaborative Good Faith).
+
+13. Assume UNKNOWN before assuming understood. Before consequential execution, challenge the highest-impact unproven belief with the cheapest reasonable disconfirmation check; distinguish authority, evidence, interpretation, and decision. A correct source or green gate does not guarantee understanding. Preserve reservations and a recoverable path (see [Assume UNKNOWN](ASSUME_UNKNOWN.md)).
 
 ## RATIONALE
 

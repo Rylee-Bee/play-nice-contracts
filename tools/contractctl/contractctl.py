@@ -224,7 +224,7 @@ def parse_contract_file(path: Path) -> dict:
     receipts = RECEIPT_RE.findall(text)
     return {
         "path": path,
-        "rel_path": str(path.relative_to(REPO_ROOT)),
+        "rel_path": path.relative_to(REPO_ROOT).as_posix(),
         "front_matter": fm,
         "receipts": receipts,  # all receipt comments in the file
         "text": text,
@@ -406,7 +406,7 @@ def build_lock(lib: list[dict] | None = None) -> dict:
 
 def write_lock() -> dict:
     lock = build_lock()
-    LOCKFILE.write_text(json.dumps(lock, indent=2, sort_keys=False) + "\n", encoding="utf-8")
+    LOCKFILE.write_text(json.dumps(lock, indent=2, sort_keys=False) + "\n", encoding="utf-8", newline="\n")
     return lock
 
 
