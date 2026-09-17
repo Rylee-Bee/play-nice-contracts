@@ -1,21 +1,21 @@
 ---
 contract_id: contract-attestation
 title: Contract Attestation
-version: 1.1.0
+version: 1.2.0
 status: canonical
 layer: agents
 applies: [agents, contracts, workflows]
 triggers: [always-before-mutating-work, contract-gate]
-rationale: Reading a contract is not applying it, and knowing one applies is not using it. The full gate proves retrieval (receipt), application (task-impact), and finally operating intent (commitment) — three checkable stages before mutating work begins.
+rationale: Reading a contract is not applying it, and knowing one applies is not using it. The full gate proves retrieval (receipt), application (task-impact), and finally operating intent (commitment) — three checkable stages before mutating work begins — and, when policy requires current contracts, that the authoritative contract source itself is current (remote freshness).
 ---
 
-<!-- contract-receipt: kindle-cedar-beacon -->
+<!-- contract-receipt: quartz-rill-ember -->
 
 # Contract Attestation
 
 ## Purpose
 
-Force contracts to be applied, not merely retrieved. Before mutating work: resolve the applicable set, read each from canonical source, verify receipts/hashes, and acknowledge each contract's impact on this task.
+Force contracts to be applied, not merely retrieved. Before mutating work: establish the freshness of the contract source itself (when policy requires it), then resolve the applicable set, read each from canonical source, verify receipts/hashes, and acknowledge each contract's impact on this task.
 
 ## NORMATIVE RULES
 
@@ -23,6 +23,10 @@ Force contracts to be applied, not merely retrieved. Before mutating work: resol
 
 1. Substantial mutating work follows the complete preflight:
    ```text
+   VERIFY AUTHORITATIVE REMOTE REVISION (when freshness policy requires it)
+             ↓
+   REMOTE FRESHNESS: CURRENT
+             ↓
    RESOLVE APPLICABLE CONTRACTS
              ↓
    READ CANONICAL SOURCES
@@ -126,14 +130,19 @@ Force contracts to be applied, not merely retrieved. Before mutating work: resol
     - unresolved material conflicts prevent the ACTIVE state;
     - the commitment records the exact resolved bundle (receipt and SHA-256 of the bundle material) and the task;
     - a stale bundle (library changed) invalidates the commitment;
+    - when the adoption configures `freshness.policy: require-current`, the commitment also succeeds only after a fresh `REMOTE FRESHNESS: CURRENT` verdict from the configured authoritative remote; `UNKNOWN` or `UNREACHABLE` yields `CONTRACT COMMITMENT: INACTIVE`, and `BEHIND` or `DIVERGED` yields `CONTRACT COMMITMENT: STALE`;
     - changing the task so that additional contracts trigger requires re-resolution and re-commitment;
     - changing applicable contract versions requires re-attestation and re-commitment.
 12. The commitment is stored as a session artifact (local state), containing no secrets:
     ```json
     {"contract_gate": "PASS", "commitment": "ACTIVE",
      "bundle_sha256": "...", "task": "...",
-     "contracts": ["<id>@<version>", ...]}
+     "contracts": ["<id>@<version>", ...],
+     "source": {"repository": "...", "ref": "refs/heads/main", "revision": "<adopted sha>"},
+     "freshness": {"status": "CURRENT", "remote_revision": "<sha>",
+                   "checked_at": "<iso8601>", "policy": "require-current"}}
     ```
+    The timestamp is evidence metadata, not proof by itself; the recorded authoritative remote revision is the load-bearing part.
 
 ### Worker inheritance (propagation tree)
 
@@ -151,13 +160,36 @@ Force contracts to be applied, not merely retrieved. Before mutating work: resol
         ↓
     TOOLS / APIs / SERVICES
     ```
-14. Worker task packets include: `INHERITED CONTRACT BUNDLE: <bundle hash>` and `PARENT CONTRACT COMMITMENT: ACTIVE`. The worker: loads the inherited applicable contracts; resolves additional contracts triggered by its narrower work; attests; activates its own commitment before mutation.
+14. Worker task packets include: `INHERITED CONTRACT BUNDLE: <bundle hash>`, `PLAY_NICE_SOURCE_REVISION: <source revision the parent resolved against>`, and `PARENT CONTRACT COMMITMENT: ACTIVE`. The worker: loads the inherited applicable contracts; resolves additional contracts triggered by its narrower work; attests; activates its own commitment before mutation. A worker commits only against a source revision no older/weaker than its parent's.
 15. A worker may discover additional applicable contracts and may strengthen constraints. A worker may NOT silently weaken or omit the parent's applicable constraints.
 16. The reverse path remains inspectable through provenance: service response → tool action → worker result → orchestrator verification → human-readable result. Contracts govern both directions.
 
 ### Conflict behavior under commitment
 
 17. If an agent cannot satisfy two applicable contracts simultaneously: do not fake compliance. Return `CONTRACT GATE: BLOCKED` / `CONTRACT COMMITMENT: INACTIVE`, and report the conflicting contracts, the exact requirements in tension, why both cannot currently be satisfied, the safest reversible options, and whether owner input is needed. An honest blocked state is compliant behavior.
+
+### Remote freshness (before the gate when policy requires current contracts)
+
+21. An adoption may configure a freshness policy. Under `freshness.policy: require-current`, substantial mutating work first establishes the CURRENT revision of the configured authoritative Play Nice source, using a deterministic check (the authoritative remote itself, not memory). None of these is proof of remote freshness:
+    - a local checkout;
+    - the adoption pin (`source.revision` alone pins what was reviewed, not what is current);
+    - a previous session or a recorded commitment;
+    - cached or summarized contract content;
+    - a natural-language claim such as "I checked GitHub".
+    The remote must actually be checked, by a deterministic operation (`git ls-remote` of the configured authoritative ref), before the resolve/read/attest stages begin.
+22. The freshness state vocabulary is exact:
+    ```text
+    CURRENT      remote authoritative ref equals the source in use and the adopted pin
+    BEHIND       the remote provably fast-forwards ahead of the adopted revision
+    DIVERGED     the remote differs and no fast-forward relationship is proven
+    UNREACHABLE  the remote could not be queried
+    UNKNOWN      the check could not be established (no pin, missing ref, malformed config)
+    ```
+    A failure to check produces `UNKNOWN`. No reassuring state may be invented; network failure is never assumed-current.
+23. When policy requires current contracts, `REMOTE FRESHNESS` gates `CONTRACT COMMITMENT`: only `CURRENT` permits `ACTIVE`; `UNKNOWN` or `UNREACHABLE` keeps `INACTIVE` (fail closed); `BEHIND` or `DIVERGED` yields `STALE` and requires `fetch/update → resolve → read → attest → commit` again. Read-only inspection may happen before the gate when needed to determine what applies; mutating work may not.
+24. If the authoritative Play Nice revision changes after a commitment, the commitment becomes stale: it cannot be trusted `ACTIVE` and requires re-resolution, re-attestation, and re-commitment against the (re-reviewed) revision.
+25. Checking for the newest revision is not the same as adopting it. `update: review` blocks mutation pending explicit review and adoption; `update: automatic` may refresh the pin, but still forces a fresh resolve/read/attest/commit cycle. Newer contracts are never silently adopted — every policy keeps adoption explicit.
+26. Propagation: controller packets record the source revision (`PLAY_NICE_SOURCE_REVISION`). A sub-controller may strengthen freshness requirements; it must not silently weaken or bypass them, and it must still attest normally when its task triggers additional contracts.
 
 ### Re-commitment
 
@@ -176,6 +208,7 @@ Agents would summarize contracts from memory, read the index and skip the files,
 ## MACHINE / IMPLEMENTATION IMPLICATIONS
 
 - `contractctl attest` produces the attestation block; `verify-attestation` re-checks receipts/hashes against the library.
+- `contractctl freshness` performs the deterministic remote check (`git ls-remote`); `sync` refreshes the adoption pin per the update policy; `commit` gates on it under `require-current`.
 - Lockfiles record id/version/path/SHA-256/receipt/status; bundle receipts derive from those.
 - Conflict state is representable and blocks by default (fail closed).
 
@@ -213,6 +246,10 @@ CONTRACT COMMITMENT: ACTIVE
 - "Contracts read and understood" without receipts/hashes/impacts.
 - Attesting from memory while the file changed.
 - Treating gate PASS as authorization to do anything.
+- Treating freshness PASS as authorization for unrelated mutations.
+- Claiming current contracts from a local checkout, an old pin, a prior session, or "I checked GitHub" instead of a checked remote revision.
+- Turning UNREACHABLE/UNKNOWN into assumed-current.
+- Silently adopting newer remote contracts when the manifest says `update: review`.
 - Silently dropping a contract because it conflicted.
 - Reusing yesterday's attestation for today's changed library.
 - Printing the commitment and immediately ignoring it; commitment without a changed way of working is a defect.
@@ -228,3 +265,6 @@ CONTRACT COMMITMENT: ACTIVE
 - Is BLOCKED/INACTIVE representable and honored as compliant behavior?
 - Does a worker packet carry the inherited bundle and parent commitment?
 - Does the commitment state fail closed when the bundle goes stale or the task's scope changes?
+- Under `freshness.policy: require-current`: was the authoritative remote actually checked (deterministically) before attestation, and does UNKNOWN/UNREACHABLE/BEHIND/DIVERGED all block ACTIVE?
+- Does a changed authoritative remote revision invalidate existing commitments until re-resolved, re-attested, and re-committed?
+- Does the worker packet carry the source revision, and cannot weaken the parent's freshness requirements?

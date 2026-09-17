@@ -12,6 +12,13 @@ agent, any human, any tooling.
 ```text
 PHASE 0 — CONTRACT GATE (complete order)
 
+VERIFY AUTHORITATIVE REMOTE REVISION   (when freshness.policy: require-current)
+        (contractctl freshness --manifest .contracts/adoption.yaml
+         — deterministic git ls-remote; UNKNOWN/UNREACHABLE/BEHIND/DIVERGED
+           block mutation, fail closed)
+                ↓
+REMOTE FRESHNESS: CURRENT
+                ↓
 RESOLVE APPLICABLE CONTRACTS
         (contractctl resolve --manifest .contracts/adoption.yaml --task "<task>")
                 ↓
@@ -84,15 +91,22 @@ not failure. Never guess to keep moving.
 WORKER INHERITANCE: a foreman that accepted the contracts cannot dispatch a
 worker outside them. Worker packets carry:
   INHERITED CONTRACT BUNDLE: <bundle hash>
+  PLAY_NICE_SOURCE_REVISION: <source revision the parent resolved against>
   PARENT CONTRACT COMMITMENT: ACTIVE
 The worker loads inherited contracts, resolves task-specific additions,
 attests, and activates its own worker commitment before mutation. Workers
-may strengthen constraints; they may NOT silently weaken or omit the
-parent's applicable constraints.
+may strengthen constraints (including freshness requirements); they may NOT
+silently weaken or omit the parent's applicable constraints or resolve a
+weaker/older source revision than the parent's.
 
 RE-COMMITMENT: if the task's scope materially changes (new surfaces,
 sensitive data, external providers, design/UI work, different repo or
-authority), resolve again — do not rely on the original commitment.
+authority), or the authoritative Play Nice revision changes
+(freshness.policy: require-current: `contractctl freshness` re-verifies;
+BEHIND/DIVERGED → `contractctl sync` per update policy), resolve again —
+do not rely on the original commitment. Checking for the newest revision is
+not the same as silently adopting it: update: review requires explicit
+review before re-commitment.
 
 PHASE 1 — CURRENT TRUTH
 
