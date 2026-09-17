@@ -20,7 +20,7 @@ Let people finish. Show real progress toward real completion, and make "done" an
 ## NORMATIVE RULES
 
 1. Reward real accomplishment: unresolved→resolved counts falling, degraded→repaired→verified transitions, setup incomplete→complete. Progress is movement toward a defined finish, not activity volume.
-2. Avoid: engagement streaks, arbitrary points, guilt, artificial urgency, and infinite work queues masquerading as productivity.
+2. Avoid: engagement streaks, arbitrary points, guilt, artificial urgency, and infinite work queues masquerading as productivity. Human attention is not an engagement metric. Labels such as "Needs you" must mean that meaningful human judgment or action is actually required. A healthy result may be "No action needed" (see Human Reliability).
 3. Completion is explicit: when acceptance criteria are met, the task is done and said to be done. Done beats additionally awesome; new good ideas become backlog items unless they fix a real defect.
 4. A finished task does not reopen silently. Reopening is a visible decision, or new ideas park on a roadmap.
 5. The system allows the user to finish: there exists a state where nothing needs the person, and reaching it is success, not abandonment.

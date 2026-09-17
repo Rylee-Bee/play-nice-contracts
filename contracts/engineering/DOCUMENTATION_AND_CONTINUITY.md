@@ -1,7 +1,7 @@
 ---
 contract_id: documentation-and-continuity
 title: Documentation and Continuity
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: engineering
 applies: [docs, engineering, agents]
@@ -9,7 +9,7 @@ triggers: [documentation, handoffs, always]
 rationale: Documentation is an interface for humans, agents, maintainers, and future sessions. Nobody should need transcript archaeology to know where things stand.
 ---
 
-<!-- contract-receipt: prairie-clover-sail -->
+<!-- contract-receipt: oasis-opal-amber -->
 
 # Documentation and Continuity
 
@@ -27,10 +27,12 @@ Make documentation an interface: canonical locations, explicit ownership, curren
 6. Docs change with the code they describe: commands, contracts, and behaviors stay in sync in the same change that alters them (drift is a defect).
 7. Transcript archaeology is an anti-pattern: if the answer to "why is this like this?" lives only in an old conversation, it belongs in a doc, ADR, or provenance record now.
 8. Every project maintains a minimal continuity surface: what this is, how to verify, where truth lives, how to resume.
+9. Documentation requires a brevity pass. Before human-facing documentation is complete, make one explicit pass to remove: repeated explanations, throat-clearing introductions, background that does not help the current task, formal wording where ordinary wording works, paragraphs that could be one sentence, sections that do not improve navigation, and explanations added merely because the author knows the detail. Prefer this order: what this is, what the person needs to do, what they need to know to do it safely, deeper explanation and implementation detail (see Copy and Language).
+10. Documentation must use ordinary words (see Copy and Language rule 9). When two versions mean the same thing, prefer the shorter, more familiar, easier-to-scan wording. Do not add words to sound formal, complete, or authoritative.
 
 ## RATIONALE
 
-The ecosystem's most expensive recurring cost was re-derivation: new sessions (human or agent) rediscovering what previous sessions knew because it lived in scrollback. Canonical docs + handoff formats + provenance convert that from a rite of passage into a lookup.
+The ecosystem's most expensive recurring cost was re-derivation: new sessions (human or agent) rediscovering what previous sessions knew because it lived in scrollback. Canonical docs + handoff formats + provenance convert that from a rite of passage into a lookup. The brevity pass ensures that documentation remains an interface rather than a knowledge dump: the reader should find what they need before they find what the author knew.
 
 ## HUMAN EXAMPLES
 

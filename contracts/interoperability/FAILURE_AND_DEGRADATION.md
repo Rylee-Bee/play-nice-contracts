@@ -1,7 +1,7 @@
 ---
 contract_id: failure-and-degradation
 title: Failure and Degradation
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: interoperability
 applies: [api, ui, operations, agents]
@@ -9,7 +9,7 @@ triggers: [error-handling, always, api-design]
 rationale: Optional failure must not destroy unrelated capabilities, and errors must tell the truth: what failed, why, what still works, what's safe, what's next. Shared state vocabulary makes degradation legible everywhere.
 ---
 
-<!-- contract-receipt: nectar-ledger-basalt -->
+<!-- contract-receipt: sigma-hazel-cedar -->
 
 # Failure and Degradation
 
@@ -24,13 +24,15 @@ Make failure honest, contained, and useful. Systems degrade legibly instead of f
 3. Optional failure must not destroy unrelated capabilities. One provider's outage degrades its capability; it does not crash the dashboard, corrupt state, or fail sibling features.
 4. Errors answer:
    ```text
-   WHAT failed?
-   WHY, if known?
+   WHAT happened?
+   WHAT changed or did not change?
    WHAT still works?
    IS anything unsafe?
    CAN it be retried?
    WHAT is the next reasonable action?
+   WHERE is technical detail available?
    ```
+   Errors support recovery, not blame. Never blame the person. Do not expose implementation errors as the primary human message when a useful translation exists (see Copy and Language). Do not promise unchanged state or recoverability unless verified.
 5. Machine interfaces return stable error identifiers (`provider_unreachable`, `not_authorized`, `version_mismatch`); human interfaces translate them into useful language (see Copy and Language). Never reduce a meaningful error to "Something went wrong."
 6. Partial success is representable: a multi-item operation reports per-item outcomes, not all-or-nothing when both are possible and honesty demands per-item truth.
 7. Degrading systems stay inspectable: the degraded state, its reason, and its last verified point are visible (Level 2 detail), not guessed.
