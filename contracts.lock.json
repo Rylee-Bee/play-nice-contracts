@@ -110,10 +110,10 @@
     },
     {
       "id": "contract-attestation",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "path": "contracts/agents/CONTRACT_ATTESTATION.md",
-      "sha256": "47bc2e5fadb73d5ca3311b9e72888489f23ee0e5b05a3615c08eaba474a8c107",
-      "receipt": "kindle-cedar-beacon",
+      "sha256": "39d0630c38cd78d482cbd8f98f434accca885fdbc3f92d028dc5db15bf05a96e",
+      "receipt": "quartz-rill-ember",
       "status": "canonical"
     },
     {

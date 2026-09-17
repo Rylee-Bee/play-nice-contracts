@@ -12,6 +12,8 @@ Subcommands:
   attest                produce a CONTRACT_ATTESTATION v1 block
   verify-attestation    re-verify an attestation against the library
   adopt                 validate a project adoption manifest
+  freshness             verify the authoritative remote revision (fail closed)
+  sync                  refresh the adoption pin to the remote revision
   status                one-line library health summary
 
 Run with --help or <subcommand> --help for details.
@@ -24,7 +26,9 @@ import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -41,6 +45,7 @@ RECEIPT_RE = re.compile(r"<!--\s*contract-receipt:\s*([a-z]+(?:-[a-z]+){2})\s*--
 CONTRACT_ID_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 SEMVER_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
+GITSHA_RE = re.compile(r"^[a-f0-9]{7,64}$")
 LAYER_DIRS = {
     "core": "core",
     "human": "human",
@@ -64,6 +69,7 @@ class CTError(Exception):
 # ---------------------------------------------------------------- yaml subset
 # Minimal YAML front-matter parser for the shapes this library actually uses.
 # Supports: nested maps, lists of scalars, one level of list-of-maps, scalars.
+
 
 def _parse_scalar(s: str):
     s = s.strip()
@@ -142,7 +148,9 @@ def _yaml_block_to_dict(lines: list[str], indent_stack=None) -> dict:
         # list or map child? A block is a list only if its first
         # non-empty line is a dash item; otherwise it is a map whose
         # values may themselves be lists (map-of-lists).
-        first = next((b for b in block if b.strip() and not b.lstrip().startswith("#")), "")
+        first = next(
+            (b for b in block if b.strip() and not b.lstrip().startswith("#")), ""
+        )
         if re.match(r"^\s*-\s", first):
             out[key] = _yaml_list(block)
         else:
@@ -189,7 +197,11 @@ def _yaml_list(block: list[str]):
             item_lines.append(nxt)
             j += 1
         # parse the item as a mini-document starting at the key
-        items.append(_yaml_block_to_dict([" " * item_indent + l if k else l for k, l in enumerate(item_lines)]))
+        items.append(
+            _yaml_block_to_dict(
+                [" " * item_indent + l if k else l for k, l in enumerate(item_lines)]
+            )
+        )
         i = j
     return items
 
@@ -205,6 +217,7 @@ def parse_front_matter(text: str) -> dict:
 
 
 # ---------------------------------------------------------------- discovery
+
 
 def find_contract_files() -> list[Path]:
     files = []
@@ -241,6 +254,7 @@ def load_library() -> list[dict]:
 
 # ---------------------------------------------------------------- validation
 
+
 def validate_library(lib: list[dict] | None = None) -> list[str]:
     errors: list[str] = []
     if lib is None:
@@ -272,7 +286,9 @@ def validate_library(lib: list[dict] | None = None) -> list[str]:
         if not SEMVER_RE.match(version):
             errors.append(f"{p}: invalid version {version!r}")
         if status not in VALID_STATUS:
-            errors.append(f"{p}: invalid status {status!r} (valid: {sorted(VALID_STATUS)})")
+            errors.append(
+                f"{p}: invalid status {status!r} (valid: {sorted(VALID_STATUS)})"
+            )
         layer = fm.get("layer", "")
         if layer not in LAYER_DIRS:
             errors.append(f"{p}: missing/invalid layer {layer!r}")
@@ -291,13 +307,17 @@ def validate_library(lib: list[dict] | None = None) -> list[str]:
 
         # receipt: exactly one, in canonical form, unique across library
         if len(c["receipts"]) == 0:
-            errors.append(f"{p}: missing receipt comment (<!-- contract-receipt: word-word-word -->)")
+            errors.append(
+                f"{p}: missing receipt comment (<!-- contract-receipt: word-word-word -->)"
+            )
         elif len(c["receipts"]) > 1:
             errors.append(f"{p}: multiple receipt comments found ({c['receipts']})")
         else:
             r = c["receipts"][0]
             if r in seen_receipts:
-                errors.append(f"{p}: duplicate receipt {r} (also in {seen_receipts[r]})")
+                errors.append(
+                    f"{p}: duplicate receipt {r} (also in {seen_receipts[r]})"
+                )
             else:
                 seen_receipts[r] = p
 
@@ -319,10 +339,14 @@ def validate_library(lib: list[dict] | None = None) -> list[str]:
     index_ids = _index_contract_ids()
     for cid in seen_ids:
         if cid not in index_ids:
-            errors.append(f"index drift: contract '{cid}' missing from CONTRACT_INDEX.md")
+            errors.append(
+                f"index drift: contract '{cid}' missing from CONTRACT_INDEX.md"
+            )
     for cid in index_ids:
         if cid not in seen_ids:
-            errors.append(f"index drift: CONTRACT_INDEX.md lists unknown contract '{cid}'")
+            errors.append(
+                f"index drift: CONTRACT_INDEX.md lists unknown contract '{cid}'"
+            )
 
     # Receipt-rotation discipline: meaningful changes must rotate receipts
     errors.extend(check_receipt_rotation(lib))
@@ -358,7 +382,11 @@ def _validate_against_contract_schema(fm: dict, schema: dict, where: str) -> lis
                 errs.append(f"{where}: '{key}' must be a string")
             elif "pattern" in ps and not re.match(ps["pattern"], val):
                 errs.append(f"{where}: '{key}' violates pattern {ps['pattern']}")
-            elif "maxLength" in ps and isinstance(val, str) and len(val) > ps["maxLength"]:
+            elif (
+                "maxLength" in ps
+                and isinstance(val, str)
+                and len(val) > ps["maxLength"]
+            ):
                 errs.append(f"{where}: '{key}' exceeds maxLength {ps['maxLength']}")
         if ps.get("type") == "array":
             if not isinstance(val, list):
@@ -378,6 +406,7 @@ def _index_contract_ids() -> set[str]:
 
 
 # ---------------------------------------------------------------- lockfile
+
 
 def build_lock(lib: list[dict] | None = None) -> dict:
     if lib is None:
@@ -406,7 +435,11 @@ def build_lock(lib: list[dict] | None = None) -> dict:
 
 def write_lock() -> dict:
     lock = build_lock()
-    LOCKFILE.write_text(json.dumps(lock, indent=2, sort_keys=False) + "\n", encoding="utf-8", newline="\n")
+    LOCKFILE.write_text(
+        json.dumps(lock, indent=2, sort_keys=False) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
     return lock
 
 
@@ -426,18 +459,28 @@ def verify_lock(lib: list[dict] | None = None) -> list[str]:
 
     for cid, e in locked.items():
         if cid not in current:
-            errors.append(f"lock drift: locked contract '{cid}' no longer exists in library")
+            errors.append(
+                f"lock drift: locked contract '{cid}' no longer exists in library"
+            )
             continue
         c = current[cid]
         if e["sha256"] != c["sha256"]:
-            errors.append(f"lock drift: '{cid}' content hash changed (was {e['sha256'][:12]}, now {c['sha256'][:12]})")
+            errors.append(
+                f"lock drift: '{cid}' content hash changed (was {e['sha256'][:12]}, now {c['sha256'][:12]})"
+            )
         if str(e["version"]) != str(c["front_matter"]["version"]):
-            errors.append(f"lock drift: '{cid}' version changed ({e['version']} → {c['front_matter']['version']})")
+            errors.append(
+                f"lock drift: '{cid}' version changed ({e['version']} → {c['front_matter']['version']})"
+            )
         if e.get("receipt") != (c["receipts"][0] if c["receipts"] else None):
-            errors.append(f"lock drift: '{cid}' receipt changed ({e.get('receipt')} → {c['receipts'][0] if c['receipts'] else None})")
+            errors.append(
+                f"lock drift: '{cid}' receipt changed ({e.get('receipt')} → {c['receipts'][0] if c['receipts'] else None})"
+            )
     for cid in current:
         if cid not in locked:
-            errors.append(f"lock drift: library contract '{cid}' missing from contracts.lock.json (run lock)")
+            errors.append(
+                f"lock drift: library contract '{cid}' missing from contracts.lock.json (run lock)"
+            )
     return errors
 
 
@@ -448,12 +491,15 @@ def verify_lock(lib: list[dict] | None = None) -> list[str]:
 # a byte-stable identity. The full library is itself representable as a set
 # (all contracts) for lockfile purposes.
 
+
 def _bundle_material(contract_refs: list[str]) -> str:
     """Canonical material: sorted id@version#sha256 refs."""
     return "|".join(sorted(contract_refs))
 
 
-def resolved_refs(lock: dict, contract_ids: list[str] | set[str] | None = None) -> list[str]:
+def resolved_refs(
+    lock: dict, contract_ids: list[str] | set[str] | None = None
+) -> list[str]:
     """id@version#sha256 refs for the given ids (all lockfile entries if None)."""
     ids = set(contract_ids) if contract_ids is not None else None
     refs = []
@@ -486,18 +532,69 @@ def bundle_sha256(lock: dict, contract_ids: list[str] | set[str] | None = None) 
 
 
 _RECEIPT_WORDS = (
-    "amber", "aster", "basalt", "beacon", "bramble", "cedar", "cinder", "clover",
-    "compass", "dell", "dovetail", "driftwood", "echo", "ember", "fable",
-    "fathom", "fern", "gable", "gatehouse", "harbor", "heather", "hollow",
-    "inkstone", "jetty", "juniper", "kindle", "lantern", "latch", "ledger",
-    "loam", "maple", "marble", "meadow", "nectar", "north", "opal", "orchard",
-    "orbit", "prairie", "quartz", "quay", "ridge", "rill", "river", "sable",
-    "sail", "stone", "thicket", "timber", "tundra", "urnfield", "vellum",
-    "velvet", "window", "willow", "wren", "yarrow", "zenith",
+    "amber",
+    "aster",
+    "basalt",
+    "beacon",
+    "bramble",
+    "cedar",
+    "cinder",
+    "clover",
+    "compass",
+    "dell",
+    "dovetail",
+    "driftwood",
+    "echo",
+    "ember",
+    "fable",
+    "fathom",
+    "fern",
+    "gable",
+    "gatehouse",
+    "harbor",
+    "heather",
+    "hollow",
+    "inkstone",
+    "jetty",
+    "juniper",
+    "kindle",
+    "lantern",
+    "latch",
+    "ledger",
+    "loam",
+    "maple",
+    "marble",
+    "meadow",
+    "nectar",
+    "north",
+    "opal",
+    "orchard",
+    "orbit",
+    "prairie",
+    "quartz",
+    "quay",
+    "ridge",
+    "rill",
+    "river",
+    "sable",
+    "sail",
+    "stone",
+    "thicket",
+    "timber",
+    "tundra",
+    "urnfield",
+    "vellum",
+    "velvet",
+    "window",
+    "willow",
+    "wren",
+    "yarrow",
+    "zenith",
 )
 
 
 # ---------------------------------------------------------------- resolution
+
 
 def load_adoption(manifest_path: Path) -> dict:
     if not manifest_path.is_file():
@@ -517,7 +614,9 @@ def load_adoption(manifest_path: Path) -> dict:
     return data
 
 
-def resolve_set(manifest: dict, task: str = "", task_tags: list[str] | None = None) -> dict:
+def resolve_set(
+    manifest: dict, task: str = "", task_tags: list[str] | None = None
+) -> dict:
     """Resolve the smallest applicable contract set.
 
     Selection sources (in order): manifest always; manifest triggers whose
@@ -544,7 +643,11 @@ def resolve_set(manifest: dict, task: str = "", task_tags: list[str] | None = No
         for surface, cids in (manifest.get("triggers", {}) or {}).items():
             surface_l = str(surface).lower()
             # surface matches if the tag was passed explicitly or appears in the task text
-            if surface_l in tags or surface_l in tl or _surface_words_match(surface_l, tl):
+            if (
+                surface_l in tags
+                or surface_l in tl
+                or _surface_words_match(surface_l, tl)
+            ):
                 for cid in cids or []:
                     add(cid, f"trigger:{surface}")
 
@@ -568,7 +671,10 @@ def _surface_words_match(surface: str, task_lower: str) -> bool:
     if words in task_lower:
         return True
     head = words.split()[0]
-    return head in ("external", "agent", "human", "ui", "api", "cli", "web", "integration") and words.split()[-1] in task_lower
+    return (
+        head in ("external", "agent", "human", "ui", "api", "cli", "web", "integration")
+        and words.split()[-1] in task_lower
+    )
 
 
 # ---------------------------------------------------------------- attestation
@@ -615,10 +721,15 @@ I understand that "play nice together" means designing the boundary between
 systems as carefully as the systems themselves."""
 
 
-def make_attestation(manifest_path: Path, task: str, task_impact: dict[str, str],
-                     revision: str = "uncommitted", format_text: str = True,
-                     task_tags: list[str] | None = None,
-                     resolved_ids: set[str] | None = None) -> dict | str:
+def make_attestation(
+    manifest_path: Path,
+    task: str,
+    task_impact: dict[str, str],
+    revision: str = "uncommitted",
+    format_text: str = True,
+    task_tags: list[str] | None = None,
+    resolved_ids: set[str] | None = None,
+) -> dict | str:
     """Attest an exact contract set.
 
     resolved_ids: when provided (e.g. by build_commitment for workers), attest
@@ -631,8 +742,15 @@ def make_attestation(manifest_path: Path, task: str, task_impact: dict[str, str]
         lib_all = {c["front_matter"]["contract_id"]: c for c in load_library()}
         unknown = [cid for cid in resolved_ids if cid not in lib_all]
         if unknown:
-            raise CTError("attestation: unknown contract ids in resolved set: " + ", ".join(sorted(unknown)))
-        res = {"selected": {cid: "inherited-or-resolved" for cid in resolved_ids}, "errors": [], "library_size": len(lib_all)}
+            raise CTError(
+                "attestation: unknown contract ids in resolved set: "
+                + ", ".join(sorted(unknown))
+            )
+        res = {
+            "selected": {cid: "inherited-or-resolved" for cid in resolved_ids},
+            "errors": [],
+            "library_size": len(lib_all),
+        }
     else:
         res = resolve_set(manifest, task, task_tags)
     if res["errors"]:
@@ -643,7 +761,10 @@ def make_attestation(manifest_path: Path, task: str, task_impact: dict[str, str]
     # would pin stale hashes and must not be produced.
     drift = verify_lock(list(lib.values()))
     if drift:
-        raise CTError("attestation blocked — lockfile drift (run contractctl lock):\n  " + "\n  ".join(drift))
+        raise CTError(
+            "attestation blocked — lockfile drift (run contractctl lock):\n  "
+            + "\n  ".join(drift)
+        )
     locked = {e["id"]: e for e in lock["contracts"]}
     selected_ids = set(res["selected"])
     b_receipt = bundle_receipt(lock, selected_ids)
@@ -658,7 +779,9 @@ def make_attestation(manifest_path: Path, task: str, task_impact: dict[str, str]
         conflict = None
         if impact is None:
             status = "CONFLICT"
-            conflict = "missing task-impact acknowledgement (see contract-attestation rule 6)"
+            conflict = (
+                "missing task-impact acknowledgement (see contract-attestation rule 6)"
+            )
             conflicts.append(f"{cid}: {conflict}")
         loaded.append(
             {
@@ -749,7 +872,9 @@ def verify_attestation(att_path: Path, manifest_path: Path | None = None) -> lis
 
     # bundle checks: the bundle is the RESOLVED set (the loaded contracts)
     b = att.get("bundle", {})
-    loaded_ids = {e.get("contract_id") for e in att.get("loaded", []) if e.get("contract_id")}
+    loaded_ids = {
+        e.get("contract_id") for e in att.get("loaded", []) if e.get("contract_id")
+    }
     expected_receipt = bundle_receipt(lock, loaded_ids)
     if b.get("receipt") != expected_receipt:
         errors.append(
@@ -768,13 +893,19 @@ def verify_attestation(att_path: Path, manifest_path: Path | None = None) -> lis
             continue
         c = lib[cid]
         if e.get("receipt") != (c["receipts"][0] if c["receipts"] else None):
-            errors.append(f"attestation: wrong receipt for '{cid}' (got {e.get('receipt')!r}, want {c['receipts'][0]!r})")
+            errors.append(
+                f"attestation: wrong receipt for '{cid}' (got {e.get('receipt')!r}, want {c['receipts'][0]!r})"
+            )
         if e.get("sha256") != c["sha256"]:
             errors.append(f"attestation: wrong hash for '{cid}'")
         if e.get("version") != str(c["front_matter"]["version"]):
-            errors.append(f"attestation: wrong version for '{cid}' ({e.get('version')} vs {c['front_matter']['version']})")
+            errors.append(
+                f"attestation: wrong version for '{cid}' ({e.get('version')} vs {c['front_matter']['version']})"
+            )
         if e.get("status") not in ATTEST_STATUSES:
-            errors.append(f"attestation: invalid status {e.get('status')!r} for '{cid}'")
+            errors.append(
+                f"attestation: invalid status {e.get('status')!r} for '{cid}'"
+            )
         if e.get("status") == "CONFLICT" and not e.get("conflict"):
             errors.append(f"attestation: CONFLICT for '{cid}' without explanation")
 
@@ -787,7 +918,9 @@ def verify_attestation(att_path: Path, manifest_path: Path | None = None) -> lis
         loaded_ids = {e.get("contract_id") for e in loaded}
         for cid in manifest.get("always", []) or []:
             if cid not in loaded_ids:
-                errors.append(f"attestation: mandatory contract '{cid}' (manifest always) not loaded")
+                errors.append(
+                    f"attestation: mandatory contract '{cid}' (manifest always) not loaded"
+                )
 
     # gate consistency
     if gate == "PASS":
@@ -805,8 +938,13 @@ def _parse_attestation_text(raw: str) -> dict | None:
     loaded = []
     cur = None
     task_impact = []
-    bundle = {"library_version": None, "library_revision": None,
-              "receipt": None, "sha256": None, "scope": None}
+    bundle = {
+        "library_version": None,
+        "library_revision": None,
+        "receipt": None,
+        "sha256": None,
+        "scope": None,
+    }
     conflicts = None
     gate = None
     in_impact = False
@@ -880,14 +1018,15 @@ def _consumer_context_key(manifest_path: Path | None = None) -> str:
     if manifest_path is not None:
         m = Path(manifest_path).resolve()
         if m.parent.name == ".contracts":
-            root = m.parent          # <project>/.contracts/
+            root = m.parent  # <project>/.contracts/
             return str(root / "sessions")
         return str(m.parent / ".contracts" / "sessions")
     return str(REPO_ROOT / ".contract-commitments")
 
 
-def default_artifact_path(role: str = "session", task: str = "",
-                          manifest_path: Path | None = None) -> Path:
+def default_artifact_path(
+    role: str = "session", task: str = "", manifest_path: Path | None = None
+) -> Path:
     """Project/worktree/session-safe artifact path.
 
     Artifacts live in the CONSUMING execution context (the project that owns
@@ -901,12 +1040,17 @@ def default_artifact_path(role: str = "session", task: str = "",
     return d / f"{role}-{slug}.json"
 
 
-def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str],
-                     revision: str = "uncommitted",
-                     role: str = "session", parent_bundle: str | None = None,
-                     parent_manifest: Path | None = None,
-                     worker: bool = False,
-                     task_tags: list[str] | None = None) -> tuple[dict, str]:
+def build_commitment(
+    manifest_path: Path,
+    task: str,
+    task_impact: dict[str, str],
+    revision: str = "uncommitted",
+    role: str = "session",
+    parent_bundle: str | None = None,
+    parent_manifest: Path | None = None,
+    worker: bool = False,
+    task_tags: list[str] | None = None,
+) -> tuple[dict, str]:
     """Build the operational commitment for a task.
 
     Returns (artifact_dict, text_block). Raises CTError on any failure that
@@ -914,6 +1058,9 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
     conflicts, lock drift, or (for workers) an unverifiable parent bundle.
     """
     manifest = load_adoption(manifest_path)
+    # freshness gate: runs BEFORE resolution — a require-current policy must
+    # establish the authoritative remote revision before anything mutates.
+    gate_state, evidence = apply_freshness_gate(manifest, manifest_path)
     res = resolve_set(manifest, task, task_tags)
     if res["errors"]:
         raise CTError("commitment: resolution errors:\n  " + "\n  ".join(res["errors"]))
@@ -929,7 +1076,9 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
         # workers load inherited contracts, add task-specific ones, and therefore
         # cannot silently drop a parent constraint.
         if not parent_bundle:
-            raise CTError("commitment: worker commitment requires --parent-bundle (inherited bundle sha256)")
+            raise CTError(
+                "commitment: worker commitment requires --parent-bundle (inherited bundle sha256)"
+            )
         parent = find_commitment_by_bundle(parent_bundle, manifest_path)
         if parent is None:
             raise CTError(
@@ -938,6 +1087,15 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
                 "(workers inherit a real parent bundle, not an arbitrary hash)"
             )
         parent_contracts = set(parent.get("contracts", []))
+        parent_src = parent.get("source") or {}
+        own_rev = str((manifest.get("source") or {}).get("revision", ""))
+        if parent_src.get("revision") and own_rev and parent_src["revision"] != own_rev:
+            raise CTError(
+                "commitment: parent commitment used Play Nice source revision "
+                f"{parent_src['revision'][:12]} but this manifest pins {own_rev[:12]} — "
+                "a worker must not resolve a weaker/older source than its parent; "
+                "re-commit under a parent committed against the current pin"
+            )
         inherited_only = parent_contracts - selected_ids
         if inherited_only:
             # inherited contracts join the worker's resolved set; the worker must
@@ -951,8 +1109,10 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
                     "never silently drops it"
                 )
             selected_ids |= inherited_only
-            res["selected"] = {cid: "inherited" if cid in inherited_only else why
-                               for cid, why in res["selected"].items()}
+            res["selected"] = {
+                cid: "inherited" if cid in inherited_only else why
+                for cid, why in res["selected"].items()
+            }
             for cid in inherited_only:
                 res["selected"][cid] = "inherited"
         role = "worker"
@@ -968,8 +1128,14 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
     # A PASS attestation over the EXACT (possibly unioned) set is a precondition;
     # its machinery also fails closed on lock drift. Governing invariant:
     # the set attested must be exactly the set committed.
-    att = make_attestation(manifest_path, task, task_impact, revision, format_text=False,
-                           resolved_ids=selected_ids)
+    att = make_attestation(
+        manifest_path,
+        task,
+        task_impact,
+        revision,
+        format_text=False,
+        resolved_ids=selected_ids,
+    )
     if att["gate"] != "PASS":
         raise CTError(
             "commitment: contract gate is BLOCKED — conflicts prevent the ACTIVE state:\n  "
@@ -986,7 +1152,7 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
 
     artifact = {
         "format": COMMITMENT_FORMAT,
-        "role": role,                      # session | orchestrator | worker
+        "role": role,  # session | orchestrator | worker
         "contract_gate": "PASS",
         "commitment": COMMITMENT_ACTIVE,
         "library_version": library_version(),
@@ -996,10 +1162,23 @@ def build_commitment(manifest_path: Path, task: str, task_impact: dict[str, str]
         "bundle_scope": "resolved-set",
         "task": task,
         "task_fingerprint": task,
-        "session_dir": str(default_artifact_path(role, task, manifest_path=manifest_path).parent),
-        "resolved_contracts": sorted(f"{cid}@{lib[cid]['front_matter']['version']}" for cid in selected_ids),
+        "session_dir": str(
+            default_artifact_path(role, task, manifest_path=manifest_path).parent
+        ),
+        "resolved_contracts": sorted(
+            f"{cid}@{lib[cid]['front_matter']['version']}" for cid in selected_ids
+        ),
         "contracts": sorted(selected_ids),
         "inherited_bundle": parent_bundle,
+        "source": {
+            "repository": str((manifest.get("source") or {}).get("repository", "")),
+            "ref": evidence["ref"],
+            "revision": str((manifest.get("source") or {}).get("revision", "")),
+        },
+        "freshness": evidence,
+        "play_nice_source_revision": revision
+        if revision != "uncommitted"
+        else str((manifest.get("source") or {}).get("revision", "")),
         "activated_at": None,  # filled by caller with real timestamps if desired
     }
 
@@ -1015,8 +1194,13 @@ def _artifact_search_dirs(manifest_path: Path | None = None) -> list[Path]:
     dirs.append(primary)
     # fallbacks: explicit env dirs may differ; library-local dir for
     # in-library sessions; never duplicate
-    for d in (primary, Path(os.environ.get("CONTRACTCTL_SESSION_DIR", "")) if os.environ.get("CONTRACTCTL_SESSION_DIR") else None,
-              REPO_ROOT / ".contract-commitments"):
+    for d in (
+        primary,
+        Path(os.environ.get("CONTRACTCTL_SESSION_DIR", ""))
+        if os.environ.get("CONTRACTCTL_SESSION_DIR")
+        else None,
+        REPO_ROOT / ".contract-commitments",
+    ):
         if d is None:
             continue
         key = str(d.resolve()) if d.exists() or d.parent.exists() else str(d)
@@ -1027,7 +1211,9 @@ def _artifact_search_dirs(manifest_path: Path | None = None) -> list[Path]:
     return [d for d in dirs if d.is_dir()]
 
 
-def find_commitment_by_bundle(bundle_sha: str, manifest_path: Path | None = None) -> dict | None:
+def find_commitment_by_bundle(
+    bundle_sha: str, manifest_path: Path | None = None
+) -> dict | None:
     """Find a recorded commitment (orchestrator or session) by its bundle sha256.
 
     Inheritance validates against recorded parent state in the SAME consuming
@@ -1040,7 +1226,10 @@ def find_commitment_by_bundle(bundle_sha: str, manifest_path: Path | None = None
                 a = json.loads(f.read_text(encoding="utf-8"))
             except json.JSONDecodeError:
                 continue
-            if a.get("bundle_sha256") == bundle_sha and a.get("commitment") == COMMITMENT_ACTIVE:
+            if (
+                a.get("bundle_sha256") == bundle_sha
+                and a.get("commitment") == COMMITMENT_ACTIVE
+            ):
                 if a.get("role") in ("orchestrator", "session"):
                     return a
     return None
@@ -1053,8 +1242,19 @@ def format_commitment_text(a: dict) -> str:
     lines.append(f"bundle: {a['bundle_receipt']}")
     lines.append(f"bundle_sha256: {a['bundle_sha256']}")
     lines.append(f"bundle_scope: {a.get('bundle_scope', 'resolved-set')}")
+    if a.get("freshness"):
+        fr = a["freshness"]
+        lines.append(
+            f"REMOTE FRESHNESS: {fr.get('status', 'UNKNOWN')}"
+            + ("" if fr.get("enforced") else " (policy: pinned — not enforced)")
+        )
+        if fr.get("remote_revision"):
+            lines.append(f"  remote_revision: {fr['remote_revision']}")
     if a.get("inherited_bundle"):
         lines.append(f"INHERITED CONTRACT BUNDLE: {a['inherited_bundle']}")
+        lines.append(
+            f"PLAY_NICE_SOURCE_REVISION: {a.get('play_nice_source_revision', 'unknown')}"
+        )
         lines.append("PARENT CONTRACT COMMITMENT: ACTIVE")
     lines.append(f"role: {a['role']}")
     lines.append(f"task: {a['task']}")
@@ -1063,18 +1263,26 @@ def format_commitment_text(a: dict) -> str:
     return "\n".join(lines)
 
 
-def write_session_artifact(artifact: dict, path: Path | None = None,
-                           manifest_path: Path | None = None) -> Path:
+def write_session_artifact(
+    artifact: dict, path: Path | None = None, manifest_path: Path | None = None
+) -> Path:
     """Persist the commitment into the consuming context (no secrets, by construction)."""
-    p = path or default_artifact_path(artifact.get("role", "session"), artifact.get("task", ""),
-                                      manifest_path=manifest_path)
+    p = path or default_artifact_path(
+        artifact.get("role", "session"),
+        artifact.get("task", ""),
+        manifest_path=manifest_path,
+    )
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")
     return p
 
 
-def load_session_artifact(path: Path | None = None, role: str = "session", task: str = "",
-                          manifest_path: Path | None = None) -> dict | None:
+def load_session_artifact(
+    path: Path | None = None,
+    role: str = "session",
+    task: str = "",
+    manifest_path: Path | None = None,
+) -> dict | None:
     """Load the artifact for this role+task key, or the newest artifact when
     only a path/role is given. Searches the consuming context. Returns None
     when absent."""
@@ -1084,7 +1292,9 @@ def load_session_artifact(path: Path | None = None, role: str = "session", task:
         return json.loads(path.read_text(encoding="utf-8"))
     slug = re.sub(r"[^a-z0-9-]+", "-", task.lower()).strip("-")[:48] or "untitled"
     for d in _artifact_search_dirs(manifest_path):
-        candidates = sorted(d.glob(f"{role}-*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+        candidates = sorted(
+            d.glob(f"{role}-*.json"), key=lambda p: p.stat().st_mtime, reverse=True
+        )
         if task:
             exact = d / f"{role}-{slug}.json"
             if exact.is_file():
@@ -1097,8 +1307,12 @@ def load_session_artifact(path: Path | None = None, role: str = "session", task:
     return None
 
 
-def session_status(manifest_path: Path | None = None, artifact_path: Path | None = None,
-                   role: str = "session", task: str = "") -> tuple[str, list[str]]:
+def session_status(
+    manifest_path: Path | None = None,
+    artifact_path: Path | None = None,
+    role: str = "session",
+    task: str = "",
+) -> tuple[str, list[str]]:
     """Report the current commitment state and any staleness.
 
     Returns (status_line, problems). Staleness rules:
@@ -1107,9 +1321,13 @@ def session_status(manifest_path: Path | None = None, artifact_path: Path | None
     - worker artifacts: parent bundle must still be a real recorded commitment
     """
     problems: list[str] = []
-    artifact = load_session_artifact(artifact_path, role=role, task=task, manifest_path=manifest_path)
+    artifact = load_session_artifact(
+        artifact_path, role=role, task=task, manifest_path=manifest_path
+    )
     if artifact is None:
-        return "CONTRACT COMMITMENT: INACTIVE (no session artifact)", ["no commitment recorded for this session"]
+        return "CONTRACT COMMITMENT: INACTIVE (no session artifact)", [
+            "no commitment recorded for this session"
+        ]
 
     lock = load_lock()
     recorded = set(artifact.get("contracts", []))
@@ -1118,7 +1336,10 @@ def session_status(manifest_path: Path | None = None, artifact_path: Path | None
 
     if artifact.get("commitment") != COMMITMENT_ACTIVE:
         problems.append("recorded commitment is not ACTIVE")
-    if artifact.get("bundle_receipt") != cur_receipt or artifact.get("bundle_sha256") != cur_sha:
+    if (
+        artifact.get("bundle_receipt") != cur_receipt
+        or artifact.get("bundle_sha256") != cur_sha
+    ):
         problems.append(
             f"stale bundle — commitment was made against {artifact.get('bundle_receipt')}/{str(artifact.get('bundle_sha256'))[:12]}, "
             f"library now yields {cur_receipt}/{cur_sha[:12]} for this resolved set — re-attest and re-commit"
@@ -1142,8 +1363,43 @@ def session_status(manifest_path: Path | None = None, artifact_path: Path | None
                 "parent commitment no longer recorded — inherited bundle "
                 f"{artifact['inherited_bundle'][:12]} cannot be verified — re-commit under a live parent"
             )
+        else:
+            parent_rev = str((parent.get("source") or {}).get("revision", "") or "")
+            own_rev = str((artifact.get("source") or {}).get("revision", "") or "")
+            if parent_rev and own_rev and parent_rev != own_rev:
+                problems.append(
+                    f"parent used Play Nice source revision {parent_rev[:12]}, "
+                    f"this worker committed against {own_rev[:12]} — re-commit under a current parent"
+                )
 
-    state = "ACTIVE" if not problems else "STALE" if any("stale" in p for p in problems) else "INACTIVE"
+    # live freshness re-check: require-current re-verifies the authoritative
+    # remote each status call (fail closed); pinned never goes online.
+    fr = artifact.get("freshness") or {}
+    if fr.get("policy") == "require-current" and manifest_path is not None:
+        fr_now = check_freshness(manifest_path)
+        # rule 24: a changed authoritative revision invalidates a commitment
+        # even when the new remote state is itself internally consistent.
+        if fr_now.get("remote_revision") and fr_now["remote_revision"] != fr.get(
+            "remote_revision"
+        ):
+            problems.append(
+                f"remote freshness is stale: authoritative remote moved "
+                f"({str(fr.get('remote_revision') or 'unknown')[:12]} → {fr_now['remote_revision'][:12]}) — "
+                "fetch/update, re-resolve, re-attest, re-commit"
+            )
+        elif fr_now["status"] not in ("CURRENT",):
+            problems.append(
+                f"remote freshness {fr_now['status']} — freshness cannot be established, "
+                "commitment is not trustworthy ACTIVE under require-current"
+            )
+
+    state = (
+        "ACTIVE"
+        if not problems
+        else "STALE"
+        if any("stale" in p for p in problems)
+        else "INACTIVE"
+    )
     if problems and "not ACTIVE" in problems[0]:
         state = "INACTIVE"
     summary = (
@@ -1158,7 +1414,9 @@ def session_status(manifest_path: Path | None = None, artifact_path: Path | None
     return summary, problems
 
 
-def verify_commitment_artifact(artifact: dict, manifest_path: Path | None = None) -> list[str]:
+def verify_commitment_artifact(
+    artifact: dict, manifest_path: Path | None = None
+) -> list[str]:
     """Verify a commitment artifact against the current library. Fail closed."""
     errors: list[str] = []
     if artifact.get("format") != COMMITMENT_FORMAT:
@@ -1170,20 +1428,39 @@ def verify_commitment_artifact(artifact: dict, manifest_path: Path | None = None
     lock = load_lock()
     recorded = set(artifact.get("contracts", []))
     if artifact.get("bundle_receipt") != bundle_receipt(lock, recorded):
-        errors.append("commitment: resolved-set bundle receipt does not match current library (stale)")
+        errors.append(
+            "commitment: resolved-set bundle receipt does not match current library (stale)"
+        )
     if artifact.get("bundle_sha256") != bundle_sha256(lock, recorded):
-        errors.append("commitment: resolved-set bundle sha256 does not match current library (stale)")
+        errors.append(
+            "commitment: resolved-set bundle sha256 does not match current library (stale)"
+        )
     if not artifact.get("contracts"):
         errors.append("commitment: no resolved contracts recorded")
     if not artifact.get("task"):
         errors.append("commitment: task not recorded")
+    fr = artifact.get("freshness") or {}
+    if fr.get("policy") == "require-current":
+        if fr.get("status") != "CURRENT":
+            errors.append(
+                "commitment: freshness policy is require-current but recorded "
+                f"status is {fr.get('status')!r} — ACTIVE requires CURRENT"
+            )
+        if not fr.get("remote_revision"):
+            errors.append(
+                "commitment: require-current artifact lacks remote freshness evidence"
+            )
     if artifact.get("role") == "worker":
         if not artifact.get("inherited_bundle"):
             errors.append("commitment: worker commitment missing inherited bundle")
         else:
-            parent = find_commitment_by_bundle(artifact["inherited_bundle"], manifest_path)
+            parent = find_commitment_by_bundle(
+                artifact["inherited_bundle"], manifest_path
+            )
             if parent is None:
-                errors.append("commitment: worker's inherited bundle has no recorded parent commitment")
+                errors.append(
+                    "commitment: worker's inherited bundle has no recorded parent commitment"
+                )
             else:
                 dropped = set(parent.get("contracts", [])) - recorded
                 if dropped:
@@ -1197,7 +1474,9 @@ def verify_commitment_artifact(artifact: dict, manifest_path: Path | None = None
         if ref not in locked:
             errors.append(f"commitment: unknown contract '{ref}'")
         elif ref in lib and locked[ref]["sha256"] != lib[ref]["sha256"]:
-            errors.append(f"commitment: contract '{ref}' content changed since commitment")
+            errors.append(
+                f"commitment: contract '{ref}' content changed since commitment"
+            )
     return errors
 
 
@@ -1217,7 +1496,9 @@ def check_receipt_rotation(lib: list[dict]) -> list[str]:
         try:
             r = subprocess.run(
                 ["git", "-C", str(REPO_ROOT), *args],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             return r.stdout if r.returncode == 0 else None
         except Exception:
@@ -1252,7 +1533,9 @@ def check_receipt_rotation(lib: list[dict]) -> list[str]:
             cm, cd, cp = (int(x) for x in cur_version.split("."))
         except ValueError:
             continue
-        patch_only = (pm == cm and pd == cd and cp == pp + 1) and cur_version != prev_version
+        patch_only = (
+            pm == cm and pd == cd and cp == pp + 1
+        ) and cur_version != prev_version
         prev_receipts = RECEIPT_RE.findall(prev)
         cur_receipts = c["receipts"]
         if patch_only:
@@ -1270,6 +1553,7 @@ def check_receipt_rotation(lib: list[dict]) -> list[str]:
 
 # ---------------------------------------------------------------- question/help artifacts
 
+
 def validate_question(path: Path) -> list[str]:
     """Validate a play-nice/question|help-request|help-response artifact
     against schema/question.schema.json (structural subset enforcement)."""
@@ -1284,7 +1568,9 @@ def validate_question(path: Path) -> list[str]:
 
     allowed_schemas = schema["properties"]["schema"]["enum"]
     if data.get("schema") not in allowed_schemas:
-        errs.append(f"question: schema must be one of {allowed_schemas}, got {data.get('schema')!r}")
+        errs.append(
+            f"question: schema must be one of {allowed_schemas}, got {data.get('schema')!r}"
+        )
     for key in schema.get("required", []):
         if key not in data:
             errs.append(f"question: missing required field '{key}'")
@@ -1302,25 +1588,40 @@ def validate_question(path: Path) -> list[str]:
         p = data.get(pkey)
         if p is None:
             continue
-        if not isinstance(p, dict) or p.get("type") not in schema["$defs"]["participant"]["properties"]["type"]["enum"]:
-            errs.append(f"question: {pkey}.type must be one of {schema['$defs']['participant']['properties']['type']['enum']}")
+        if (
+            not isinstance(p, dict)
+            or p.get("type")
+            not in schema["$defs"]["participant"]["properties"]["type"]["enum"]
+        ):
+            errs.append(
+                f"question: {pkey}.type must be one of {schema['$defs']['participant']['properties']['type']['enum']}"
+            )
 
-    if data.get("schema") == "play-nice/help-request-v1" and not data.get("needed_capability"):
+    if data.get("schema") == "play-nice/help-request-v1" and not data.get(
+        "needed_capability"
+    ):
         errs.append("question: help-request-v1 requires 'needed_capability'")
     if data.get("schema") == "play-nice/help-response-v1":
         if not data.get("result"):
             errs.append("question: help-response-v1 requires 'result'")
         if status not in ("ANSWERED", "DECLINED", "EXPIRED"):
-            errs.append("question: help-response status must be ANSWERED, DECLINED, or EXPIRED")
+            errs.append(
+                "question: help-response status must be ANSWERED, DECLINED, or EXPIRED"
+            )
 
-    if data.get("blocking") is False and data.get("safe_to_continue_without_answer") is False:
+    if (
+        data.get("blocking") is False
+        and data.get("safe_to_continue_without_answer") is False
+    ):
         errs.append("question: inconsistent — not blocking but not safe to continue")
 
     # secret-shape hygiene: help artifacts must not carry credential-like values
     blob = json.dumps(data).lower()
-    for shape in ("api_key\":", "token\":", "password\":", "secret\":"):
+    for shape in ('api_key":', 'token":', 'password":', 'secret":'):
         if shape in blob:
-            errs.append(f"question: possible inline secret near '{shape}' — help artifacts reference secrets symbolically, never inline")
+            errs.append(
+                f"question: possible inline secret near '{shape}' — help artifacts reference secrets symbolically, never inline"
+            )
 
     # choices shape
     choices = data.get("choices")
@@ -1340,6 +1641,7 @@ def validate_question(path: Path) -> list[str]:
 
 # ---------------------------------------------------------------- adoption
 
+
 def validate_adoption_manifest(manifest_path: Path) -> list[str]:
     errors: list[str] = []
     try:
@@ -1350,7 +1652,11 @@ def validate_adoption_manifest(manifest_path: Path) -> list[str]:
     schema = _load_json_schema("adoption.schema.json")
     # structural checks
     src = manifest.get("source")
-    if not isinstance(src, dict) or not src.get("repository") or not src.get("revision"):
+    if (
+        not isinstance(src, dict)
+        or not src.get("repository")
+        or not src.get("revision")
+    ):
         errors.append("adoption: source.repository and source.revision are required")
     for cid in manifest.get("always", []) or []:
         if cid not in lib:
@@ -1361,11 +1667,17 @@ def validate_adoption_manifest(manifest_path: Path) -> list[str]:
             continue
         for cid in cids:
             if cid not in lib:
-                errors.append(f"adoption: unknown contract in triggers.{surface}: '{cid}'")
+                errors.append(
+                    f"adoption: unknown contract in triggers.{surface}: '{cid}'"
+                )
     props = schema.get("properties", {})
     for key in manifest:
         if key not in props and schema.get("additionalProperties") is False:
             errors.append(f"adoption: schema forbids additional property '{key}'")
+    try:
+        freshness_config(manifest)
+    except CTError as e:
+        errors.append(str(e))
     return errors
 
 
@@ -1407,25 +1719,316 @@ def library_version() -> str:
 def library_revision() -> str:
     """Adopted Git revision of the library (commit SHA when available, else VERSION)."""
     import subprocess
+
     try:
         sha = subprocess.run(
             ["git", "-C", str(REPO_ROOT), "rev-parse", "HEAD"],
-            capture_output=True, text=True, timeout=10,
+            capture_output=True,
+            text=True,
+            timeout=10,
         ).stdout.strip()
-        if SHA256_RE.match(sha) or (len(sha) >= 7 and all(c in "0123456789abcdef" for c in sha)):
+        if SHA256_RE.match(sha) or (
+            len(sha) >= 7 and all(c in "0123456789abcdef" for c in sha)
+        ):
             return sha
     except Exception:
         pass
     return library_version()
 
 
+# ---------------------------------------------------------------- freshness
+# Remote freshness: before mutating work under a `require-current` freshness
+# policy, the configured authoritative remote revision must be established by
+# a deterministic git operation (`git ls-remote`). A local checkout, an
+# adoption pin, a previous session, or cached information is never proof of
+# remote freshness. Unknown is a valid state and fails closed.
+
+FRESHNESS_STATES = ("CURRENT", "BEHIND", "DIVERGED", "UNREACHABLE", "UNKNOWN")
+FRESHNESS_POLICIES = ("pinned", "require-current")
+FRESHNESS_UPDATES = ("review", "automatic")
+LS_REMOTE_TIMEOUT = 20
+
+
+class CTFreshnessError(CTError):
+    """Freshness gate failure. Carries the machine state for exact reporting."""
+
+    def __init__(self, state: str, detail: str = ""):
+        super().__init__(detail or f"remote freshness: {state}")
+        self.state = state
+        self.detail = detail
+
+
+def freshness_config(manifest: dict) -> dict:
+    """Freshness policy of an adoption manifest.
+
+    Absent block means the legacy default: policy pinned, update review —
+    existing manifests must not change behavior by upgrading contractctl.
+    """
+    fr = manifest.get("freshness")
+    if fr is None:
+        return {"policy": "pinned", "ref": "main", "update": "review"}
+    if not isinstance(fr, dict):
+        raise CTError("adoption manifest: 'freshness' must be a mapping")
+    policy = fr.get("policy", "pinned")
+    if policy not in FRESHNESS_POLICIES:
+        raise CTError(
+            f"adoption manifest: freshness.policy must be one of {list(FRESHNESS_POLICIES)}, got {policy!r}"
+        )
+    update = fr.get("update", "review")
+    if update not in FRESHNESS_UPDATES:
+        raise CTError(
+            f"adoption manifest: freshness.update must be one of {list(FRESHNESS_UPDATES)}, got {update!r}"
+        )
+    ref = fr.get("ref", "main")
+    if not isinstance(ref, str) or not ref or ref.startswith("refs/"):
+        raise CTError(
+            "adoption manifest: freshness.ref must be a branch name like 'main'"
+        )
+    return {"policy": policy, "ref": ref, "update": update}
+
+
+def _remote_url(repository: str) -> str:
+    """Repository identifier -> git URL. GitHub owner/repo shorthand expands
+    to the canonical https URL; full URLs and local paths pass through."""
+    if repository.startswith(("/", "./", "../")) or Path(repository).exists():
+        return repository
+    if "://" in repository or repository.startswith("git@"):
+        return repository
+    if re.match(r"^[\w.-]+/[\w.-]+$", repository):
+        return f"https://github.com/{repository}.git"
+    return repository
+
+
+def git_ls_remote(repository: str, ref: str) -> str | None:
+    """Deterministic remote head of refs/heads/<ref>.
+
+    Returns the full SHA, or None when the ref does not exist on the remote.
+    Raises CTFreshnessError(UNREACHABLE) when the remote cannot be queried.
+    """
+    url = _remote_url(repository)
+    try:
+        proc = subprocess.run(
+            ["git", "ls-remote", url, f"refs/heads/{ref}"],
+            capture_output=True,
+            text=True,
+            timeout=LS_REMOTE_TIMEOUT,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        raise CTFreshnessError(
+            "UNREACHABLE", f"git ls-remote {url} failed (timeout/error)"
+        )
+    if proc.returncode != 0:
+        raise CTFreshnessError(
+            "UNREACHABLE",
+            "git ls-remote failed: "
+            + (proc.stderr.strip().splitlines() or ["unknown error"])[-1],
+        )
+    for line in proc.stdout.split("\n"):
+        line = line.strip()
+        if not line or "\t" not in line:
+            continue
+        sha, refname = line.split("\t", 1)
+        if refname == f"refs/heads/{ref}" and GITSHA_RE.match(sha):
+            return sha
+    return None  # ref not found on remote
+
+
+def _is_ancestor_library(repo: Path, a: str, b: str) -> bool | None:
+    """True/False when ancestry is provable with local objects, else None."""
+    try:
+        probe = subprocess.run(
+            ["git", "-C", str(repo), "cat-file", "-e", f"{b}^{{commit}}"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if probe.returncode != 0:
+            return None
+        r = subprocess.run(
+            ["git", "-C", str(repo), "merge-base", "--is-ancestor", a, b],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if r.returncode == 0:
+        return True
+    if r.returncode == 1:
+        return False
+    return None
+
+
+def check_freshness(manifest_path: Path) -> dict:
+    """Establish the state of the configured authoritative remote revision.
+
+    CURRENT   remote head equals the adopted revision AND the library checkout
+    BEHIND    differing revisions provably fast-forward (remote is ahead)
+    DIVERGED  revisions differ without a proven fast-forward relationship
+    UNREACHABLE  the remote could not be queried
+    UNKNOWN   the check could not be established (no pin, ref missing, malformed)
+
+    Fail closed: only CURRENT satisfies require-current.
+    """
+    manifest = load_adoption(manifest_path)
+    cfg = freshness_config(manifest)
+    src = manifest.get("source") or {}
+    repository = str(src.get("repository", "") or "")
+    adopted = str(src.get("revision", "") or "")
+    local = library_revision()
+    out = {
+        "policy": cfg["policy"],
+        "enforced": cfg["policy"] == "require-current",
+        "ref": f"refs/heads/{cfg['ref']}",
+        "repository": repository,
+        "adopted_revision": adopted,
+        "library_revision": local,
+        "remote_revision": None,
+        "status": "UNKNOWN",
+        "detail": "",
+    }
+    if not repository:
+        out["detail"] = "adoption manifest has no source.repository"
+        return out
+    if adopted in ("", "0000000"):
+        out["detail"] = "no adopted revision pinned (pin the commit you reviewed)"
+        return out
+
+    try:
+        remote = git_ls_remote(repository, cfg["ref"])
+    except CTFreshnessError as e:
+        out["status"] = e.state
+        out["detail"] = e.detail
+        return out
+    out["remote_revision"] = remote
+    if remote is None:
+        out["detail"] = f"remote has no ref refs/heads/{cfg['ref']}"
+        return out
+
+    # normalize pins (short SHAs, branchy pins) against the library checkout
+    def _normalize(pin: str) -> str:
+        try:
+            r = subprocess.run(
+                [
+                    "git",
+                    "-C",
+                    str(REPO_ROOT),
+                    "rev-parse",
+                    "--verify",
+                    "--quiet",
+                    pin + ("^{commit}" if not pin.startswith(("^", ":")) else ""),
+                ],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            if r.returncode == 0 and GITSHA_RE.match(r.stdout.strip()):
+                return r.stdout.strip()
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        return pin
+
+    adopted = _normalize(adopted)
+    if GITSHA_RE.match(local):
+        local = _normalize(local)
+    else:
+        out["detail"] = (
+            "cannot establish the local library revision (no git checkout) — "
+            "the contract set in use cannot be compared to the remote"
+        )
+        return out
+    out["adopted_revision"] = adopted
+    out["library_revision"] = local
+
+    pins = {adopted, local}
+    if pins == {remote}:  # every pin equals the remote head
+        out["status"] = "CURRENT"
+        return out
+    # classify conservative: BEHIND only when the fast-forward is provable
+    diverged = False
+    for pin in pins:
+        if _is_ancestor_library(REPO_ROOT, pin, remote) is not True:
+            diverged = True
+    out["status"] = "DIVERGED" if diverged else "BEHIND"
+    out["detail"] = (
+        f"remote {out['ref']} is {remote[:12]}; adopted pin {adopted[:12]}; "
+        "the contract set being used has not been reviewed at the remote revision"
+        if out["status"] == "BEHIND"
+        else f"remote {out['ref']} is {remote[:12]}; no proven fast-forward from the adopted revision {adopted[:12]}"
+    )
+    return out
+
+
+def freshness_evidence(result: dict, *, enforced: bool) -> dict:
+    """Secret-free freshness evidence for the session/commitment artifact."""
+    return {
+        "policy": result["policy"],
+        "status": result["status"],
+        "ref": result["ref"],
+        "repository": result["repository"],
+        "remote_revision": result.get("remote_revision"),
+        "checked_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "checked_via": "git ls-remote",
+        "enforced": enforced,
+        "reason": result.get("detail", "") if result["status"] != "CURRENT" else "",
+    }
+
+
+def apply_freshness_gate(
+    manifest: dict, manifest_path: Path
+) -> tuple[str, dict | None]:
+    """Commitment gate for the manifest's freshness policy.
+
+    Returns ("ok", evidence) when mutation may proceed to the attestation gate.
+    Raises CTFreshnessError when a require-current policy fails. A pinned
+    policy never contacts the network at commit time (backward-compatible).
+    """
+    cfg = freshness_config(manifest)
+    if cfg["policy"] != "require-current":
+        return "ok", {
+            "policy": "pinned",
+            "status": "UNKNOWN",
+            "ref": f"refs/heads/{cfg['ref']}",
+            "repository": str((manifest.get("source") or {}).get("repository", "")),
+            "remote_revision": None,
+            "checked_at": None,
+            "checked_via": None,
+            "enforced": False,
+            "reason": "not checked (policy: pinned)",
+        }
+    result = check_freshness(manifest_path)
+    evidence = freshness_evidence(result, enforced=True)
+    if result["status"] == "CURRENT":
+        return "ok", evidence
+    raise CTFreshnessError(result["status"], result.get("detail", ""))
+
+
 # ---------------------------------------------------------------- project context / participant packs
 
-CANONICALITY_STATES = {"canonical", "reference", "observed", "generated",
-                       "historical", "superseded", "stale", "unknown"}
-PARTICIPANT_TYPES = {"design-service", "forge", "agent", "automation", "test-tool",
-                     "deployment-system", "database", "external-api", "monitoring",
-                     "identity", "human-team", "other"}
+CANONICALITY_STATES = {
+    "canonical",
+    "reference",
+    "observed",
+    "generated",
+    "historical",
+    "superseded",
+    "stale",
+    "unknown",
+}
+PARTICIPANT_TYPES = {
+    "design-service",
+    "forge",
+    "agent",
+    "automation",
+    "test-tool",
+    "deployment-system",
+    "database",
+    "external-api",
+    "monitoring",
+    "identity",
+    "human-team",
+    "other",
+}
 SECRET_SHAPE_RE = re.compile(
     r"(api[_-]?key|token|password|secret|cookie|credential)\s*[:=]\s*['\"]?[A-Za-z0-9_\-\.]{16,}",
     re.IGNORECASE,
@@ -1476,7 +2079,9 @@ def validate_project(project_dir: Path) -> list[str]:
         return [str(e)]
 
     if pm.get("schema") != "play-nice/project-v1":
-        errs.append(f"project: schema must be 'play-nice/project-v1', got {pm.get('schema')!r}")
+        errs.append(
+            f"project: schema must be 'play-nice/project-v1', got {pm.get('schema')!r}"
+        )
     for key in ("id", "name"):
         if not pm.get(key):
             errs.append(f"project: missing required field '{key}'")
@@ -1499,7 +2104,11 @@ def validate_project(project_dir: Path) -> list[str]:
     _check_no_secrets(d, errs)
     # participants
     pdir = pm.get("participants", {})
-    pdir_path = d / (pdir.get("directory", "participants") if isinstance(pdir, dict) else "participants")
+    pdir_path = d / (
+        pdir.get("directory", "participants")
+        if isinstance(pdir, dict)
+        else "participants"
+    )
     if pdir_path.is_dir():
         errs.extend(validate_participants(pdir_path))
     return [e for e in errs if e]
@@ -1521,7 +2130,9 @@ def validate_participants(participants_dir: Path) -> list[str]:
     return errs
 
 
-def validate_participant(pack_dir: Path, seen_ids: dict[str] | None = None) -> list[str]:
+def validate_participant(
+    pack_dir: Path, seen_ids: dict[str] | None = None
+) -> list[str]:
     """Validate one participant pack directory (play-nice/participant-v1)."""
     errs: list[str] = []
     d = Path(pack_dir)
@@ -1540,20 +2151,26 @@ def validate_participant(pack_dir: Path, seen_ids: dict[str] | None = None) -> l
 
     pid = str(pm.get("id", ""))
     if pm.get("schema") != "play-nice/participant-v1":
-        errs.append(f"{d.name}: schema must be 'play-nice/participant-v1', got {pm.get('schema')!r}")
+        errs.append(
+            f"{d.name}: schema must be 'play-nice/participant-v1', got {pm.get('schema')!r}"
+        )
     if not pid:
         errs.append(f"{d.name}: missing required field 'id'")
     if pid and pid != d.name:
         errs.append(f"{d.name}: directory name must match participant id '{pid}'")
     if pid and seen_ids is not None:
         if pid in seen_ids:
-            errs.append(f"{d.name}: duplicate participant id '{pid}' (also {seen_ids[pid]})")
+            errs.append(
+                f"{d.name}: duplicate participant id '{pid}' (also {seen_ids[pid]})"
+            )
         else:
             seen_ids[pid] = d.name
     if not pm.get("name"):
         errs.append(f"{d.name}: missing required field 'name'")
     if pm.get("type") not in PARTICIPANT_TYPES:
-        errs.append(f"{d.name}: invalid type {pm.get('type')!r} (valid: {sorted(PARTICIPANT_TYPES)})")
+        errs.append(
+            f"{d.name}: invalid type {pm.get('type')!r} (valid: {sorted(PARTICIPANT_TYPES)})"
+        )
 
     rel = pm.get("relationship")
     if not isinstance(rel, dict):
@@ -1562,20 +2179,36 @@ def validate_participant(pack_dir: Path, seen_ids: dict[str] | None = None) -> l
         if not rel.get("role"):
             errs.append(f"{d.name}: relationship.role is required")
         if rel.get("optional") is not True:
-            errs.append(f"{d.name}: relationship.optional must be true — required participants are an explicit, project-level justified exception, not a pack-level default")
+            errs.append(
+                f"{d.name}: relationship.optional must be true — required participants are an explicit, project-level justified exception, not a pack-level default"
+            )
         af = rel.get("authoritative_for")
         naf = rel.get("not_authoritative_for")
         if not isinstance(af, list) or not af:
-            errs.append(f"{d.name}: relationship.authoritative_for list is required (may be narrow)")
+            errs.append(
+                f"{d.name}: relationship.authoritative_for list is required (may be narrow)"
+            )
         if not isinstance(naf, list) or not naf:
-            errs.append(f"{d.name}: relationship.not_authoritative_for is required and non-empty — no participant owns everything")
+            errs.append(
+                f"{d.name}: relationship.not_authoritative_for is required and non-empty — no participant owns everything"
+            )
 
     auth = pm.get("authentication")
     if isinstance(auth, dict):
-        if "secret_reference" not in auth or "token" in str(auth).lower() and "vault" not in str(auth):
-            errs.append(f"{d.name}: authentication must use symbolic secret_reference, never values")
+        if (
+            "secret_reference" not in auth
+            or "token" in str(auth).lower()
+            and "vault" not in str(auth)
+        ):
+            errs.append(
+                f"{d.name}: authentication must use symbolic secret_reference, never values"
+            )
     prov = pm.get("provenance")
-    if not isinstance(prov, dict) or not prov.get("supplied_by") or not prov.get("observed_at"):
+    if (
+        not isinstance(prov, dict)
+        or not prov.get("supplied_by")
+        or not prov.get("observed_at")
+    ):
         errs.append(f"{d.name}: provenance (supplied_by, observed_at) is required")
 
     # capabilities (referenced or inline-required)
@@ -1588,16 +2221,26 @@ def validate_participant(pack_dir: Path, seen_ids: dict[str] | None = None) -> l
             caps = None
         if caps is not None:
             if caps.get("schema") != "play-nice/participant-capabilities-v1":
-                errs.append(f"{d.name}: capabilities.schema must be 'play-nice/participant-capabilities-v1'")
+                errs.append(
+                    f"{d.name}: capabilities.schema must be 'play-nice/participant-capabilities-v1'"
+                )
             if caps.get("participant") != (pid or None):
                 errs.append(f"{d.name}: capabilities.participant must match id '{pid}'")
             clist = caps.get("capabilities")
             if not isinstance(clist, list) or not clist:
-                errs.append(f"{d.name}: capabilities list is required and non-empty (use real discovered capabilities)")
+                errs.append(
+                    f"{d.name}: capabilities list is required and non-empty (use real discovered capabilities)"
+                )
             else:
                 for c in clist:
-                    if not isinstance(c, dict) or not c.get("id") or not c.get("description"):
-                        errs.append(f"{d.name}: each capability needs 'id' and 'description'")
+                    if (
+                        not isinstance(c, dict)
+                        or not c.get("id")
+                        or not c.get("description")
+                    ):
+                        errs.append(
+                            f"{d.name}: each capability needs 'id' and 'description'"
+                        )
             lims = caps.get("limitations")
             if not isinstance(lims, list) or not lims:
                 errs.append(f"{d.name}: at least one honest limitation is required")
@@ -1612,7 +2255,9 @@ def validate_participant(pack_dir: Path, seen_ids: dict[str] | None = None) -> l
             refs = None
         if refs is not None:
             if refs.get("schema") != "play-nice/references-v1":
-                errs.append(f"{d.name}: references.schema must be 'play-nice/references-v1'")
+                errs.append(
+                    f"{d.name}: references.schema must be 'play-nice/references-v1'"
+                )
             if refs.get("participant") != (pid or None):
                 errs.append(f"{d.name}: references.participant must match id '{pid}'")
             rlist = refs.get("references")
@@ -1624,7 +2269,9 @@ def validate_participant(pack_dir: Path, seen_ids: dict[str] | None = None) -> l
                         errs.append(f"{d.name}: each reference needs 'id' and 'type'")
                         continue
                     if r.get("status") not in CANONICALITY_STATES:
-                        errs.append(f"{d.name}: reference '{r.get('id')}' status {r.get('status')!r} not in canonicality vocabulary {sorted(CANONICALITY_STATES)}")
+                        errs.append(
+                            f"{d.name}: reference '{r.get('id')}' status {r.get('status')!r} not in canonicality vocabulary {sorted(CANONICALITY_STATES)}"
+                        )
 
     # secret hygiene across the whole pack
     _check_no_secrets(d, errs)
@@ -1701,7 +2348,12 @@ references.yaml — only the sections that earn their place.
 }
 
 
-def init_project(target: Path, project_id: str, name: str, adoption_path: str = ".project/contracts/adoption.yaml") -> list[str]:
+def init_project(
+    target: Path,
+    project_id: str,
+    name: str,
+    adoption_path: str = ".project/contracts/adoption.yaml",
+) -> list[str]:
     """Create a minimal useful .project/ skeleton. No forest of empty dirs."""
     created: list[str] = []
     d = Path(target) / ".project"
@@ -1713,12 +2365,16 @@ def init_project(target: Path, project_id: str, name: str, adoption_path: str = 
         if p.is_file():
             continue
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(template.format(id=project_id, name=name, adoption_path=adoption_path), encoding="utf-8")
+        p.write_text(
+            template.format(id=project_id, name=name, adoption_path=adoption_path),
+            encoding="utf-8",
+        )
         created.append(str(p))
     return created
 
 
 # ---------------------------------------------------------------- commands
+
 
 def cmd_list(_args) -> int:
     lib = load_library()
@@ -1730,7 +2386,9 @@ def cmd_list(_args) -> int:
         return 1
     for c in sorted(lib, key=lambda x: x["front_matter"]["contract_id"]):
         fm = c["front_matter"]
-        print(f"{fm['contract_id']:42s} {str(fm['version']):8s} {fm['status']:10s} {fm.get('layer', '?'):16s} {c['rel_path']}")
+        print(
+            f"{fm['contract_id']:42s} {str(fm['version']):8s} {fm['status']:10s} {fm.get('layer', '?'):16s} {c['rel_path']}"
+        )
     print(f"\n{len(lib)} contracts")
     return 0
 
@@ -1748,14 +2406,20 @@ def cmd_show(args) -> int:
 def cmd_validate(_args) -> int:
     lib = load_library()
     errors = validate_library(lib)
-    lock_errors = verify_lock(lib) if LOCKFILE.is_file() else ["contracts.lock.json missing (run lock)"]
+    lock_errors = (
+        verify_lock(lib)
+        if LOCKFILE.is_file()
+        else ["contracts.lock.json missing (run lock)"]
+    )
     errors = errors + lock_errors
     if errors:
         print(f"INVALID — {len(errors)} problem(s):")
         for e in errors:
             print(f"  - {e}")
         return 1
-    print(f"VALID — {len(lib)} contracts; lockfile verified; receipts unique; index in sync")
+    print(
+        f"VALID — {len(lib)} contracts; lockfile verified; receipts unique; index in sync"
+    )
     return 0
 
 
@@ -1768,12 +2432,16 @@ def cmd_lock(_args) -> int:
             print(f"  - {e}", file=sys.stderr)
         return 1
     lock = write_lock()
-    print(f"wrote contracts.lock.json ({len(lock['contracts'])} contracts); bundle receipt: {bundle_receipt(lock)}")
+    print(
+        f"wrote contracts.lock.json ({len(lock['contracts'])} contracts); bundle receipt: {bundle_receipt(lock)}"
+    )
     return 0
 
 
 def cmd_resolve(args) -> int:
-    manifest = Path(args.manifest) if args.manifest else Path(".contracts/adoption.yaml")
+    manifest = (
+        Path(args.manifest) if args.manifest else Path(".contracts/adoption.yaml")
+    )
     m = load_adoption(manifest)
     res = resolve_set(m, args.task, (args.tag or []))
     if res["errors"]:
@@ -1789,7 +2457,9 @@ def cmd_resolve(args) -> int:
         for cid in sorted(groups[why]):
             print(f"  {cid}")
         print()
-    print(f"resolved {len(res['selected'])} of {res['library_size']} contracts for task: {args.task!r}")
+    print(
+        f"resolved {len(res['selected'])} of {res['library_size']} contracts for task: {args.task!r}"
+    )
     return 0
 
 
@@ -1797,12 +2467,20 @@ def cmd_attest(args) -> int:
     manifest = Path(args.manifest)
     impact = _read_impact_args(args)
     revision = args.revision or library_revision()
-    out = make_attestation(manifest, args.task, impact, revision, task_tags=(getattr(args, "tag", None) or []))
+    out = make_attestation(
+        manifest,
+        args.task,
+        impact,
+        revision,
+        task_tags=(getattr(args, "tag", None) or []),
+    )
     print(out)
     if "CONTRACT GATE: PASS" in str(out):
         print()
         print("Next: activate the operational commitment before mutating work:")
-        print("  contractctl commit --manifest <m> --task <task> --impact id=sentence ...")
+        print(
+            "  contractctl commit --manifest <m> --task <task> --impact id=sentence ..."
+        )
     return 0 if "CONTRACT GATE: PASS" in str(out) else 2
 
 
@@ -1833,14 +2511,40 @@ def cmd_commit(args) -> int:
     role = "worker" if args.worker else args.role
     try:
         artifact, text = build_commitment(
-            manifest, args.task, impact, revision,
-            role=role, parent_bundle=args.parent_bundle, worker=args.worker,
+            manifest,
+            args.task,
+            impact,
+            revision,
+            role=role,
+            parent_bundle=args.parent_bundle,
+            worker=args.worker,
             task_tags=(getattr(args, "tag", None) or []),
         )
-    except CTError as e:
-        print(f"CONTRACT GATE: BLOCKED\nCONTRACT COMMITMENT: INACTIVE\n\n{e}", file=sys.stderr)
+    except CTFreshnessError as e:
+        staleish = e.state in ("BEHIND", "DIVERGED")
+        state = "STALE" if staleish else "INACTIVE"
+        print(f"REMOTE FRESHNESS: {e.state}")
+        print(f"CONTRACT COMMITMENT: {state}")
+        if e.detail:
+            print(f"  - {e.detail}")
+        if staleish:
+            print("  - fetch/update → resolve → read → attest → commit again")
+        else:
+            print(
+                "  - freshness not established; mutating work stays blocked (fail closed)"
+            )
         return 2
-    out = Path(args.output) if args.output else default_artifact_path(role, args.task, manifest_path=manifest)
+    except CTError as e:
+        print(
+            f"CONTRACT GATE: BLOCKED\nCONTRACT COMMITMENT: INACTIVE\n\n{e}",
+            file=sys.stderr,
+        )
+        return 2
+    out = (
+        Path(args.output)
+        if args.output
+        else default_artifact_path(role, args.task, manifest_path=manifest)
+    )
     if args.text_only:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(text + "\n", encoding="utf-8")
@@ -1871,7 +2575,9 @@ def cmd_validate_question(args) -> int:
             print(f"  - {e}")
         return 1
     data = json.loads(Path(args.question).read_text(encoding="utf-8"))
-    print(f"QUESTION VALID — {data.get('schema')} ({data.get('question_id', data.get('request_id', '?'))}), status={data.get('status')}, blocking={data.get('blocking')}")
+    print(
+        f"QUESTION VALID — {data.get('schema')} ({data.get('question_id', data.get('request_id', '?'))}), status={data.get('status')}, blocking={data.get('blocking')}"
+    )
     return 0
 
 
@@ -1891,7 +2597,9 @@ def cmd_init_project(args) -> int:
         print("created:")
         for c in created:
             print(f"  {c}")
-        print("\nnext: edit project.yaml purpose; pin adoption revision; add participant packs as needed")
+        print(
+            "\nnext: edit project.yaml purpose; pin adoption revision; add participant packs as needed"
+        )
         return 0
     print(".project/ already initialized (no files changed)")
     return 0
@@ -1906,8 +2614,14 @@ def cmd_project_validate(args) -> int:
             print(f"  - {e}")
         return 1
     pm = _load_yaml_file(d / "project.yaml")
-    packs = sorted(p.name for p in (d / "participants").iterdir() if p.is_dir()) if (d / "participants").is_dir() else []
-    print(f"PROJECT VALID — {pm.get('id')} ({pm.get('name')}): {len(packs)} participant pack(s)")
+    packs = (
+        sorted(p.name for p in (d / "participants").iterdir() if p.is_dir())
+        if (d / "participants").is_dir()
+        else []
+    )
+    print(
+        f"PROJECT VALID — {pm.get('id')} ({pm.get('name')}): {len(packs)} participant pack(s)"
+    )
     for name in packs:
         print(f"  - {name}")
     return 0
@@ -1969,7 +2683,9 @@ def cmd_verify_attestation(args) -> int:
         for e in errors:
             print(f"  - {e}")
         return 1
-    print("ATTESTATION VERIFIED — receipts, hashes, versions, and bundle match the current library")
+    print(
+        "ATTESTATION VERIFIED — receipts, hashes, versions, and bundle match the current library"
+    )
     return 0
 
 
@@ -1982,7 +2698,9 @@ def cmd_adopt(args) -> int:
             print(f"  - {e}")
         return 1
     m = load_adoption(Path(args.manifest))
-    print(f"ADOPTION VALID — {m.get('project', 'unnamed')}: always={len(m.get('always', []))} triggers={len(m.get('triggers', {}))}")
+    print(
+        f"ADOPTION VALID — {m.get('project', 'unnamed')}: always={len(m.get('always', []))} triggers={len(m.get('triggers', {}))}"
+    )
     return 0
 
 
@@ -1999,39 +2717,76 @@ ROLE_KEYWORDS = {
 
 ROLE_HIGH_PRIORITY = {
     "orchestrator": [
-        "play-nice-together", "truth-and-evidence", "ask-for-help",
-        "orchestration", "model-routing", "bounded-work", "handoff",
-        "contract-attestation", "agent-behavior", "worker-contract",
-        "review-and-integration", "participation-and-contribution",
-        "mutual-contribution", "collaborative-good-faith",
+        "play-nice-together",
+        "truth-and-evidence",
+        "ask-for-help",
+        "orchestration",
+        "model-routing",
+        "bounded-work",
+        "handoff",
+        "contract-attestation",
+        "agent-behavior",
+        "worker-contract",
+        "review-and-integration",
+        "participation-and-contribution",
+        "mutual-contribution",
+        "collaborative-good-faith",
     ],
     "worker": [
-        "play-nice-together", "truth-and-evidence", "ask-for-help",
-        "agent-behavior", "bounded-work", "handoff", "worker-contract",
-        "contract-attestation", "testing-and-verification",
+        "play-nice-together",
+        "truth-and-evidence",
+        "ask-for-help",
+        "agent-behavior",
+        "bounded-work",
+        "handoff",
+        "worker-contract",
+        "contract-attestation",
+        "testing-and-verification",
     ],
     "ui": [
-        "play-nice-together", "accessibility-floor", "human-reliability",
-        "attention-and-focus", "quiet-when-healthy", "copy-and-language",
-        "themes-and-personalization", "motion-and-feedback",
-        "migraine-and-sensory-safety", "low-vision-and-reflow",
-        "visual-fidelity-and-composition", "web-ui",
+        "play-nice-together",
+        "accessibility-floor",
+        "human-reliability",
+        "attention-and-focus",
+        "quiet-when-healthy",
+        "copy-and-language",
+        "themes-and-personalization",
+        "motion-and-feedback",
+        "migraine-and-sensory-safety",
+        "low-vision-and-reflow",
+        "visual-fidelity-and-composition",
+        "web-ui",
     ],
     "cli": [
-        "play-nice-together", "truth-and-evidence", "cli",
-        "machine-readable-output", "human-and-machine-parity",
-        "failure-and-degradation", "explicit-state",
+        "play-nice-together",
+        "truth-and-evidence",
+        "cli",
+        "machine-readable-output",
+        "human-and-machine-parity",
+        "failure-and-degradation",
+        "explicit-state",
     ],
     "service": [
-        "play-nice-together", "truth-and-evidence", "api",
-        "friendly-api-client", "idempotency", "failure-and-degradation",
-        "authorization", "authentication", "secrets",
-        "external-mutations", "versioning-and-compatibility",
+        "play-nice-together",
+        "truth-and-evidence",
+        "api",
+        "friendly-api-client",
+        "idempotency",
+        "failure-and-degradation",
+        "authorization",
+        "authentication",
+        "secrets",
+        "external-mutations",
+        "versioning-and-compatibility",
     ],
     "human": [
-        "play-nice-together", "human-reliability", "ask-for-help",
-        "attention-and-focus", "progress-and-closure",
-        "collaborative-good-faith", "copy-and-language",
+        "play-nice-together",
+        "human-reliability",
+        "ask-for-help",
+        "attention-and-focus",
+        "progress-and-closure",
+        "collaborative-good-faith",
+        "copy-and-language",
     ],
 }
 
@@ -2082,21 +2837,27 @@ def cmd_onboard(args) -> int:
             "trusted_translation": "docs/principles/trusted-translation.md",
             "quick_reference": "docs/QUICK_REFERENCE.md",
             "high_priority": [
-                {"id": c["front_matter"]["contract_id"],
-                 "version": str(c["front_matter"]["version"]),
-                 "title": c["front_matter"]["title"]}
+                {
+                    "id": c["front_matter"]["contract_id"],
+                    "version": str(c["front_matter"]["version"]),
+                    "title": c["front_matter"]["title"],
+                }
                 for c in high
             ],
             "applicable": [
-                {"id": c["front_matter"]["contract_id"],
-                 "version": str(c["front_matter"]["version"]),
-                 "title": c["front_matter"]["title"]}
+                {
+                    "id": c["front_matter"]["contract_id"],
+                    "version": str(c["front_matter"]["version"]),
+                    "title": c["front_matter"]["title"],
+                }
                 for c in applicable
             ],
             "remaining": [
-                {"id": c["front_matter"]["contract_id"],
-                 "version": str(c["front_matter"]["version"]),
-                 "title": c["front_matter"]["title"]}
+                {
+                    "id": c["front_matter"]["contract_id"],
+                    "version": str(c["front_matter"]["version"]),
+                    "title": c["front_matter"]["title"],
+                }
                 for c in remaining
             ],
             "note": "This is an onboarding plan, not an attestation. Reading order is a suggestion; all contracts remain applicable where their metadata matches your work.",
@@ -2155,7 +2916,9 @@ def cmd_onboard(args) -> int:
     print(f"    contractctl attest --task 'your task' --impact ...")
     print()
     print("  This tool prepares onboarding; you perform it.")
-    print("  A role determines reading order and emphasis, not permission or exemptions.")
+    print(
+        "  A role determines reading order and emphasis, not permission or exemptions."
+    )
     print("  All contracts remain applicable where their metadata matches your work.")
 
     return 0
@@ -2173,8 +2936,91 @@ def cmd_status(_args) -> int:
     return 0 if (not errors and lock_ok) else 1
 
 
+def _print_freshness(fr: dict) -> None:
+    print(f"REMOTE FRESHNESS: {fr['status']}")
+    print(
+        f"  policy: {fr['policy']} ({'enforced' if fr['enforced'] else 'not enforced at commit'})"
+    )
+    print(f"  source: {fr['repository']} {fr['ref']}")
+    if fr.get("remote_revision"):
+        print(f"  remote_revision: {fr['remote_revision']}")
+    print(f"  adopted_revision: {fr['adopted_revision']}")
+    print(f"  library_revision: {fr['library_revision']}")
+    if fr.get("detail"):
+        print(f"  detail: {fr['detail']}")
+
+
+def cmd_freshness(args) -> int:
+    """Deterministic remote freshness check (the first preflight stage)."""
+    manifest = Path(args.manifest)
+    try:
+        fr = check_freshness(manifest)
+    except CTError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    if args.json_output:
+        print(json.dumps({k: fr[k] for k in sorted(fr)}, sort_keys=True, indent=2))
+    else:
+        _print_freshness(fr)
+    if fr["status"] == "CURRENT":
+        return 0
+    return 1 if fr["status"] in ("BEHIND", "DIVERGED") else 2
+
+
+def cmd_sync(args) -> int:
+    """Refresh the adoption pin to the authoritative remote revision.
+
+    update: automatic — rewrites source.revision when the remote moved, then
+    demands a fresh resolve → read → attest → commit cycle.
+    update: review — detects the change, blocks mutation, and prints the
+    required review path. Never silently adopts newer contracts.
+    """
+    manifest = Path(args.manifest)
+    fr = check_freshness(manifest)
+    _print_freshness(fr)
+    cfg = freshness_config(load_adoption(manifest))
+    if fr["status"] == "CURRENT":
+        print("SYNC: NOTHING TO DO (REMOTE FRESHNESS: CURRENT)")
+        return 0
+    if fr["status"] not in ("BEHIND", "DIVERGED"):
+        print(f"SYNC: BLOCKED — REMOTE FRESHNESS: {fr['status']} (fail closed)")
+        return 2
+    if cfg["update"] == "review":
+        print(
+            "SYNC: REVIEW REQUIRED — update: review never auto-adopts newer contracts."
+        )
+        print("  1. read what changed at the remote revision")
+        print(f"  2. if accepted: pin source.revision to {fr.get('remote_revision')}")
+        print("  3. resolve → read → attest → commit again (fresh commitment required)")
+        return 2
+    remote = fr.get("remote_revision")
+    text = manifest.read_text(encoding="utf-8")
+    new_text, n = re.subn(
+        r"(revision:\s*)([0-9a-f]{7,64})",
+        rf"\g<1>{remote}",
+        text,
+        count=1,
+    )
+    if n != 1:
+        print(
+            "SYNC: FAILED — could not rewrite source.revision deterministically",
+            file=sys.stderr,
+        )
+        return 2
+    manifest.write_text(new_text, encoding="utf-8")
+    print(f"SYNC: pin updated to {remote}")
+    print(
+        "SYNC: contracts are STALE — resolve → read → attest → commit required before mutation"
+    )
+    return 0
+
+
 def main(argv=None) -> int:
-    ap = argparse.ArgumentParser(prog="contractctl", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        prog="contractctl",
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     sub = ap.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("list", help="list contracts")
@@ -2199,47 +3045,103 @@ def main(argv=None) -> int:
     p = sub.add_parser("attest", help="produce CONTRACT_ATTESTATION v1")
     p.add_argument("--manifest", required=True)
     p.add_argument("--task", required=True)
-    p.add_argument("--impact", action="append", default=[], metavar="ID=SENTENCE",
-                   help="contract_id=sentence task-impact acknowledgement (repeatable)")
+    p.add_argument(
+        "--impact",
+        action="append",
+        default=[],
+        metavar="ID=SENTENCE",
+        help="contract_id=sentence task-impact acknowledgement (repeatable)",
+    )
     p.add_argument("--impact-file", help="file of 'id = sentence' lines")
     p.add_argument("--revision", default="")
-    p.add_argument("--tag", action="append", default=[],
-                   help="explicit surface tags for trigger matching (repeatable)")
+    p.add_argument(
+        "--tag",
+        action="append",
+        default=[],
+        help="explicit surface tags for trigger matching (repeatable)",
+    )
     p.set_defaults(func=cmd_attest)
 
     p = sub.add_parser("commit", help="activate CONTRACT OPERATIONAL COMMITMENT v1")
     p.add_argument("--manifest", required=True)
     p.add_argument("--task", required=True)
-    p.add_argument("--impact", action="append", default=[], metavar="ID=SENTENCE",
-                   help="contract_id=sentence task-impact acknowledgement (repeatable)")
+    p.add_argument(
+        "--impact",
+        action="append",
+        default=[],
+        metavar="ID=SENTENCE",
+        help="contract_id=sentence task-impact acknowledgement (repeatable)",
+    )
     p.add_argument("--impact-file", help="file of 'id = sentence' lines")
     p.add_argument("--revision", default="")
-    p.add_argument("--tag", action="append", default=[],
-                   help="explicit surface tags for trigger matching (repeatable)")
-    p.add_argument("--role", default="session", choices=["session", "orchestrator", "worker"],
-                   help="participant role in the propagation tree")
-    p.add_argument("--worker", action="store_true",
-                   help="shortcut for --role worker; requires --parent-bundle")
-    p.add_argument("--parent-bundle", default=None,
-                   help="inherited contract bundle hash (workers must carry the parent bundle)")
-    p.add_argument("--output", default=None,
-                   help="where to write the session artifact (default: .contract-commitment.json in the library root)")
-    p.add_argument("--text-only", action="store_true",
-                   help="write the human-readable commitment text instead of JSON")
+    p.add_argument(
+        "--tag",
+        action="append",
+        default=[],
+        help="explicit surface tags for trigger matching (repeatable)",
+    )
+    p.add_argument(
+        "--role",
+        default="session",
+        choices=["session", "orchestrator", "worker"],
+        help="participant role in the propagation tree",
+    )
+    p.add_argument(
+        "--worker",
+        action="store_true",
+        help="shortcut for --role worker; requires --parent-bundle",
+    )
+    p.add_argument(
+        "--parent-bundle",
+        default=None,
+        help="inherited contract bundle hash (workers must carry the parent bundle)",
+    )
+    p.add_argument(
+        "--output",
+        default=None,
+        help="where to write the session artifact (default: .contract-commitment.json in the library root)",
+    )
+    p.add_argument(
+        "--text-only",
+        action="store_true",
+        help="write the human-readable commitment text instead of JSON",
+    )
     p.set_defaults(func=cmd_commit)
 
-    p = sub.add_parser("session-status", help="report current commitment state (ACTIVE/STALE/INACTIVE)")
-    p.add_argument("--manifest", default=None,
-                   help="adoption manifest; enables task-change re-resolution detection")
-    p.add_argument("--artifact", default=None,
-                   help="specific commitment artifact path (default: keyed .contract-commitments/)")
-    p.add_argument("--role", default="session", choices=["session", "orchestrator", "worker"])
-    p.add_argument("--task", default="", help="task key when looking up the keyed artifact")
+    p = sub.add_parser(
+        "session-status", help="report current commitment state (ACTIVE/STALE/INACTIVE)"
+    )
+    p.add_argument(
+        "--manifest",
+        default=None,
+        help="adoption manifest; enables task-change re-resolution detection",
+    )
+    p.add_argument(
+        "--artifact",
+        default=None,
+        help="specific commitment artifact path (default: keyed .contract-commitments/)",
+    )
+    p.add_argument(
+        "--role", default="session", choices=["session", "orchestrator", "worker"]
+    )
+    p.add_argument(
+        "--task", default="", help="task key when looking up the keyed artifact"
+    )
     p.set_defaults(func=cmd_session_status)
 
-    p = sub.add_parser("init-project", help="create a minimal .project/ skeleton (no empty directory forest)")
-    p.add_argument("target", nargs="?", default=".", help="project root (default: current directory)")
-    p.add_argument("--id", required=True, help="stable machine id (e.g. personal-world)")
+    p = sub.add_parser(
+        "init-project",
+        help="create a minimal .project/ skeleton (no empty directory forest)",
+    )
+    p.add_argument(
+        "target",
+        nargs="?",
+        default=".",
+        help="project root (default: current directory)",
+    )
+    p.add_argument(
+        "--id", required=True, help="stable machine id (e.g. personal-world)"
+    )
     p.add_argument("--name", required=True, help="human name")
     p.set_defaults(func=cmd_init_project)
 
@@ -2258,11 +3160,18 @@ def main(argv=None) -> int:
     pal.add_argument("path", help="path to the .project/ directory (or its parent)")
     pal.set_defaults(func=cmd_participant_list)
 
-    p = sub.add_parser("validate-question", help="validate a play-nice question / help-request / help-response artifact")
-    p.add_argument("question", help="path to the JSON artifact (play-nice/question-v1 family)")
+    p = sub.add_parser(
+        "validate-question",
+        help="validate a play-nice question / help-request / help-response artifact",
+    )
+    p.add_argument(
+        "question", help="path to the JSON artifact (play-nice/question-v1 family)"
+    )
     p.set_defaults(func=cmd_validate_question)
 
-    p = sub.add_parser("verify-attestation", help="verify an attestation against the library")
+    p = sub.add_parser(
+        "verify-attestation", help="verify an attestation against the library"
+    )
     p.add_argument("attestation")
     p.add_argument("--manifest", default=None)
     p.set_defaults(func=cmd_verify_attestation)
@@ -2272,15 +3181,52 @@ def main(argv=None) -> int:
     p.set_defaults(func=cmd_adopt)
 
     p = sub.add_parser("onboard", help="guided onboarding plan for a role")
-    p.add_argument("--role", required=True,
-                   choices=["orchestrator", "worker", "ui", "cli", "service", "human"],
-                   help="participant role determining reading order and emphasis")
-    p.add_argument("--json", action="store_true", dest="json_output",
-                   help="machine-readable JSON output")
+    p.add_argument(
+        "--role",
+        required=True,
+        choices=["orchestrator", "worker", "ui", "cli", "service", "human"],
+        help="participant role determining reading order and emphasis",
+    )
+    p.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="machine-readable JSON output",
+    )
     p.set_defaults(func=cmd_onboard)
 
     p = sub.add_parser("status", help="one-line library health")
     p.set_defaults(func=cmd_status)
+
+    p = sub.add_parser(
+        "freshness",
+        help="verify the authoritative remote revision (first preflight stage)",
+        description=(
+            "Deterministically establish the state of the configured authoritative "
+            "remote revision (git ls-remote). Fail closed: only CURRENT satisfies "
+            "a require-current freshness policy."
+        ),
+    )
+    p.add_argument("--manifest", default=".contracts/adoption.yaml")
+    p.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="machine-readable JSON (deterministic field set)",
+    )
+    p.set_defaults(func=cmd_freshness)
+
+    p = sub.add_parser(
+        "sync",
+        help="refresh the adoption pin to the authoritative remote revision",
+        description=(
+            "Detect a changed authoritative remote. update: automatic moves the "
+            "pin and forces a fresh resolve/read/attest/commit cycle; update: "
+            "review blocks and prints the review path instead."
+        ),
+    )
+    p.add_argument("--manifest", default=".contracts/adoption.yaml")
+    p.set_defaults(func=cmd_sync)
 
     args = ap.parse_args(argv)
     try:

@@ -4,6 +4,23 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-09-17
+
+Remote freshness: current Play Nice contracts are required before mutating work when the adoption opts in (contract-attestation 1.2.0).
+
+### Added
+- Optional `freshness` block in the adoption manifest (`schema/adoption.schema.json`, backward compatible): `policy: pinned` (legacy default, unchanged behavior) | `require-current`; `ref` (default main); `update: review` (default) | `automatic`.
+- `contractctl freshness` — deterministic remote check of the authoritative revision (`git ls-remote` of the configured ref; owner/repo shorthand resolves to GitHub). Exact state vocabulary: CURRENT / BEHIND / DIVERGED / UNREACHABLE / UNKNOWN; `--json` output deterministic and stable.
+- `contractctl sync` — refreshes `source.revision` to the authoritative remote per update policy; `review` blocks and prints the review path (never auto-adopts); `automatic` moves the pin but still requires a fresh resolve → read → attest → commit cycle.
+- Commit gating: under `require-current`, `CONTRACT COMMITMENT: ACTIVE` requires `REMOTE FRESHNESS: CURRENT`; `UNKNOWN`/`UNREACHABLE` → INACTIVE, `BEHIND`/`DIVERGED` → STALE (fail closed).
+- `session-status` re-verifies the authoritative remote on each call under `require-current`; a changed revision invalidates existing commitments (fail closed). Pinned policy never contacts the remote.
+- Session/commitment artifacts record secret-free freshness evidence (`status`, `remote_revision`, `checked_at`, `ref`) plus `source` (repository/ref/revision) and `play_nice_source_revision`; worker commitments verify the parent's source revision (workers may strengthen, never weaken).
+- `tests/test_freshness.py`: 14 offline regression tests using local bare repositories as the substitute remote — no live GitHub access.
+
+### Changed
+- `contract-attestation` 1.1.0 → 1.2.0 (receipt rotated to `quartz-rill-ember`): the preflight now begins with VERIFY AUTHORITATIVE REMOTE REVISION when policy requires current contracts; a local checkout, adoption pin, prior session, or "I checked GitHub" is explicitly not proof of remote freshness.
+- `CONTRACT_INDEX.md`, `contracts.lock.json` regenerated accordingly.
+
 ## [0.8.0] — 2026-09-17
 
 Human-language principles from the Project Worlds readability pass integrated as project-neutral, reusable Play-Nice contracts.

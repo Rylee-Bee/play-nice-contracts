@@ -100,7 +100,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | `worker-contract` | Worker Contract | 1.0.0 | canonical | Bounded packets: SHA, paths, criteria, exclusions, authority |
 | `review-and-integration` | Review and Integration | 1.0.0 | canonical | Worker-green ≠ integration-green; review real diffs |
 | `handoff` | Handoff | 1.0.0 | canonical | Resumable truth reports; cold-start continuation |
-| `contract-attestation` | Contract Attestation | 1.1.0 | canonical | Full gate: receipt + hash + task-impact attestation, then OPERATIONAL COMMITMENT: ACTIVE before mutation |
+| `contract-attestation` | Contract Attestation | 1.2.0 | canonical | Full gate: freshness-verified source, receipt + hash + task-impact attestation, then OPERATIONAL COMMITMENT: ACTIVE before mutation |
 
 ## Interfaces
 
