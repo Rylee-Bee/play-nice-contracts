@@ -25,7 +25,7 @@ Design interfaces that remain usable for people sensitive to visual and motion l
 4. No continuous decorative rotation or ambient motion by default. Peripheral movement is restrained.
 5. Transitions are short and gentle (sub-300ms, ease-out class) and gated behind no-preference; motion defaults to reduced.
 6. `prefers-reduced-motion: reduce` is honored unconditionally and suppresses all nonessential motion, overriding any application preference.
-7. Every animated or motion-carried meaning has a static alternative. Animation never carries essential meaning.
+7. Every animated or motion-carried meaning has a static alternative. Animation never carries essential meaning (see Accessibility Floor).
 8. Success does not require fireworks: completion feedback can be a quiet, static confirmation.
 9. Where a documented relationship exists between specific hues and visual discomfort (e.g. high-glare blue range), palettes may demote those hues as a comfort decision — while never dropping below contrast minimums.
 
