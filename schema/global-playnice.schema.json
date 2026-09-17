@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "play-nice/global-config-v1",
+  "title": "Play-Nice Global Agent-Work Configuration",
+  "description": "User-level configuration for the `playnice` work-entry orchestrator. Defaults are conservative; the owner opts into automation explicitly. Repositories consume the global system; they never silently weaken these floors.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "play_nice": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": { "type": "string", "default": "Rylee-Bee/play-nice-contracts" },
+        "ref": { "type": "string", "default": "main" },
+        "freshness": {
+          "enum": ["pinned", "require-current"],
+          "default": "pinned",
+          "description": "Global floor for remote freshness. `require-current` gates every work permit on a verified authoritative remote revision; consumer manifests may raise the floor but cannot lower it."
+        }
+      }
+    },
+    "repositories": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fetch_before_work": { "type": "boolean", "default": true },
+        "prune_remotes": { "type": "boolean", "default": true },
+        "inspect_previous_work": { "type": "boolean", "default": true },
+        "reconcile_before_new_work": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fast-forward the default branch to its upstream ONLY when the working tree is clean. Diverged/dirty state is preserved, never destroyed."
+        }
+      }
+    },
+    "github": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "inspect_pull_requests": { "type": "boolean", "default": true },
+        "inspect_issues": { "type": "boolean", "default": true },
+        "inspect_ci": { "type": "boolean", "default": true },
+        "merge_ready_pull_requests": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit opt-in: merge PRs whose objective readiness is proven (mergeable, checks green, review not required, not draft). Never merges on 'probably okay'."
+        },
+        "close_proven_resolved_issues": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit opt-in: close issues only when a merged PR references close/fix/resolve #N."
+        },
+        "remove_proven_merged_branches": {
+          "type": "boolean",
+          "default": false,
+          "description": "Explicit opt-in: delete branches proven merged into the default branch with no open PR and no linked worktree. Unmerged branches are preserved."
+        },
+        "merge_method": { "enum": ["merge", "squash", "rebase"], "default": "merge" },
+        "bin": { "type": "string", "default": "gh" }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "unknown_fails_closed": { "type": "boolean", "default": true },
+        "respect_branch_protection": { "type": "boolean", "default": true },
+        "respect_required_reviews": { "type": "boolean", "default": true },
+        "respect_authorization": { "type": "boolean", "default": true },
+        "never_force_push_by_default": { "type": "boolean", "default": true }
+      }
+    },
+    "handoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "required": { "type": "boolean", "default": true },
+        "path": {
+          "type": "string",
+          "default": "",
+          "description": "Handoff file location. Empty = .project/HANDOFF.md when .project exists, else .agent/HANDOFF.md."
+        }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "command": { "type": "string", "default": "opencode" },
+        "args": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["run"],
+          "description": "Adapter arguments before the task prompt. Provider-neutral: opencode, codex, kilo, aider, ..."
+        }
+      }
+    },
+    "post": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "verify_command": { "type": "string", "default": "", "description": "Shell command run after the agent exits (e.g. 'uv run pytest -q'). Empty = skip." },
+        "create_pull_request": { "type": "boolean", "default": false },
+        "push": { "type": "boolean", "default": false },
+        "timeout_minutes": { "type": "integer", "minimum": 0, "default": 0, "description": "0 = no timeout for the agent process." }
+      }
+    }
+  }
+}

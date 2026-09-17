@@ -1,0 +1,61 @@
+# Global play-nice configuration — Rylee's workstation example.
+#
+# Install with:
+#   cp examples/global-playnice.yaml ~/.config/play-nice/global.yaml
+#
+# Everything below is explicit. Absent keys use the conservative library
+# defaults (inspection on, automation off). This example enables the strong
+# automation that Play Nice is designed to carry safely.
+#
+# The orchestrator: refreshes truth -> reconciles old work -> loads Play
+# Nice -> launches the agent -> verifies and cleans up afterward.
+
+play_nice:
+  # authoritative Play Nice source; the consumer manifest's own pin is what
+  # gets verified, but this floor means a repo's manifest cannot silently
+  # downgrade freshness to 'pinned'.
+  repository: Rylee-Bee/play-nice-contracts
+  ref: main
+  freshness: require-current
+
+repositories:
+  fetch_before_work: true
+  prune_remotes: true
+  inspect_previous_work: true
+  # fast-forward the default branch only when clean and strictly behind;
+  # divergent or dirty state is preserved, never destroyed
+  reconcile_before_new_work: true
+
+github:
+  inspect_pull_requests: true
+  inspect_issues: true
+  inspect_ci: true
+  # explicit grants; each mutation below requires BOTH this config AND an
+  # ACTIVE work permit (contract gate PASS + commitment ACTIVE + freshness)
+  merge_ready_pull_requests: true
+  close_proven_resolved_issues: true
+  remove_proven_merged_branches: true
+  merge_method: merge
+
+safety:
+  unknown_fails_closed: true
+  respect_branch_protection: true
+  respect_required_reviews: true
+  respect_authorization: true
+  never_force_push_by_default: true
+
+handoff:
+  required: true
+  # path: ""   # default: .project/HANDOFF.md if .project exists, else .agent/HANDOFF.md
+
+agent:
+  # provider-neutral adapter: any command that consumes a prompt works
+  command: opencode
+  args: [run]
+  # examples: command codex, args [exec]; command kilo; command aider, args [--message]
+
+post:
+  # verify_command: "uv run pytest --timeout=30 -q"
+  create_pull_request: false
+  push: false
+  timeout_minutes: 0
