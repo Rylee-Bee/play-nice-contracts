@@ -603,7 +603,7 @@ def test_commitment_records_exact_bundle(tmp_repo):
     assert selected == {
         "truth-and-evidence", "explicit-state", "recovery-and-reversibility",
         "provenance-and-audit", "least-privilege", "ask-for-help", "assume-unknown"}
-    assert art["library_version"] == "0.8.0"  # semver from VERSION
+    assert art["library_version"] == "0.9.0"  # semver from VERSION
     # no secrets by construction: artifact only carries ids/hashes/words
     blob = json.dumps(art).lower()
     for bad in ("token", "secret", "password", "api_key"):
@@ -628,7 +628,7 @@ def test_resolved_set_bundle_differs_by_scope(tmp_repo):
 def test_library_version_vs_revision(tmp_repo):
     """Library semver and adopted git revision are distinct concepts (hardening #2)."""
     ct = _load_ct_from(tmp_repo)
-    assert ct.library_version() == "0.8.0"          # semver from VERSION file
+    assert ct.library_version() == "0.9.0"          # semver from VERSION file
     rev = ct.library_revision()
     assert rev != "unknown"
     assert rev != ct.library_version()              # git SHA when repo initialized

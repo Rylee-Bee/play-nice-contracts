@@ -122,6 +122,9 @@ updating the library alone does not force new core contracts into old manifests.
 Substantial work starts with the complete preflight:
 
 ```text
+REMOTE FRESHNESS (require-current only)
+        (contractctl freshness — verify the authoritative remote revision)
+                ↓
 RESOLVE APPLICABLE CONTRACTS → READ CANONICAL SOURCES →
 VERIFY VERSION + HASH + RECEIPT → TASK-IMPACT ACKNOWLEDGEMENT →
 CHECK FOR CONFLICTS → CONTRACT ATTESTATION →
@@ -130,6 +133,32 @@ MUTATING WORK MAY BEGIN
 ```
 
 The three stages mean: receipt = "I obtained the lesson"; attestation = "I know this lesson applies here"; commitment = "I will use this lesson while I work." For substantial mutating work, BOTH `CONTRACT GATE: PASS` and `CONTRACT COMMITMENT: ACTIVE` are required before implementation. The commitment is an operating state, not ceremony: tooling uses it as an execution gate, stale bundles invalidate it, scope changes force re-resolution, and workers inherit the parent's bundle (they may strengthen, never weaken, the applicable constraints). Full prefix: `examples/session-handoff.md`. Neither gate nor commitment is ever authorization — authority comes from the task and the Authorization contract.
+
+## Remote freshness (require-current)
+
+A project can opt into **current contracts** in its adoption manifest:
+
+```yaml
+schema: play-nice/adoption-v1
+source:
+  repository: Rylee-Bee/play-nice-contracts
+  revision: <reviewed SHA>
+freshness:
+  policy: require-current   # pinned (legacy default) | require-current
+  ref: main                 # authoritative branch
+  update: review            # review (block, ask for review) | automatic (refresh pin, still re-commit)
+```
+
+Under `require-current`, `contractctl` deterministically checks the authoritative remote (`git ls-remote`) BEFORE the resolve/read/attest stages:
+
+```text
+REMOTE FRESHNESS → RESOLVE → READ → VERIFY → ATTEST → COMMIT → MUTATE
+```
+
+- a local checkout, the adoption pin, a previous session, or "I checked GitHub" is **not** proof of remote freshness — the remote is actually queried;
+- `UNKNOWN`/`UNREACHABLE` → `CONTRACT COMMITMENT: INACTIVE` (fail closed); `BEHIND`/`DIVERGED` → `STALE`, requiring fetch/update → resolve → read → attest → commit again;
+- a changed authoritative revision invalidates existing commitments (re-resolve, re-attest, re-commit);
+- `contractctl sync` refreshes the pin per the update policy — **checking for the newest revision is not the same as silently adopting it**; `update: review` blocks mutation pending explicit review, and even `automatic` still forces a fresh resolve/read/attest/commit cycle.
 
 ## Versioning
 
