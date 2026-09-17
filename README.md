@@ -160,6 +160,24 @@ REMOTE FRESHNESS → RESOLVE → READ → VERIFY → ATTEST → COMMIT → MUTAT
 - a changed authoritative revision invalidates existing commitments (re-resolve, re-attest, re-commit);
 - `contractctl sync` refreshes the pin per the update policy — **checking for the newest revision is not the same as silently adopting it**; `update: review` blocks mutation pending explicit review, and even `automatic` still forces a fresh resolve/read/attest/commit cycle.
 
+## The playnice orchestrator (`playnice work`)
+
+`playnice` is the global agent-work entry point: take a task, fetch/refresh remote Play Nice contracts, reconcile carryover, pass the contract gate, issue a work permit, launch the agent, then verify and write a durable handoff — one command, no prompts required:
+
+```bash
+python3 tools/playnice/playnice.py work --repo ~/code/your-repo "implement the feature"
+playnice status --repo ~/code/your-repo       # what state is this repo in?
+playnice reconcile --repo ~/code/your-repo    # clean up merged work, refresh pins
+```
+
+- **Fail closed on UNKNOWN.** No adoption manifest, no freshness evidence, no permit → no work, no mutation. Freshness and carryover use the exact vocabularies `CURRENT/BEHIND/DIVERGED/UNREACHABLE/UNKNOWN` and `DONE/MERGED/CLOSED/STILL_ACTIVE/DEFERRED/WAITING_FOR_HELP/UNKNOWN/BLOCKED`.
+- **Two-layer commitment.** The orchestrator computes a deterministic task-impact permit floor; the executing agent does its own worker attestation via `contractctl` and inherits the parent's constraints (worker packet: `INHERITED_CONTRACT_BUNDLE`, `PLAY_NICE_SOURCE_REVISION`, `PARENT_CONTRACT_COMMITMENT`).
+- **Automation is explicit opt-in.** Automation runs only with both a global config grant (`~/.config/play-nice/global.yaml`, or `PLAY_NICE_CONFIG`/`--config`) and an ACTIVE permit; `reconcile` revalidates liveness with `contractctl session-status` before any mutation.
+- **Deterministic, no live network.** Tests run against local bare remotes and a fake `gh` (`PLAY_NICE_GH`); nothing in the pipeline requires the network.
+- Exit codes: `0` ok · `1` usage/internal · `2` fail-closed · `3` agent failed · `4` needs help (human attention, safely deferred).
+
+Full reference: [`docs/PLAYNICE.md`](docs/PLAYNICE.md) · config schema: [`schema/global-playnice.schema.json`](schema/global-playnice.schema.json) · examples: [`examples/global-playnice.yaml`](examples/global-playnice.yaml).
+
 ## Versioning
 
 Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR = incompatible change. Library semver (VERSION) is distinct from the adopted Git revision: the version describes contract content, the revision pins the exact adopted commit. `contracts.lock.json` pins id, version, path, SHA-256, receipt, and status; lock drift is detected deterministically and attestations fail closed on it. A commitment's bundle identity represents the **resolved contract set** for its task — different scopes, different bundles — and stale bundles invalidate commitments. Bundle receipts (e.g. `cedar-lantern-47`) are identifiers, never credentials or authorization.

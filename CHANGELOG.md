@@ -4,6 +4,21 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-09-17
+
+New `playnice` orchestrator: a deterministic global agent-work entry point that owns the full lifecycle (remote freshness → repo refresh → carryover reconciliation → contract gate → work permit → agent launch → post-work verify/reconcile → durable handoff). Tooling, not prompts; fail closed on UNKNOWN; automation is explicit opt-in.
+
+### Added
+- `playnice work|status|reconcile` (`tools/playnice/playnice.py`, stdlib only, Python 3.10+). `work` runs the full lifecycle; `status` reports repository/adoption/freshness/carryover state; `reconcile` prunes merged branches, closes done issues/PRs, refreshes pins per update policy, and revalidates commit liveness before any mutation.
+- Deterministic reusable pieces: `find_adoption_manifest` (`.contracts/adoption.yaml` then `.project/contracts/adoption.yaml`), commit artifact parsing (`session artifact written: <path>`), permit floor from auto-generated deterministic task-impact sentences per resolved contract, carryover discovery from handoff files (`DONE/MERGED/CLOSED/STILL_ACTIVE/DEFERRED/WAITING_FOR_HELP/UNKNOWN/BLOCKED`), and a merge-ready PR gate (mergeable/checks/review/exact-commit).
+- Automation grants via `~/.config/play-nice/global.yaml` (or `PLAY_NICE_CONFIG`/`--config`): freshness enforcement floor, GitHub tokens, agent launcher, automation opt-in. Unknown keys/enums/types fail loudly. Schema at `schema/global-playnice.schema.json`, example at `examples/global-playnice.yaml`.
+- Worker packet inherited by the launched agent: `INHERITED_CONTRACT_BUNDLE`, `PLAY_NICE_SOURCE_REVISION`, `PARENT_CONTRACT_COMMITMENT`; env `PLAY_NICE_LIBRARY` + `PLAY_NICE_PERMIT`.
+- Exit codes `0` ok `/ 1` usage, internal `/ 2` fail-closed `/ 3` agent failed `/ 4` needs help. Deterministic exit and machine-readable `--json` output.
+- Hermetic test doubles: `tests/fakegh.py` (scenario-driven GitHub via `PLAY_NICE_GH`+`PLAY_NICE_FAKE_GH_SCENARIO`) and `tests/fakeagent.py` (launcher double); `tests/test_playnice.py` (~26 tests) runs fully offline against local bare remotes.
+
+### Changed
+- `VERSION` 0.9.0 → 0.10.0 (library semver; no contract content changes, no lock drift).
+
 ## [0.9.0] — 2026-09-17
 
 Remote freshness: current Play Nice contracts are required before mutating work when the adoption opts in (contract-attestation 1.2.0).
