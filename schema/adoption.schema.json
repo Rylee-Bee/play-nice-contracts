@@ -55,6 +55,28 @@
       "description": "Optional machine-checkable acceptance rules the project adds on top of contracts.",
       "additionalProperties": true
     },
+    "freshness": {
+      "type": "object",
+      "required": ["policy"],
+      "additionalProperties": false,
+      "description": "Optional remote-freshness policy. Absent means {policy: pinned, ref: main, update: review} (legacy behavior). policy: pinned keeps the reviewed revision authoritative; policy: require-current makes a verified authoritative remote revision a prerequisite of CONTRACT COMMITMENT: ACTIVE (fail closed on UNKNOWN/UNREACHABLE).",
+      "properties": {
+        "policy": {
+          "enum": ["pinned", "require-current"],
+          "description": "pinned: existing behavior — the reviewed revision is authoritative for the consumer. require-current: the configured authoritative remote MUST be checked (git ls-remote) before mutating work."
+        },
+        "ref": {
+          "type": "string",
+          "default": "main",
+          "description": "Authoritative branch the remote is checked against (branch name, not full ref). Ignored under policy: pinned."
+        },
+        "update": {
+          "enum": ["review", "automatic"],
+          "default": "review",
+          "description": "review: a newer remote blocks mutation pending explicit adoption review. automatic: the pin may be refreshed automatically, but a fresh resolve/read/attest/commit cycle is still mandatory."
+        }
+      }
+    },
     "notes": {
       "type": "string",
       "maxLength": 2000,
