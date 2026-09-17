@@ -14,10 +14,10 @@
     },
     {
       "id": "agent-behavior",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "contracts/agents/AGENT_BEHAVIOR.md",
-      "sha256": "9dd75fcf902818c50054a8d5a6bdcd02b90d27f0312b624342531f29117f1348",
-      "receipt": "wren-compass-timber",
+      "sha256": "4027a1622f109068aab8af6d0cf14cbe8841d5c8f9ad9964afce502b642c7be9",
+      "receipt": "raven-pearl-oak",
       "status": "canonical"
     },
     {
@@ -118,10 +118,10 @@
     },
     {
       "id": "copy-and-language",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "contracts/experience/COPY_AND_LANGUAGE.md",
-      "sha256": "d4da9e0d7a38f986da935850e4f23c67fe659bd77c4b80db592ba3f97b705f76",
-      "receipt": "amber-wren-marble",
+      "sha256": "0a36c26ec8af1ca74083daebb2b4d1ab4d898459cd4592f6405f41788f9017be",
+      "receipt": "clay-cedar-glade",
       "status": "canonical"
     },
     {
@@ -166,10 +166,10 @@
     },
     {
       "id": "documentation-and-continuity",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "contracts/engineering/DOCUMENTATION_AND_CONTINUITY.md",
-      "sha256": "8b162cd9859f0d8428487648091429d4bbe8b87344c2cd0d120afa58e18a44bf",
-      "receipt": "prairie-clover-sail",
+      "sha256": "df48d105ba200a0eff9b12ae019e02b3a5f762da71027291462a9999eb63b0ee",
+      "receipt": "oasis-opal-amber",
       "status": "canonical"
     },
     {
@@ -190,10 +190,10 @@
     },
     {
       "id": "failure-and-degradation",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "contracts/interoperability/FAILURE_AND_DEGRADATION.md",
-      "sha256": "18b250b560887cc4f86dad627a178db3d8ef3dd0efc8ba9066394787c5015754",
-      "receipt": "nectar-ledger-basalt",
+      "sha256": "9a5260cb0ca44b0741c66aa795f04db6618f641c0b04dbe0fe056a12ea7b70bb",
+      "receipt": "sigma-hazel-cedar",
       "status": "canonical"
     },
     {
@@ -238,10 +238,10 @@
     },
     {
       "id": "human-reliability",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "path": "contracts/human/HUMAN_RELIABILITY.md",
-      "sha256": "b35216d85dcd2b53b9da1d21fdf76702a62cab51d6534faf2d9c65824a9e6ebf",
-      "receipt": "willow-north-yarrow",
+      "sha256": "a421ec62f352bd8d78ab8f6e96a3420d0a6949d19a8003db5ef13d409fb936d3",
+      "receipt": "jade-harbor-cobalt",
       "status": "canonical"
     },
     {
@@ -288,7 +288,7 @@
       "id": "migraine-and-sensory-safety",
       "version": "1.0.0",
       "path": "contracts/human/MIGRAINE_AND_SENSORY_SAFETY.md",
-      "sha256": "aec5a96e8fed0e8cbffe7ef7c9054c1ba66ba1cd6e00c081ffeff23c2889ce9e",
+      "sha256": "31df7b4e689c8e2f3e3bfdfae969c745ffb3f5fd768169b1b6fe0f98d64c8b20",
       "receipt": "fathom-opal-zenith",
       "status": "canonical"
     },
@@ -376,16 +376,16 @@
       "id": "progress-and-closure",
       "version": "1.0.0",
       "path": "contracts/experience/PROGRESS_AND_CLOSURE.md",
-      "sha256": "22fd586c6916d3398ffd001f7a00f233fbc2c97cde370f068507a732725757ac",
+      "sha256": "b0655053fcf773b2d8b37bbe4773b07bdf0b2444cce346323606b38f8f8b73e9",
       "receipt": "inkstone-tundra-cedar",
       "status": "canonical"
     },
     {
       "id": "progressive-disclosure",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "contracts/experience/PROGRESSIVE_DISCLOSURE.md",
-      "sha256": "9ef9f7270b41d6b10acc0929f56c03c4c850cf424bfd3ea0bb053456cdeb055e",
-      "receipt": "timber-compass-willow",
+      "sha256": "09b34d7f87495411f8a107971f4531e2458732a0a4390ec83ddfc6bca96c133b",
+      "receipt": "glade-lagoon-tulip",
       "status": "canonical"
     },
     {
@@ -520,7 +520,7 @@
       "id": "what-why-next",
       "version": "1.0.0",
       "path": "contracts/experience/WHAT_WHY_NEXT.md",
-      "sha256": "a664b43b798f7548d20d3ec03ad2bf9aacb4bb924c19f9275017480cd98b13ff",
+      "sha256": "9e67f4b15d1949fd610b6b7bb0a4b8021820a17615a3a8f789c4c8dae59473ed",
       "receipt": "timber-nectar-zenith",
       "status": "canonical"
     },
