@@ -28,7 +28,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 
 | ID | Title | Ver | Status | Purpose |
 |---|---|---|---|---|
-| `human-reliability` | Human Reliability | 1.1.0 | canonical | No heroics; attention finite; resumable; "done for now" allowed |
+| `human-reliability` | Human Reliability | 1.2.0 | canonical | No heroics; attention finite; reduced cognitive capacity; unknowns preserved; resumable |
 | `accessibility-floor` | Accessibility Floor | 1.0.0 | canonical | Accessibility is architecture: keyboard, targets, labels, zoom, focus |
 | `migraine-and-sensory-safety` | Migraine and Sensory Safety | 1.0.0 | canonical | Low-glare, static-first, reduced-motion unconditional; no strobing |
 | `low-vision-and-reflow` | Low Vision and Reflow | 1.0.0 | canonical | 200% zoom/reflow gate; text scaling; forced-colors; coherent contrast |
@@ -41,7 +41,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | ID | Title | Ver | Status | Purpose |
 |---|---|---|---|---|
 | `what-why-next` | What / Why / Next | 1.0.0 | canonical | Important work answers what, why it matters, what's next |
-| `progressive-disclosure` | Progressive Disclosure | 1.0.0 | canonical | Smallest useful view first; summaries never lie; native mechanisms |
+| `progressive-disclosure` | Progressive Disclosure | 1.1.0 | canonical | Smallest useful view first; human meaning leads; summaries never lie; native mechanisms |
 | `quiet-when-healthy` | Quiet When Healthy | 1.0.0 | canonical | Routine success costs zero attention; NO ACTION NEEDED valid |
 | `progress-and-closure` | Progress and Closure | 1.0.0 | canonical | Real accomplishment rewarded; done beats additionally awesome |
 | `guide-me` | Guide Me | 1.0.0 | canonical | Resumable guided paths for complex workflows; not every flow a wizard |
@@ -49,7 +49,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | `motion-and-feedback` | Motion and Feedback | 1.0.0 | canonical | Motion reduced by default, never essential; every action has observable result |
 | `design-source-and-fidelity` | Design Source and Fidelity | 1.0.0 | canonical | Semantic tokens as canonical design truth; extract, never eyeball |
 | `visual-fidelity-and-composition` | Visual Fidelity and Composition | 1.0.0 | canonical | Token fidelity ≠ design fidelity; composition is verified design data; D0–D4 levels |
-| `copy-and-language` | Copy and Language | 1.0.0 | canonical | Words are interface; human translation of machine truth |
+| `copy-and-language` | Copy and Language | 1.1.0 | canonical | Words are interface; simplest clear language; brevity pass; truth before tone |
 
 ## Interoperability (playing with other systems)
 
@@ -60,7 +60,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | `provider-neutrality` | Provider Neutrality | 1.0.0 | canonical | Provider-neutral meaning; namespaced enrichment; no config looks "real" |
 | `discovery-and-negotiation` | Discovery and Negotiation | 1.1.0 | canonical | Ask what's supported; degrade gracefully on absence |
 | `versioning-and-compatibility` | Versioning and Compatibility | 1.0.0 | canonical | Declared versions; breaks explicit; unknown fails clearly |
-| `failure-and-degradation` | Failure and Degradation | 1.0.0 | canonical | Shared status vocabulary; optional failure contained; errors answer six questions |
+| `failure-and-degradation` | Failure and Degradation | 1.1.0 | canonical | Shared status vocabulary; optional failure contained; errors answer seven questions; no blame |
 | `idempotency` | Idempotency | 1.0.0 | canonical | Repeated invocation never double-applies destruction |
 | `polling-webhooks-and-caching` | Polling, Webhooks, and Caching | 1.0.0 | canonical | Prefer events; poll politely; cached data never masquerades as current |
 | `external-mutations` | External Mutations | 1.0.0 | canonical | Observe → smallest mutation → verify → attribute; approval gates |
@@ -86,7 +86,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | `testing-and-verification` | Testing and Verification | 1.0.0 | canonical | Evidence grades; "works" states its command |
 | `dependency-discipline` | Dependency Discipline | 1.0.0 | canonical | Few, boring, pinned, reproducible; removal supported |
 | `git-and-worktrees` | Git and Worktrees | 1.0.0 | canonical | PROVE STALE → CLEAN; per-lane worktrees; explicit staging |
-| `documentation-and-continuity` | Documentation and Continuity | 1.0.0 | canonical | Docs are interfaces; no transcript archaeology |
+| `documentation-and-continuity` | Documentation and Continuity | 1.1.0 | canonical | Docs are interfaces; brevity pass; ordinary words; no transcript archaeology |
 | `migrations` | Migrations | 1.0.0 | canonical | CURRENT/TARGET/TRANSFORM/VALIDATE/ROLLBACK/DELETION GATE |
 | `observability` | Observability | 1.0.0 | canonical | Correlated, attributed, secret-free, diagnosable |
 
@@ -94,7 +94,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 
 | ID | Title | Ver | Status | Purpose |
 |---|---|---|---|---|
-| `agent-behavior` | Agent Behavior | 1.0.0 | canonical | Inspect, preserve uncertainty, verify, stop at boundaries |
+| `agent-behavior` | Agent Behavior | 1.1.0 | canonical | Inspect, preserve uncertainty, preserve human authority, truth before tone, verify, stop at boundaries |
 | `orchestration` | Orchestration | 1.4.0 | canonical | Owner/architect/foreman/worker/gatekeeper; assignment is negotiated; foreman resolves heat into information; serial integration |
 | `model-routing` | Model Routing | 1.2.0 | canonical | Sufficient-for-the-contribution routing, never prestige or benchmark; participant-stated conditions shape the task; no silent fallback |
 | `worker-contract` | Worker Contract | 1.0.0 | canonical | Bounded packets: SHA, paths, criteria, exclusions, authority |

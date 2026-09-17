@@ -29,7 +29,7 @@ WHAT can happen next?
 2. WHAT: the primary fact, in the person's vocabulary (concepts, not vendor internals).
 3. WHY: the consequence or stakes, when it is not obvious. Omit the why only when it is genuinely self-evident; never invent urgency.
 4. NEXT: the next reasonable action or an explicit "nothing needed". An explicit no-action is a first-class answer.
-5. The order is deliberate: state before explanation before action. Never lead with the CTA.
+5. The order is deliberate: state before explanation before action. Never lead with the CTA. Lead with human meaning before implementation detail (see Progressive Disclosure). Use the simplest clear language for the first layer (see Copy and Language).
 6. Errors follow the same shape extended: what failed, why (if known), what still works, is anything unsafe, can it be retried, next action (see the error rules in Failure and Degradation).
 7. Notifications and agent reports inherit this shape.
 

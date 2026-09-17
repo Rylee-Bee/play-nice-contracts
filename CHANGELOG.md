@@ -4,8 +4,29 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-09-17
+
+Human-language principles from the Project Worlds readability pass integrated as project-neutral, reusable Play-Nice contracts.
+
 ### Added
-- Non-normative Project Worlds Workshop v3 story in `docs/principles/world-with-manners.md`, linked from the README: emotional volume, sixteen-frame convergence, provenance, notification persistence, known normalization gaps and the deliberate design-to-implementation handoff. Audit outcomes remain attributed historical evidence; no contract, lockfile, product behavior or implementation claim changes.
+- `copy-and-language` 1.0.0 → 1.1.0 (receipt preserved): three new normative rules — prefer the simplest clear language (rule 9), documentation requires a brevity pass (rule 10), truth before tone (rule 11). Expanded rationale, anti-patterns, acceptance checks.
+- `progressive-disclosure` 1.0.0 → 1.1.0 (receipt preserved): rule 9 — human meaning leads; technical detail follows. Cross-reference to Copy and Language for simplicity.
+- `human-reliability` 1.1.0 → 1.2.0 (receipt preserved): two new normative rules — design for reduced cognitive capacity (rule 8), unknowns remain unknown (rule 9). Reinforces existing human-capacity philosophy.
+- `documentation-and-continuity` 1.0.0 → 1.1.0 (receipt preserved): two new normative rules — documentation requires a brevity pass (rule 9), use ordinary words (rule 10). Cross-reference to Copy and Language.
+- `agent-behavior` 1.0.0 → 1.1.0 (receipt preserved): two new normative rules — preserve human authority in language (rule 12), truth before tone in agent output (rule 13). Cross-references to Copy and Language and Handoff.
+- `failure-and-degradation` 1.0.0 → 1.1.0 (receipt preserved): error question set expanded from six to seven (added "WHERE is technical detail available?"); no-blame and no-false-recovery cross-reference added.
+- `progress-and-closure` 1.0.0 (receipt unchanged): strengthened rule 2 — manufactured urgency prohibition expanded with "Needs you" must mean real human judgment required; cross-reference to Human Reliability.
+- `what-why-next` 1.0.0 (receipt unchanged): rule 5 strengthened with cross-references to Progressive Disclosure (human meaning first) and Copy and Language (simplest clear language).
+
+### Source provenance
+These language/readability additions were derived from the Project Worlds human-language/readability pass on 2026-09-17. They were generalized before entering Play-Nice. Project Worlds-specific terminology was deliberately excluded. The source artifact was `HANDOFF-HUMAN-READABILITY-FULL-UPDATE-2-2026-09-17.md`. Related existing Play-Nice contracts were extended rather than duplicated. External references consulted: USWDS Plain Language Guide (digital.gov), W3C COGA Task Force, Inclusion Europe Easy-to-Read standards.
+
+### Changed
+- `CONTRACT_INDEX.md` updated with all version bumps and purpose summaries.
+- `contracts.lock.json` regenerated for all changed contracts.
+
+### Tests
+- Existing suite covers contract count, index drift, lock drift, receipt uniqueness, dual-use structure, and adoption validation. Version bumps and new rules are compatible with all existing gates.
 
 ## [0.7.0] — 2026-09-13
 
