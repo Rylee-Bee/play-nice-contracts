@@ -6,8 +6,12 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 
 ### Security
 - Commit identity guard (CI): author/committer emails must be GitHub
-  noreply or `.invalid`; fails closed on raw mailboxes, machine
-  hostnames, and tunnel domains. Triggered by self-discovery that
+  noreply (`@users.noreply.github.com`) or `*@.invalid`; fails closed
+  on raw mailboxes, machine hostnames, and tunnel domains. The first
+  revision of this guard rejected the very noreply address it protects
+  (its boundary class omitted `@`); it was caught by running the guard
+  against its own PR — guards are only real once they've passed
+  themselves. Triggered by self-discovery that
   `d7a6e11` (2026-09-20, an agent direct-push during the clarity work)
   carried an email built from this machine's name at the family tunnel
   domain — the exact private-material class this library bans in

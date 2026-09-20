@@ -28,7 +28,7 @@ jobs:
           RANGE="${BASE:+$BASE..$HEAD}"
           [ -n "$RANGE" ] || RANGE="HEAD~1..HEAD"
           BAD=$(git log --format='%ae %ce' $RANGE | tr ' ' '\n' | sort -u \
-                | grep -Ev '(^|[#&/._%+-])users\.noreply\.github\.com$|@[A-Za-z0-9.-]*[.]invalid$' || true)
+                | grep -Ev '@users\.noreply\.github\.com$|@[A-Za-z0-9.-]*[.]invalid$' || true)
           if [ -n "$BAD" ]; then
             echo "::error::commit metadata contains disallowed identity emails:"
             echo "$BAD"
