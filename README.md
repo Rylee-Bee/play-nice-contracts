@@ -14,7 +14,9 @@ Start with **[Trusted Translation](docs/principles/trusted-translation.md)** for
 
 ## The layering
 
-Contracts are layered; a lower layer may never violate a requirement above it:
+The `contracts/` tree groups the library into 8 topic areas; normative
+**authority** is the five-layer stack below. A lower layer may never
+violate a requirement above it:
 
 ```text
 UNIVERSAL SAFETY / INTEROPERABILITY FLOOR      (contracts/core)
@@ -33,17 +35,30 @@ Rylee's preferred experience is a first-class profile (`profiles/`), not a hidde
 ## What's here
 
 ```text
-schema/            contract, adoption, attestation, capability, status, question, project, participant, references schemas
-contracts/         66 canonical contracts across 8 layers
-docs/             QUICK_REFERENCE.md (non-normative reminder card),
-                  principles/ (non-normative philosophy, e.g. trusted-translation),
-                  roles/ (non-normative role docs, e.g. trusted-steward)
-profiles/          baseline + example personal profiles
-tools/contractctl  the CLI (stdlib-only Python)
-tests/             full library test suite
-examples/          adoption manifests (Personal World, VEFR, homelab) + session prefix
-CONTRACT_INDEX.md  the registry (routes, does not govern)
-contracts.lock.json pinned id/version/sha256/receipt for every contract
+schema/                     JSON Schemas: contract, adoption, attestation,
+                            capability, status, question, project, participant,
+                            references, global Play-Nice config
+contracts/                  66 canonical contracts in 8 topic areas (normative)
+.contracts/adoption.yaml    this repo's own adoption of its library — the
+                            contract gate is dogfooded here (see AGENTS.md)
+docs/                       QUICK_REFERENCE.md (non-normative reminder card),
+                            principles/ (non-normative philosophy),
+                            PLAYNICE.md (orchestrator reference), roles/,
+                            research/, decisions/, participant-notes/
+profiles/                   baseline + example personal profiles
+tools/contractctl           the CLI (stdlib-only Python): validate, lock,
+                            resolve, attest, commit, adopt, freshness, sync,
+                            onboard, init-project, and more
+tools/playnice              the `playnice work|status|reconcile` orchestrator
+tests/                      hermetic suite: library invariants + tooling
+examples/                   real adoption manifests, worked .project/ example,
+                            session prefix
+harness/                    EXPERIMENTAL research: candidate harness laws
+                            are hypotheses with evidence — NOT contracts
+CONTRACT_INDEX.md           the registry (routes, does not govern)
+contracts.lock.json         generated: pinned id/version/sha256/receipt per contract
+VERSION + CHANGELOG.md      library semver — distinct from adopted git revisions
+SECURITY.md / TRADEMARKS.md threat model; name and fork-identity rules
 ```
 
 ## Design philosophy
@@ -87,7 +102,6 @@ contractctl validate-question q.json  # play-nice question / help-request / help
 ```
 
 Commitment artifacts are **consumer-context scoped** (project/worktree/session-safe by default): they live in `<your project>/.contracts/sessions/` next to your adoption manifest — parallel projects, worktrees, and workers never collide. Orchestration harnesses may pin a per-lane directory with `CONTRACTCTL_SESSION_DIR`; `--output` overrides explicitly. Artifacts are secret-free JSON, keyed by role+task, and record their own location.
-```
 
 ## Project context + participant packs
 
@@ -185,28 +199,16 @@ Per-contract semver: PATCH = clarification, MINOR = compatible new rule, MAJOR =
 ## Tests
 
 ```bash
-python3 -m pytest tests/ -q
+python3 -m pytest tests/ -q    # what CI runs, after pip install pytest pyyaml
+```
+
+One-command local equivalent without polluting the system Python:
+
+```bash
+uv run --python 3.12 --with pytest,pyyaml python3 -m pytest tests/ -q
 ```
 
 The full suite covers: library invariants, resolution, attestation/commitment machinery, receipt-rotation enforcement, ask-for-help + question schema, the project-context/participant-pack framework, participation-and-contribution (right-sized participation, honest refusal), mutual-contribution (the agreement loop, authority separation), and collaborative-good-faith (critique toward repair, safe uncertainty, foreman disagreement integration, no moderation machinery).
-
-## Project context + participant packs
-
-`.project/` is the standard durable-context structure any project can adopt
-(`contractctl init-project .` creates a minimal skeleton): a project.yaml
-manifest, canonical pointers (CURRENT/DECISIONS), the Play-Nice adoption
-manifest, and optional **participant packs** — one directory per regular
-collaborator (Figma, GitHub, an agent, a team) describing capabilities,
-interaction guides, references, what the participant is authoritative for
-and NOT authoritative for, and which questions it can answer directly
-(ask-for-help routing). Packs are optional enrichment: deleting one never
-corrupts canonical project truth. See the
-`project-context-and-participant-packs` contract and the worked example under
-`examples/project-context/`.
-
-## Asking for help is part of the architecture
-
-`ask-for-help` (core) encodes: **it is nice, polite, kind, and smart to ask.** Know → act; can safely discover → discover; another participant can answer cheaply → ask; high-risk/ambiguous → ask or escalate; unknown and nobody can answer → preserve UNKNOWN. Never guess to keep moving. Questions are resumable state (`play-nice/question-v1`), answers become provenance, and answers are never authorization. `WAITING_FOR_HELP` is a successful stop state.
 
 ## Privacy / repository state
 
@@ -226,4 +228,10 @@ Contract text changes: lockfile regeneration ships in the same commit (`contract
 
 ## License
 
-MIT (see `LICENSE`). GitHub recognizes the license.
+Everything in this repository — contract text, tooling, schemas, docs —
+is **MIT** (see `LICENSE` and `contracts/LICENSE.md`). This supersedes
+an earlier MPL-2.0 + CC BY-SA 4.0 split that had drifted out of sync
+with this README; sole-authorship relicensing, recorded in
+`CHANGELOG.md`. Character and world content from Project Worlds lives
+in other repositories under their own terms — nothing here licenses it,
+and it must never be moved into this repository.

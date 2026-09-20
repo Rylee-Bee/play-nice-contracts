@@ -4,6 +4,26 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 
 ## [Unreleased]
 
+### Changed
+- **Relicensed to MIT across the whole repository.** The root `LICENSE`
+  (was MPL-2.0) and `contracts/LICENSE.md` (was CC BY-SA 4.0) now match
+  the README's long-standing MIT claim; sole-authorship relicense.
+  Contracts remain reference-not-fork for consumers — that is adoption
+  discipline, not a copyright term. No contract text changed, so no
+  receipt rotation; `VERSION` unchanged pending release.
+- README: fixed a stray code fence that swallowed four sections,
+  removed two verbatim duplicated sections, completed the "What's here"
+  map (`harness/`, `.contracts/`, VERSION/CHANGELOG, SECURITY,
+  TRADEMARKS), clarified 8 topic areas vs 5 authority layers, and added
+  the one-command local test invocation.
+
+### Added
+- `AGENTS.md`: agent-facing rulebook — what the repo is/isn't, surface
+  ownership, change classes, license and privacy floors, change flow.
+- `.contracts/adoption.yaml`: the library now adopts itself
+  (`require-current`, `update: review`) — the contract gate is
+  dogfooded in this repo.
+
 ## [0.10.0] — 2026-09-17
 
 New `playnice` orchestrator: a deterministic global agent-work entry point that owns the full lifecycle (remote freshness → repo refresh → carryover reconciliation → contract gate → work permit → agent launch → post-work verify/reconcile → durable handoff). Tooling, not prompts; fail closed on UNKNOWN; automation is explicit opt-in.
