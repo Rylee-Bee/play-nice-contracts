@@ -12,7 +12,7 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
   (its boundary class omitted `@`); it was caught by running the guard
   against its own PR — guards are only real once they've passed
   themselves. Triggered by self-discovery that
-  `d7a6e11` (2026-09-20, an agent direct-push during the clarity work)
+  `4aa7f8a` (2026-09-20, an agent direct-push during the clarity work)
   carried an email built from this machine's name at the family tunnel
   domain — the exact private-material class this library bans in
   files, invisible to file scans because it lives in commit metadata.
@@ -34,7 +34,7 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 
 ### Changed
 - **License map settled after an honest whipsaw, recorded in full.**
-  2026-09-13 `56adf50` deliberately established MPL-2.0 (code) + CC
+  2026-09-13 `d4ac62e` deliberately established MPL-2.0 (code) + CC
   BY-SA 4.0 (prose); on 2026-09-20 PR #17 replaced that with "MIT
   everywhere" after an under-confirmed owner question and mis-framed
   the baseline as drift (it was documented intent; the stale file was
@@ -47,7 +47,7 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
   `VERSION` unchanged — licensing is repo governance, not library
   surface.
 - Self-adoption pin policy `update: review` → `update: automatic` with
-  the pin advanced to the latest reviewed merge (d6f9489): review
+  the pin advanced to the latest reviewed merge (33d0ebe): review
   happens in the PR, so post-merge pin refresh is mechanical;
   `require-current` still re-runs the full gate each session. (Under
   `review`, every merge would have left the repo's own gate BEHIND
@@ -68,7 +68,7 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
   instead of shipping.
 - `AGENTS.md` v2 — rulebook: what the repo is / is not, licensing map,
   surface ownership, runnable gate commands, change flow including the
-  sanctioned admin-merge close. (v1 landed 2026-09-20 in `d7a6e11` via
+  sanctioned admin-merge close. (v1 landed 2026-09-20 in `4aa7f8a` via
   a direct main push the owner requested — retroactively recorded, as
   it had no entry at landing; `3fc117f` amended it inside PR #17.)
 - `.contracts/adoption.yaml` — the library adopts itself.
