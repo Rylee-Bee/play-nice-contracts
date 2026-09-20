@@ -59,6 +59,7 @@ CONTRACT_INDEX.md           the registry (routes, does not govern)
 contracts.lock.json         generated: pinned id/version/sha256/receipt per contract
 VERSION + CHANGELOG.md      library semver — distinct from adopted git revisions
 SECURITY.md / TRADEMARKS.md threat model; name and fork-identity rules
+CONTRIBUTING.md            the door: branch + gate + PR + Rylee review
 ```
 
 ## Design philosophy
@@ -75,6 +76,11 @@ Non-normative mental model behind the contracts. **Inspirational, not authoritat
 Each contract is dual-use: PURPOSE, NORMATIVE RULES, RATIONALE, HUMAN EXAMPLES, MACHINE IMPLICATIONS, GOOD EXAMPLES, ANTI-PATTERNS, ACCEPTANCE CHECKS — readable by a person, consumable by an agent.
 
 ## Quick start
+
+`contractctl` is **a file, not an installed command**: every invocation
+below means `python3 tools/contractctl/contractctl.py` from a library
+checkout (consumers: `python3 "$PLAY_NICE_LIBRARY/tools/contractctl/contractctl.py"`,
+or `alias` it once). Stdlib-only by design; there is no installer.
 
 ```bash
 # orient yourself
@@ -224,14 +230,28 @@ CI (`.github/workflows/ci.yml`) runs on every push and PR. The job is named **`l
 - require status check **`library`** (the actual job name) and branches up to date
 - force pushes disallowed; deletions disallowed
 
+Admin reality: the owner's token bypasses protection (GitHub also
+forbids self-approval on a single-maintainer repo), so one approved
+agent-side admin *merge* is the sanctioned close when the owner has
+explicitly approved merging in-task — as happened for PR #17. Bypass
+is never used silently, and never for a direct push.
+
 Contract text changes: lockfile regeneration ships in the same commit (`contractctl lock`) — CI's determinism check fails otherwise. Meaningful contract changes (MINOR/MAJOR) must rotate the hidden receipt — `contractctl validate` enforces this from Git history.
 
 ## License
 
-Everything in this repository — contract text, tooling, schemas, docs —
-is **MIT** (see `LICENSE` and `contracts/LICENSE.md`). This supersedes
-an earlier MPL-2.0 + CC BY-SA 4.0 split that had drifted out of sync
-with this README; sole-authorship relicensing, recorded in
-`CHANGELOG.md`. Character and world content from Project Worlds lives
-in other repositories under their own terms — nothing here licenses it,
-and it must never be moved into this repository.
+- **Contract text** (`contracts/`) and **documentation** (`docs/`):
+  **CC BY-SA 4.0** — copy, quote, and adapt freely; attribution is a
+  legal term of the license, and derivatives of the text itself stay
+  shareable. Your own projects and code are unaffected. See
+  `contracts/LICENSE.md` and `docs/LICENSE.md`.
+- **Tooling, schemas, lockfile, tests**: **MIT** (see `LICENSE`).
+- **The name**: `TRADEMARKS.md` governs identity and fork naming; the
+  optional 🐝 acknowledgement is credit, never endorsement.
+
+This map supersedes a brief same-window "MIT everywhere" experiment and
+simplifies that baseline's MPL tooling layer to MIT; `CHANGELOG.md`
+records the full sequence, including where this README had it wrong.
+Character and world content from Project Worlds lives in other
+repositories under their own terms — nothing here licenses it, and it
+must never be moved into this repository.
