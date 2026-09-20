@@ -4,6 +4,28 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 
 ## [Unreleased]
 
+### Security
+- Commit identity guard (CI): author/committer emails must be GitHub
+  noreply (`@users.noreply.github.com`) or `*@.invalid`; fails closed
+  on raw mailboxes, machine hostnames, and tunnel domains. The first
+  revision of this guard rejected the very noreply address it protects
+  (its boundary class omitted `@`); it was caught by running the guard
+  against its own PR — guards are only real once they've passed
+  themselves. Triggered by self-discovery that
+  `d7a6e11` (2026-09-20, an agent direct-push during the clarity work)
+  carried an email built from this machine's name at the family tunnel
+  domain — the exact private-material class this library bans in
+  files, invisible to file scans because it lives in commit metadata.
+  (Naming the domain here would re-trigger this repo's own canary;
+  it is deliberately not spelled out — which is itself the lesson.)
+  Global git identity has been rotated to the GitHub noreply address;
+  older commits predating today (including real-mailbox authorships
+  from web-UI merges) remain as history and are the owner's accepted
+  risk or future call.
+- The leaked tunnel hostname resolves to a private LAN address today;
+  the owner is advised to rotate the hostname regardless, since the
+  name is now public.
+
 ### Changed
 - **License map settled after an honest whipsaw, recorded in full.**
   2026-09-13 `56adf50` deliberately established MPL-2.0 (code) + CC
