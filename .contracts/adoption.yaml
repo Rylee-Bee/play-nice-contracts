@@ -1,18 +1,20 @@
 # Adoption manifest — play-nice-contracts consumes its own library.
 # The contract gate is dogfooded here: substantial mutating work in this
 # repo runs freshness -> resolve -> read -> attest -> commit like any
-# consumer. Pin moves only via `contractctl sync` under Rylee's review
-# (update: review).
+# consumer. `update: automatic` because revisions are reviewed as they
+# merge through PRs — the human review is the PR approval, so the pin
+# advances mechanically and the gate never blocks on self-inflicted
+# staleness. Full rulebook: AGENTS.md.
 schema: play-nice/adoption-v1
 project: play-nice-contracts
 source:
   repository: Rylee-Bee/play-nice-contracts
-  revision: d7a6e1127e998340a50b9e508c807ba41b4716f4
+  revision: d6f94895bea7a83ee1e1767dea84907269ada37b
 
 freshness:
   policy: require-current
   ref: main
-  update: review
+  update: automatic
 
 always:
   - assume-unknown
@@ -49,4 +51,4 @@ notes: >-
   Self-adoption keeps the library honest: the floors that govern
   consumers also govern edits to contracts, schemas, tooling, and docs
   here. Licensing and identity changes additionally follow CODEOWNERS
-  and TRADEMARKS.md. Local rulebook: AGENTS.md.
+  and TRADEMARKS.md.

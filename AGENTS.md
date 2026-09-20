@@ -12,8 +12,30 @@ copy contract text into other repos, reference it instead.
 consumer project's local rules. It is not its own governance body —
 contract changes are proposals reviewed by Rylee, not self-appointed.
 Project Worlds characters and world content have a different license
-and a different home: they must **never** appear in this (MIT, public)
-repository.
+and a different home: they must never appear in this public repository.
+(Prose rule — no scanner checks for it; machines can't yet recognize a
+character. Don't be the one who proves it wrong.)
+
+## Licensing map (test-enforced: `tests/test_license_map.py`)
+
+- contracts + docs text: **CC BY-SA 4.0** (attribution required;
+  derivatives of the text stay open; your code unaffected)
+- tooling, schemas, lockfile, tests: **MIT**
+- name and identity: `TRADEMARKS.md` (descriptive; 🐝 acknowledgement
+  is optional credit, never endorsement)
+
+## How to run `contractctl`
+
+`contractctl` is **a file, not an installed command**. Everywhere in
+this repo's docs, `contractctl` means:
+
+```bash
+python3 tools/contractctl/contractctl.py    # from a library checkout
+python3 "$PLAY_NICE_LIBRARY/tools/contractctl/contractctl.py"  # as a consumer
+```
+
+Consumers typically `alias` it once. There is no installer by design
+(stdlib-only).
 
 ## What governs what
 
@@ -23,29 +45,33 @@ repository.
 | `schema/` | machine shapes for contracts and manifests | governance change |
 | `contracts.lock.json` | generated; never hand-edited | regenerate via `lock` |
 | `CONTRACT_INDEX.md` | registry: routes, does not govern | maintain with contracts |
-| `tools/contractctl/` | reference CLI (18 subcommands; `--help`) | code change |
-| `tools/playnice/` | orchestrator; full reference in `docs/PLAYNICE.md` | code change |
+| `tools/contractctl/`, `tools/playnice/` | reference CLI + orchestrator (`docs/PLAYNICE.md`) | code change |
 | `tests/` | hermetic suite (CI job name is `library`) | must accompany changes |
 | `docs/` | non-normative: principles, quick reference, research | prose; never above `contracts/` |
 | `harness/` | **EXPERIMENTAL** research — candidate laws are hypotheses with evidence, NOT rules | evidence changes only |
 | `profiles/`, `examples/` | preference layer + real adoption manifests | keep schema-valid |
 | `VERSION`, `CHANGELOG.md` | library semver, distinct from git revision pins | bump per release rules |
-| `LICENSE*`, `SECURITY.md`, `TRADEMARKS.md`, `.github/CODEOWNERS` | licensing (MIT everywhere), threat model, name identity | Rylee-review required |
+| `LICENSE`, `contracts/LICENSE.md`, `docs/LICENSE.md`, `SECURITY.md`, `TRADEMARKS.md`, `CONTRIBUTING.md`, `.github/CODEOWNERS` | licensing, threat model, identity, review intent | Rylee-review required |
 
 ## The contract gate is dogfooded here
 
 This repo adopts its own library via `.contracts/adoption.yaml`
-(`require-current`, `update: review`). Before substantial mutating
-work here, run the normal consumer gate:
+(`require-current`, `update: automatic`: revisions are reviewed as
+they merge through PRs, so the pin advances mechanically afterward;
+the gate still re-runs fresh every session). Before substantial
+mutating work here, run the consumer gate:
 
 ```bash
-contractctl freshness   # then resolve -> read canonical text -> attest -> commit
+contractctl freshness   # CURRENT expected; then:
+contractctl resolve --manifest .contracts/adoption.yaml --task "<your task>"
+# read each resolved contract's canonical file, then:
+contractctl attest --manifest .contracts/adoption.yaml --task "<task>" --impact <id>="<sentence>" ...
+contractctl commit --manifest .contracts/adoption.yaml --task "<task>" --impact <id>="<sentence>" ...
 ```
 
 `CONTRACT GATE: PASS` + `CONTRACT COMMITMENT: ACTIVE` before
-implementation, exactly as any consumer would. When a merged revision
-lands on `main`, `contractctl sync` refreshes the pin — review mode:
-ask Rylee before syncing.
+implementation. Commitment artifacts land in `.contracts/sessions/`
+(gitignored) — never commit them.
 
 ## Rules for agents working here
 
@@ -58,8 +84,9 @@ ask Rylee before syncing.
   semver: PATCH = clarification, MINOR = compatible new rule,
   MAJOR = incompatible. MINOR/MAJOR must rotate the contract's hidden
   receipt — `contractctl validate` enforces this from Git history.
-  Record the change in `CHANGELOG.md`; bump `VERSION` only for
-  library-level releases.
+  Record every landed change in `CHANGELOG.md` (that includes changes
+  that only touch docs or licensing — this repo eats its own
+  continuity dog food); bump `VERSION` only for library-level releases.
 - **Lock determinism.** Editing `contracts/` means regenerating
   `contracts.lock.json` in the same commit; two regenerations must be
   byte-identical or CI fails.
@@ -68,12 +95,13 @@ ask Rylee before syncing.
   CI's secret/private-material scan is part of the contract. Keep
   `profiles/examples/` preference-shaped, not personal records.
 - **Change flow:** work on a branch, open a PR, and ask Rylee. Agents
-  may merge only after she explicitly approves. GitHub admin tokens
-  can bypass branch protection — **that bypass is off-limits**; do not
-  push directly to `main` without her explicit, in-task go-ahead.
-- **Evidence over memory.** Claims about contract counts, versions, or
-  receipts are verified against this checkout and live CI, not recalled
-  from prior sessions.
+  merge only after her explicit in-task approval; when her token
+  cannot approve its own PR, an admin merge *with that approval* is
+  the sanctioned path — say so in the PR. Never direct-push `main`;
+  never use admin bypass she didn't explicitly grant for that change.
+- **Evidence over memory.** Claims about counts, versions, receipts, or
+  history are verified against this checkout and live CI, not recalled.
+  Prefer writing no count over one that can rot.
 
 ## Verify (mirrors CI — all must pass before done)
 
