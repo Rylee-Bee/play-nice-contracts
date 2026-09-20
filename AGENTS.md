@@ -94,6 +94,10 @@ implementation. Commitment artifacts land in `.contracts/sessions/`
   IPs, family details, or personal medical history anywhere in it —
   CI's secret/private-material scan is part of the contract. Keep
   `profiles/examples/` preference-shaped, not personal records.
+- **Commit identity is scrubbed, machine-enforced.** Only GitHub
+  `*+*@users.noreply.github.com` or `*@*.invalid` author/committer
+  emails may enter history — the CI identity guard fails closed on
+  raw mailboxes, machine hostnames, and tunnel domains.
 - **Change flow:** work on a branch, open a PR, and ask Rylee. Agents
   merge only after her explicit in-task approval; when her token
   cannot approve its own PR, an admin merge *with that approval* is
