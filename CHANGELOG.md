@@ -5,24 +5,59 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 ## [Unreleased]
 
 ### Changed
-- **Relicensed to MIT across the whole repository.** The root `LICENSE`
-  (was MPL-2.0) and `contracts/LICENSE.md` (was CC BY-SA 4.0) now match
-  the README's long-standing MIT claim; sole-authorship relicense.
-  Contracts remain reference-not-fork for consumers — that is adoption
-  discipline, not a copyright term. No contract text changed, so no
-  receipt rotation; `VERSION` unchanged pending release.
-- README: fixed a stray code fence that swallowed four sections,
-  removed two verbatim duplicated sections, completed the "What's here"
-  map (`harness/`, `.contracts/`, VERSION/CHANGELOG, SECURITY,
-  TRADEMARKS), clarified 8 topic areas vs 5 authority layers, and added
-  the one-command local test invocation.
+- **License map settled after an honest whipsaw, recorded in full.**
+  2026-09-13 `56adf50` deliberately established MPL-2.0 (code) + CC
+  BY-SA 4.0 (prose); on 2026-09-20 PR #17 replaced that with "MIT
+  everywhere" after an under-confirmed owner question and mis-framed
+  the baseline as drift (it was documented intent; the stale file was
+  the README's original MIT claim) — both framing errors are corrected
+  here. Final map: **code (tooling, schemas, lockfile, tests) under
+  MIT; contract text and docs under CC BY-SA 4.0** (`contracts/LICENSE.md`,
+  `docs/LICENSE.md`); identity per `TRADEMARKS.md`. Sole *human*
+  authorship throughout (agent + dependabot commits exist; the agents
+  commit as the owner). No contract text changed; no receipt rotation;
+  `VERSION` unchanged — licensing is repo governance, not library
+  surface.
+- Self-adoption pin policy `update: review` → `update: automatic` with
+  the pin advanced to the latest reviewed merge (d6f9489): review
+  happens in the PR, so post-merge pin refresh is mechanical;
+  `require-current` still re-runs the full gate each session. (Under
+  `review`, every merge would have left the repo's own gate BEHIND
+  until a human-approved sync PR — gate theater, designed but never
+  replayed.)
+- README: command examples now state `contractctl` is a file in a
+  library checkout, not an installed command; branch-protection
+  section documents the admin reality (one owner-approved admin merge,
+  PR #17; never a direct push, never silent).
+- CODEOWNERS extended to `docs/`, `tools/playnice/`, `AGENTS.md`,
+  `.contracts/`.
 
 ### Added
-- `AGENTS.md`: agent-facing rulebook — what the repo is/isn't, surface
-  ownership, change classes, license and privacy floors, change flow.
-- `.contracts/adoption.yaml`: the library now adopts itself
-  (`require-current`, `update: review`) — the contract gate is
-  dogfooded in this repo.
+- `CONTRIBUTING.md` — resolves the dangling CODEOWNERS reference and
+  states the door: branch, gate, PR, green `library` check, Rylee.
+- `tests/test_license_map.py` — the license files, README section, and
+  TRADEMARKS pointers must agree; this class of drift now fails CI
+  instead of shipping.
+- `AGENTS.md` v2 — rulebook: what the repo is / is not, licensing map,
+  surface ownership, runnable gate commands, change flow including the
+  sanctioned admin-merge close. (v1 landed 2026-09-20 in `d7a6e11` via
+  a direct main push the owner requested — retroactively recorded, as
+  it had no entry at landing; `3fc117f` amended it inside PR #17.)
+- `.contracts/adoption.yaml` — the library adopts itself.
+- PR #17 itself ran before any manifest existed, so it had no
+  commitment artifact: the exemption is recorded here rather than left
+  for auditors to reconstruct.
+
+### Fixed
+- README: stray code fence that rendered four sections as raw code;
+  two verbatim duplicated sections; "What's here" completed (`harness/`,
+  VERSION/CHANGELOG, SECURITY, TRADEMARKS); 8 topic areas vs 5
+  authority layers clarified; local uv test command added.
+- `docs/LICENSE.md` scope listed two directories that don't exist;
+  corrected to the real tree.
+- `.gitignore` did not ignore `.contracts/sessions/`, so the library's
+  own dogfooded gate run would have committed private session
+  artifacts; caught by the first live gate cycle.
 
 ## [0.10.0] — 2026-09-17
 

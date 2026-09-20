@@ -14,9 +14,13 @@
 /SECURITY.md                @Rylee-Bee
 /CODEOWNERS                 @Rylee-Bee
 /CONTRIBUTING.md            @Rylee-Bee
+/AGENTS.md                  @Rylee-Bee
+/.contracts/                @Rylee-Bee
+/docs/                      @Rylee-Bee
 /contracts/                 @Rylee-Bee
 /contracts.lock.json        @Rylee-Bee
 /tools/contractctl/         @Rylee-Bee
+/tools/playnice/            @Rylee-Bee
 /schema/                    @Rylee-Bee
 /tests/                     @Rylee-Bee
 /.github/workflows/         @Rylee-Bee

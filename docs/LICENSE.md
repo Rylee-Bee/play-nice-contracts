@@ -19,11 +19,10 @@ explanatory documentation under `docs/`, including:
 
 - `docs/PLAY-NICE-OPUS.md` (Big Pickle's accepted Opus)
 - `docs/PLAY-NICE-OPUS-TLDR.md`
-- `docs/principles/`
-- `docs/roles/`
-- `docs/concepts/`
-- `docs/workflows/`
-- `docs/ACKNOWLEDGEMENT.md` (when present)
+- `docs/principles/`, `docs/roles/`
+- `docs/research/`, `docs/decisions/`, `docs/participant-notes/`
+- `docs/QUICK_REFERENCE.md`, `docs/PLAYNICE.md`
+- `docs/ACKNOWLEDGEMENT.md`
 
 ## Why CC BY-SA 4.0 for documentation
 
