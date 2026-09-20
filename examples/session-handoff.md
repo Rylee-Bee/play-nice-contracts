@@ -245,7 +245,7 @@ CONTRACT COMMITMENT: ACTIVE
 ```text
 WORKER PACKET
 
-base: 70ab495
+base: 659fb87
 branch: feat/t14-status-chip
 owned: [frontend/src/primitives/StatusChip.tsx, tests/StatusChip.test.tsx]
 objective: "StatusChip renders canonical statuses; word + luminance tint; no color-only meaning"
@@ -284,7 +284,7 @@ QUESTION: Two approved visual references disagree about navigation placement.
 ### Session → Next session (cold resumption)
 
 ```text
-CURRENT: main @20946c5, clean; Project Worlds API on :18080 (healthy)
+CURRENT: main @07b5dd3, clean; Project Worlds API on :18080 (healthy)
 CHANGED: participant profiles published (hermes.md, qwen-local-bazzite.md)
          contractctl onboard command added (7 tests)
          docs/QUICK_REFERENCE.md created

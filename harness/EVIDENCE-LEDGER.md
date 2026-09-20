@@ -43,7 +43,7 @@ This ledger turns observations into testable harness hypotheses. Do not promote 
 - Supports: external success criteria; deterministic verification at the layer where the claim matters.
 - Counterfactual: a harness rule saying “verify the user-visible/runtime consequence, not only the intermediate artifact” would have forced a browser check before completion.
 - Transfer note: likely universal in form, though the verification mechanism is domain-specific.
-- Evidence: `personal-world@aa1462522dd048eefb43557f59c61748560c2351`.
+- Evidence: `personal-world@dc5c2cb61d8774bc4a6f3a18448a7c90a09660c0`.
 
 ### OBS-2026-002 — Token fidelity did not imply composition fidelity
 
@@ -55,7 +55,7 @@ This ledger turns observations into testable harness hypotheses. Do not promote 
 - Supports: success must be measured against the actual target dimension; preserved postmortems are reusable harness evidence.
 - Complicates: “constrain authority, not creativity” needs care — unconstrained implementation defaults can overpower intended composition even when the model is acting reasonably.
 - Counterfactual: require the participant to name the authoritative visual reference and record differences before implementation/review.
-- Evidence: `personal-world@b45a391c55ce690d8fc41389aea87ef7d0620d3a`.
+- Evidence: `personal-world@1ecd1b06f217597ffd6f6d174ffff41e79900476`.
 
 ### OBS-2026-003 — Multiple plausible current-state narratives created ambiguity
 
@@ -66,7 +66,7 @@ This ledger turns observations into testable harness hypotheses. Do not promote 
 - Candidate(s): H01, H02, H03, H10.
 - Supports: orient to a named authority; preserve history without letting it impersonate current state.
 - Counterexample: historical/pinned state can be authoritative for “what was adopted then,” so “newest wins” is explicitly NOT the rule.
-- Evidence: `personal-world@be43078024bc69232c3d818d38316b76fc0b77b5`.
+- Evidence: `personal-world@69394f0e9719b64e3685a1d6512475a93ee88ddb`.
 
 ### OBS-2026-004 — Fresh upstream/live evidence overturned local evidence
 
@@ -77,7 +77,7 @@ This ledger turns observations into testable harness hypotheses. Do not promote 
 - Candidate(s): H01, H02, H09.
 - Supports: observation has scope and age; re-observe before consequential action; discovering fresher truth does not grant mutation authority over the stale witness.
 - Counterexample: the Play-Nice adoption pin intentionally remained behind library HEAD; freshness of a repo and correctness of a pinned adoption are different questions.
-- Evidence: `personal-world@448bc27efe7faea214b824562923742496ae70ac`.
+- Evidence: `personal-world@47c316f8605cdec5f267fafccbe8571ca4aa8fc4`.
 
 ### OBS-2026-005 — State and freshness are orthogonal
 
@@ -88,7 +88,7 @@ This ledger turns observations into testable harness hypotheses. Do not promote 
 - Candidate(s): H03, H04, H09.
 - Supports: epistemic distinctions should survive translation layers instead of collapsing into one status word.
 - Counterfactual: an explicit harness vocabulary for observation/value/freshness/unknown would make this distinction harder to lose.
-- Evidence: `personal-world@7bcd3bcc4502346c8cf24f631878344eae0d773b`.
+- Evidence: `personal-world@42389d0fa37c7f0af362ca866923ccffd34a0324`.
 
 ### OBS-2026-006 — Optimistic presentation became a small lie
 
@@ -99,7 +99,7 @@ This ledger turns observations into testable harness hypotheses. Do not promote 
 - Candidate(s): H02, H03, H09.
 - Supports: presentation should translate authoritative state, not become a competing state owner.
 - Counterexample: optimistic UI can still be useful if explicitly provisional and guaranteed to reconcile.
-- Evidence: `personal-world@7937ce00a2597e16c393eb5e92a0fd06844efd5f`.
+- Evidence: `personal-world@ec29e8571b32d8bb3c13478ff736a65236f17f7e`.
 
 ### OBS-2026-007 — The accepted UI was not the UI being exercised
 
@@ -110,7 +110,7 @@ This ledger turns observations into testable harness hypotheses. Do not promote 
 - Candidate(s): H02, H07, H08.
 - Supports: verify the deployed path, not merely the artifact believed to be deployed; fallback machinery can conceal failure and invalidate acceptance evidence.
 - Counterfactual: completion proof should name the exact executable path/build being exercised.
-- Evidence: `personal-world@3454eb7b3f24ac125e0d9cc86117dccc07df9502`.
+- Evidence: `personal-world@20697feee85cb0c46bade2317131840485f1ee25`.
 
 ### OBS-2026-008 — UAT created requirements tests could not invent
 
@@ -120,7 +120,7 @@ This ledger turns observations into testable harness hypotheses. Do not promote 
 - Result: immutable caching was replaced with explicit revalidation; every ordinary UAT walk starts from a proven clean slate until the owner promotes the environment.
 - Candidate(s): H07, H08, H10.
 - Supports: human acceptance can define success dimensions that automated checks cannot infer; once learned, those dimensions should become durable/testable constraints.
-- Evidence: `personal-world@aa5e2dabfd9caeafa1186721f91561f89e67246e`, `personal-world@afee1937661a89754470b76b81343d4924bf72a8`.
+- Evidence: `personal-world@bbd1b5f0527b9c4facaf129595e3315c0010913e`, `personal-world@13fdb6752c35e2917793b7c1099ba89fd510a1f0`.
 
 ### OBS-2026-009 — Restart crossed a truth boundary tests had not exercised
 
@@ -130,7 +130,7 @@ This ledger turns observations into testable harness hypotheses. Do not promote 
 - Result: boot-time reconciliation established which source owns the human-facing credential, and restart tests now verify the lifecycle boundary.
 - Candidate(s): H02, H07, H08.
 - Supports: authority/truth ownership must be explicit across lifecycle transitions; tests should cross the boundary where state can change ownership or disappear.
-- Evidence: `personal-world@f8428af7ee1ee4ddf87e8b14e823b89f968f9009`.
+- Evidence: `personal-world@90fcabb27add0cfd83d3ca0ff2f98a2eab9bd824`.
 
 ### OBS-2026-010 — Proposal, approval, action, and result must not collapse
 
@@ -141,7 +141,7 @@ This ledger turns observations into testable harness hypotheses. Do not promote 
 - Candidate(s): H02, H03, H06.
 - Supports: constrain authority, not contribution; preserve explicit phase/state distinctions.
 - Counterexample: low-risk autonomous actions may be intentionally delegated, so the universal rule should be “authority must be explicit,” not “humans must approve every action.”
-- Evidence: `personal-world@1152301379f371d42f80bfeffc76528b61030d27`, `personal-world@b499a7374045c6aae93705af7f46a646045a4969`.
+- Evidence: `personal-world@f0f64e6c389f0ed22219316bc30d839db2e9cfce`, `personal-world@04c9c76c928b91dcadb1294b8aded6dc941d0c57`.
 
 ### OBS-2026-011 — Bounded specs enabled cheaper/replaceable workers
 
@@ -152,7 +152,7 @@ This ledger turns observations into testable harness hypotheses. Do not promote 
 - Candidate(s): H06, H07, H10.
 - Supports: a harness can increase freedom inside a task by making authority, invariants, and finish conditions explicit outside the worker.
 - Complicates: large specs can themselves become stale; H01/H09 still apply.
-- Evidence: `personal-world@b8c77ceaeba71ba58de27cddec001a5f40df73d0`.
+- Evidence: `personal-world@17adc0d86da47181968bc0a4df066d9989a44579`.
 
 ### OBS-2026-012 — Durable handoff preserved defects, not just accomplishments
 
@@ -162,7 +162,7 @@ This ledger turns observations into testable harness hypotheses. Do not promote 
 - Result: the next participant had a resumable state that separated “passed this round” from “everything is finished.”
 - Candidate(s): H03, H07, H10.
 - Supports: evidence preservation should include unresolved defects and scope of the claim, not only success summaries.
-- Evidence: `personal-world@76e5f0c058e1d316d94d70a95ffc905525758143`.
+- Evidence: `personal-world@63b0825d357d7dab23f01ac59ba85b8e6fa9cc3f`.
 
 ## Pass-1 synthesis
 
