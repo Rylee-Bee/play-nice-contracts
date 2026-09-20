@@ -97,7 +97,10 @@ implementation. Commitment artifacts land in `.contracts/sessions/`
 - **Commit identity is scrubbed, machine-enforced.** Only GitHub
   `*+*@users.noreply.github.com` or `*@*.invalid` author/committer
   emails may enter history — the CI identity guard fails closed on
-  raw mailboxes, machine hostnames, and tunnel domains.
+  raw mailboxes, machine hostnames, and tunnel domains. GitHub
+  squash/merge wrappers (committer `noreply@github.com`) are exempt:
+  the account's commit email should also be set to noreply (GitHub →
+  Settings → Emails) so even wrappers stay clean.
 - **Change flow:** work on a branch, open a PR, and ask Rylee. Agents
   merge only after her explicit in-task approval; when her token
   cannot approve its own PR, an admin merge *with that approval* is

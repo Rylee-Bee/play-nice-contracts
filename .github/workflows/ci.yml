@@ -21,13 +21,19 @@ jobs:
         run: |
           # Fail closed on personal identifiers in commit metadata.
           # Allowed: GitHub noreply addresses and RFC 2606 .invalid
-          # synthetic identities. Machine hostnames, tunnel domains,
-          # and raw mailbox addresses must never enter public history.
+          # synthetic identities. GitHub-generated merge/squash wrappers
+          # (committer exactly noreply@github.com) are skipped: the
+          # original author commits already passed this check in the
+          # pull_request event, and wrapper authors come from account
+          # settings, not local git config. Machine hostnames, tunnel
+          # domains, and raw mailbox addresses must never enter raw
+          # commits in public history.
           BASE="${{ github.event.pull_request.base.sha }}"
           HEAD="${{ github.event.pull_request.head.sha }}"
           RANGE="${BASE:+$BASE..$HEAD}"
           [ -n "$RANGE" ] || RANGE="HEAD~1..HEAD"
-          BAD=$(git log --format='%ae %ce' $RANGE | tr ' ' '\n' | sort -u \
+          BAD=$(git log --format='%ae %ce' $RANGE | awk \
+                  '$2=="noreply@github.com"{next} {print $1; print $2}' | sort -u \
                 | grep -Ev '@users\.noreply\.github\.com$|@[A-Za-z0-9.-]*[.]invalid$' || true)
           if [ -n "$BAD" ]; then
             echo "::error::commit metadata contains disallowed identity emails:"
