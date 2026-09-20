@@ -21,7 +21,13 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
   Global git identity has been rotated to the GitHub noreply address;
   older commits predating today (including real-mailbox authorships
   from web-UI merges) remain as history and are the owner's accepted
-  risk or future call.
+  risk or future call. Follow-up the same day: the guard's first
+  push-to-main run rejected GitHub's own squash wrapper for merging
+  the guard (wrapper author = account commit email, committer =
+  `noreply@github.com`) — main was red for four minutes until the
+  rule learned that GitHub-generated wrappers carry commits the PR
+  event already vetted. Lesson recorded where it belongs: a CI check
+  is not tested until it has survived its own merge.
 - The leaked tunnel hostname resolves to a private LAN address today;
   the owner is advised to rotate the hostname regardless, since the
   name is now public.
