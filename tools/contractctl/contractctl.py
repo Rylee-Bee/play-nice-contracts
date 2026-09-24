@@ -351,6 +351,12 @@ def validate_library(lib: list[dict] | None = None) -> list[str]:
     # Receipt-rotation discipline: meaningful changes must rotate receipts
     errors.extend(check_receipt_rotation(lib))
 
+    # Index columns (version/status) must match canonical, not just ids
+    errors.extend(check_index_sync(lib))
+
+    # Changelog continuity: [Unreleased] exists and covers meaningful bumps
+    errors.extend(check_changelog_discipline(lib))
+
     return errors
 
 
@@ -403,6 +409,36 @@ def _index_contract_ids() -> set[str]:
         for m in re.finditer(r"\| `([a-z0-9-]+)`", text):
             ids.add(m.group(1))
     return ids
+
+
+def check_index_sync(lib: list[dict]) -> list[str]:
+    """CONTRACT_INDEX.md rows must match the canonical library exactly — not
+    just id membership, but version and status too. The index routes; when
+    its columns drift from the contracts, agents trust a wrong registry."""
+    errors: list[str] = []
+    if not INDEX_FILE.is_file():
+        return ["index drift: CONTRACT_INDEX.md is missing"]
+    text = INDEX_FILE.read_text(encoding="utf-8")
+    rows: dict[str, tuple[str, str]] = {}
+    for m in re.finditer(
+        r"^\|\s*`([a-z0-9]+(?:-[a-z0-9]+)*)`\s*\|[^|]*\|\s*([0-9]+\.[0-9]+\.[0-9]+)\s*\|\s*([a-z]+)\s*\|",
+        text,
+        re.MULTILINE,
+    ):
+        rows[m.group(1)] = (m.group(2), m.group(3))
+    for c in lib:
+        fm = c["front_matter"]
+        cid = fm["contract_id"]
+        want = (str(fm.get("version", "")), str(fm.get("status", "")))
+        got = rows.get(cid)
+        if got is None:
+            continue  # membership drift already reported elsewhere
+        if got != want:
+            errors.append(
+                f"index drift: '{cid}' row says {got[0]}/{got[1]}, "
+                f"canonical is {want[0]}/{want[1]}"
+            )
+    return errors
 
 
 # ---------------------------------------------------------------- lockfile
@@ -1551,6 +1587,85 @@ def check_receipt_rotation(lib: list[dict]) -> list[str]:
     return errors
 
 
+CHANGELOG_FILE = REPO_ROOT / "CHANGELOG.md"
+
+
+def check_changelog_discipline(lib: list[dict]) -> list[str]:
+    """Mechanical continuity: contract changes must be recorded.
+
+    Two rules, both fail-closed only when verifiable (same philosophy as
+    receipt rotation — no Git history means no claims):
+      1. CHANGELOG.md must carry an [Unreleased] section for landed-but-
+         unreleased changes.
+      2. Every canonical contract whose content changed against HEAD with a
+         version bump beyond PATCH must be mentioned by a NEW bullet in the
+         [Unreleased] section (diffed against HEAD's copy of the changelog).
+    """
+    import subprocess
+
+    def git(*args: str) -> str | None:
+        try:
+            r = subprocess.run(
+                ["git", "-C", str(REPO_ROOT), *args],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            return r.stdout if r.returncode == 0 else None
+        except Exception:
+            return None
+
+    if git("rev-parse", "--git-dir") is None:
+        return []  # no history available; cannot enforce (documented limitation)
+    if not CHANGELOG_FILE.is_file():
+        return ["changelog: CHANGELOG.md is missing"]
+
+    def _unreleased_bullets(text: str) -> set[str]:
+        m = re.search(
+            r"^## \[Unreleased\]\s*\n(.*?)(?=^## \[|^\Z)",
+            text,
+            re.MULTILINE | re.DOTALL,
+        )
+        if not m:
+            return set()
+        return {ln.strip() for ln in m.group(1).splitlines() if ln.strip().startswith("-")}
+
+    cur_text = CHANGELOG_FILE.read_text(encoding="utf-8")
+    head_text = git("show", "HEAD:CHANGELOG.md")
+    errors: list[str] = []
+    if "## [Unreleased]" not in cur_text:
+        errors.append(
+            "changelog: missing '## [Unreleased]' section — landed changes "
+            "need a home before the next release bump"
+        )
+    changed_meaningful: list[str] = []
+    for c in lib:
+        fm = c["front_matter"]
+        if fm.get("status") != "canonical":
+            continue
+        rel = c["rel_path"]
+        prev = git("show", f"HEAD:{rel}")
+        if prev is None or prev == c["text"]:
+            continue
+        try:
+            prev_version = str(parse_front_matter(prev).get("version", ""))
+        except CTError:
+            continue
+        cur_version = str(fm.get("version", ""))
+        if prev_version != cur_version and _beyond_patch(prev_version, cur_version):
+            changed_meaningful.append(str(fm["contract_id"]))
+    if changed_meaningful and head_text is not None:
+        new_bullets = _unreleased_bullets(cur_text) - _unreleased_bullets(head_text)
+        blob = "\n".join(new_bullets).lower()
+        for cid in changed_meaningful:
+            if cid.lower() not in blob:
+                errors.append(
+                    f"changelog: '{cid}' has a meaningful version change vs HEAD "
+                    "but no new [Unreleased] bullet mentions it"
+                )
+    return errors
+
+
 # ---------------------------------------------------------------- question/help artifacts
 
 
@@ -1833,6 +1948,168 @@ def git_ls_remote(repository: str, ref: str) -> str | None:
     return None  # ref not found on remote
 
 
+# Surfaces whose changes require re-review before a require-current pin may
+# read CURRENT while the remote head has moved ahead. Everything else
+# (docs-only commits, README, CHANGELOG, tooling) is reviewed as it merges.
+EQUIVALENCE_SURFACES = ("contracts/", "schema/")
+
+
+def _fetch_object(repo: Path, url: str, sha: str) -> bool:
+    """Best-effort fetch of one commit object from the authoritative remote
+    into the library checkout. True when the object exists locally after."""
+    if _is_ancestor_library(repo, sha, sha) is True:
+        return True  # already present (short-circuits the network path)
+    try:
+        r = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo),
+                "fetch",
+                "--quiet",
+                "--no-tags",
+                url,
+                sha,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=LS_REMOTE_TIMEOUT,
+        )
+        if r.returncode != 0:
+            return False
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    probe = subprocess.run(
+        ["git", "-C", str(repo), "cat-file", "-e", f"{sha}^{{commit}}"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    return probe.returncode == 0
+
+
+def contract_set_equivalent(repo: Path, pin: str, remote: str, url: str) -> tuple[str, str]:
+    """Compare the normative contract set between two library revisions.
+
+    `repo` is the library checkout used for history and object access; `url`
+    is the authoritative remote to fetch from when objects are missing.
+
+    Returns (verdict, detail). Verdicts:
+      EQUIVALENT   both revisions' contracts/ + schema/ trees are byte-identical
+      CHANGED      at least one normative file differs between them
+      UNVERIFIABLE history/objects unavailable — never treated as equivalent
+    """
+    if _is_ancestor_library(repo, pin, remote) is not True:
+        return "UNVERIFIABLE", "pin is not a provable ancestor of the remote revision"
+    have_pin = _is_ancestor_library(repo, pin, pin) is True
+    have_remote = _is_ancestor_library(repo, remote, remote) is True
+    if not (have_pin and have_remote):
+        missing = remote if not have_remote else pin
+        if not _fetch_object(repo, url, missing):
+            return (
+                "UNVERIFIABLE",
+                "required objects are not available locally and could not be fetched",
+            )
+    # Compare by blob hash, not just commit-to-commit: when one side IS the
+    # working tree (pin == local HEAD of a dirty checkout), uncommitted edits
+    # to contracts/ or schema/ must count — otherwise a modified-but-unlocked
+    # contract would be silently declared equivalent.
+    def _tree(rev: str) -> dict[str, str] | None:
+        try:
+            r = subprocess.run(
+                ["git", "-C", str(repo), "ls-tree", "-r", rev, "--", *EQUIVALENCE_SURFACES],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        if r.returncode != 0:
+            return None
+        blobs = {}
+        for line in r.stdout.splitlines():
+            meta, _, path = line.partition("\t")
+            parts = meta.split()
+            if len(parts) >= 3:
+                blobs[path] = parts[2]
+        return blobs
+
+    def _worktree() -> dict[str, str] | None:
+        """Worktree state of the normative surfaces, keyed by relative path.
+
+        Values are git-blob-compatible sha1 digests computed over the same
+        content git hashed at commit time: git stores blob = sha1("blob
+        {len}\0" + bytes), where bytes is the ON-DISK content with CRLF→LF
+        normalization applied iff core.autocrlf says so. On Linux with
+        autocrlf=false (and text=auto defaults never converting), disk bytes
+        equal git bytes; we consult config anyway and fail closed to an
+        empty mapping when normalization would differ from our assumption.
+        """
+        crlf = subprocess.run(
+            ["git", "-C", str(repo), "config", "--get", "core.autocrlf"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if crlf.returncode == 0 and crlf.stdout.strip().lower() not in ("false", ""):
+            return None  # cannot reproduce git's conversion deterministically
+        blobs = {}
+        for surface in EQUIVALENCE_SURFACES:
+            d = repo / surface
+            if not d.is_dir():
+                continue
+            for f in sorted(d.rglob("*")):
+                if not f.is_file():
+                    continue
+                rel = f.relative_to(repo).as_posix()
+                try:
+                    raw = f.read_bytes()
+                except OSError:
+                    return None
+                digest = hashlib.sha1(
+                    b"blob %d\0" % len(raw) + raw
+                ).hexdigest()
+                blobs[rel] = digest
+        return blobs
+
+    head_sha = None
+    try:
+        hr = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        head_sha = hr.stdout.strip() if hr.returncode == 0 else None
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+
+    def _side(rev: str):
+        """(blobs, use_worktree_overlay) for one revision."""
+        if head_sha and rev == head_sha:
+            wt = _worktree()
+            if wt is not None:
+                return wt, True
+        return _tree(rev), False
+
+    ta, _overlay = _side(pin)
+    tb, _ = _side(remote)
+    if ta is None or tb is None:
+        return "UNVERIFIABLE", "could not enumerate normative trees for comparison"
+    # both maps hold git blob sha1s (ls-tree objects, or identical blob
+    # reconstruction for the working tree), so plain comparison is exact
+    changed = sorted(set(ta) ^ set(tb)) + [
+        pth for pth in sorted(set(ta) & set(tb)) if ta[pth] != tb[pth]
+    ]
+    if changed:
+        return (
+            "CHANGED",
+            "normative surfaces differ between pin and remote: "
+            + ", ".join(changed[:8]),
+        )
+    return "EQUIVALENT", "contracts/ and schema/ are byte-identical between pin and remote"
+
+
 def _is_ancestor_library(repo: Path, a: str, b: str) -> bool | None:
     """True/False when ancestry is provable with local objects, else None."""
     try:
@@ -1862,7 +2139,11 @@ def _is_ancestor_library(repo: Path, a: str, b: str) -> bool | None:
 def check_freshness(manifest_path: Path) -> dict:
     """Establish the state of the configured authoritative remote revision.
 
-    CURRENT   remote head equals the adopted revision AND the library checkout
+    CURRENT   remote head equals the adopted revision AND the library
+              checkout — or, under update: automatic, both revisions are
+              provable ancestors of the remote and contracts/ + schema/ are
+              byte-identical between them and it (equivalence rule; recorded
+              as freshness.equivalence in commitment artifacts)
     BEHIND    differing revisions provably fast-forward (remote is ahead)
     DIVERGED  revisions differ without a proven fast-forward relationship
     UNREACHABLE  the remote could not be queried
@@ -1949,6 +2230,41 @@ def check_freshness(manifest_path: Path) -> dict:
     for pin in pins:
         if _is_ancestor_library(REPO_ROOT, pin, remote) is not True:
             diverged = True
+    url = _remote_url(repository)
+    if not diverged:
+        # Ancestor-with-unchanged-set rule: under update: automatic, a pin
+        # that is a provable ancestor of the remote may read CURRENT when
+        # BOTH the adopted pin and the checkout's own HEAD reach the remote
+        # only through commits that leave contracts/ and schema/ byte-
+        # identical. Review still happens as changes merge through PRs; this
+        # ends the post-merge pin treadmill without weakening fail-closed
+        # semantics (anything unverifiable stays BEHIND).
+        if cfg["update"] == "automatic":
+            verdicts = {}
+            for pin in (adopted, local):
+                v, d = contract_set_equivalent(REPO_ROOT, pin, remote, url)
+                verdicts[pin] = (v, d)
+            if all(v == "EQUIVALENT" for v, _ in verdicts.values()):
+                out["status"] = "CURRENT"
+                out["equivalence"] = {
+                    "rule": "ancestor-pin + byte-identical contracts/ and schema/ to remote",
+                    "adopted_verdict": verdicts[adopted][0],
+                    "library_verdict": verdicts[local][0],
+                }
+                out["detail"] = (
+                    f"remote {out['ref']} is {remote[:12]}; adopted pin {adopted[:12]} "
+                    "is an ancestor with an unchanged contract set (equivalence rule)"
+                )
+                return out
+            first_bad = next(
+                (
+                    f"{pin[:12]}: {v} — {d}"
+                    for pin, (v, d) in verdicts.items()
+                    if v != "EQUIVALENT"
+                ),
+                "",
+            )
+            out["equivalence_note"] = first_bad
     out["status"] = "DIVERGED" if diverged else "BEHIND"
     out["detail"] = (
         f"remote {out['ref']} is {remote[:12]}; adopted pin {adopted[:12]}; "
@@ -1961,7 +2277,7 @@ def check_freshness(manifest_path: Path) -> dict:
 
 def freshness_evidence(result: dict, *, enforced: bool) -> dict:
     """Secret-free freshness evidence for the session/commitment artifact."""
-    return {
+    ev = {
         "policy": result["policy"],
         "status": result["status"],
         "ref": result["ref"],
@@ -1972,6 +2288,11 @@ def freshness_evidence(result: dict, *, enforced: bool) -> dict:
         "enforced": enforced,
         "reason": result.get("detail", "") if result["status"] != "CURRENT" else "",
     }
+    # CURRENT via the equivalence rule must be distinguishable from exact-match
+    # CURRENT in recorded provenance (which revision was actually adopted).
+    if result.get("equivalence"):
+        ev["equivalence"] = result["equivalence"]
+    return ev
 
 
 def apply_freshness_gate(
@@ -2435,6 +2756,188 @@ def cmd_lock(_args) -> int:
     print(
         f"wrote contracts.lock.json ({len(lock['contracts'])} contracts); bundle receipt: {bundle_receipt(lock)}"
     )
+    return 0
+
+
+# ---------------------------------------------------------------- diff (revision comparison)
+
+
+def _rev_or_fail(rev: str) -> str | None:
+    """Resolve a revision to a full SHA against the library checkout."""
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "rev-parse", "--verify", f"{rev}^{{commit}}"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if r.returncode == 0 and GITSHA_RE.match(r.stdout.strip()):
+            return r.stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return None
+
+
+def _contract_entries_at_rev(repo: Path, rev: str) -> dict[str, dict] | None:
+    """Parse every contract's front matter + receipt from a git revision.
+
+    Returns {id: {version, status, receipt, path}} or None when the revision
+    or the contracts/ tree cannot be read.
+    """
+    out = {}
+    try:
+        listing = subprocess.run(
+            ["git", "-C", str(repo), "ls-tree", "-r", "--name-only", rev, "--", "contracts/"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if listing.returncode != 0:
+            return None
+        paths = [ln for ln in listing.stdout.splitlines() if ln.endswith(".md")]
+        for p in paths:
+            blob = subprocess.run(
+                ["git", "-C", str(repo), "show", f"{rev}:{p}"],
+                capture_output=True,
+                text=True,
+                timeout=15,
+            )
+            if blob.returncode != 0:
+                return None
+            try:
+                fm = parse_front_matter(blob.stdout)
+            except CTError:
+                continue
+            cid = str(fm.get("contract_id", ""))
+            if not cid:
+                continue
+            receipts = RECEIPT_RE.findall(blob.stdout)
+            out[cid] = {
+                "version": str(fm.get("version", "")),
+                "status": str(fm.get("status", "")),
+                "receipt": receipts[0] if receipts else None,
+                "path": p,
+            }
+        return out
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def _beyond_patch(prev: str, cur: str) -> bool:
+    try:
+        pm, pd, pp = (int(x) for x in prev.split("."))
+        cm, cd, cp = (int(x) for x in cur.split("."))
+    except ValueError:
+        return True  # unparseable versions: treat conservatively as meaningful
+    return (cm, cd) != (pm, pd)
+
+
+def compute_contract_diff(from_rev: str, to_rev: str) -> dict:
+    """Deterministic comparison of the normative contract set between two
+    library revisions. Answers: what changed, which changes are meaningful
+    (MINOR/MAJOR ⇒ rotated receipt), and whether a consumer manifest's
+    always-set is affected."""
+    repo = REPO_ROOT
+    a = _contract_entries_at_rev(repo, from_rev)
+    b = _contract_entries_at_rev(repo, to_rev)
+    result = {
+        "from": from_rev,
+        "to": to_rev,
+        "added": [],
+        "removed": [],
+        "changed": [],
+        "unchanged_count": 0,
+        "meaningful_changes": 0,  # MINOR/MAJOR (receipt rotated or version beyond patch)
+        "errors": [],
+    }
+    if a is None or b is None:
+        result["errors"].append(
+            "revisions unavailable locally; fetch them first (contractctl diff "
+            "never guesses: UNKNOWN stays UNKNOWN)"
+        )
+        return result
+    for cid in sorted(set(b) - set(a)):
+        result["added"].append({"id": cid, **b[cid]})
+    for cid in sorted(set(a) - set(b)):
+        result["removed"].append({"id": cid, **a[cid]})
+    for cid in sorted(set(a) & set(b)):
+        ea, eb = a[cid], b[cid]
+        if ea == eb:
+            result["unchanged_count"] += 1
+            continue
+        meaningful = ea["receipt"] != eb["receipt"] or _beyond_patch(
+            ea["version"], eb["version"]
+        )
+        result["changed"].append(
+            {
+                "id": cid,
+                "from_version": ea["version"],
+                "to_version": eb["version"],
+                "from_status": ea["status"],
+                "to_status": eb["status"],
+                "receipt_rotated": ea["receipt"] != eb["receipt"],
+                "meaningful": meaningful,
+            }
+        )
+        if meaningful:
+            result["meaningful_changes"] += 1
+    return result
+
+
+def _manifest_always_ids(manifest_path: Path | None) -> list[str]:
+    if manifest_path is None or not manifest_path.is_file():
+        return []
+    try:
+        m = load_adoption(manifest_path)
+    except CTError:
+        return []
+    return [str(c) for c in (m.get("always") or [])]
+
+
+def cmd_diff(args) -> int:
+    """Compare the contract set between two library revisions."""
+    from_rev = _rev_or_fail(args.from_rev)
+    to_rev = _rev_or_fail(args.to_rev)
+    if from_rev is None or to_rev is None:
+        missing = args.from_rev if from_rev is None else args.to_rev
+        print(f"DIFF: UNKNOWN — revision not resolvable locally: {missing}", file=sys.stderr)
+        print("  fetch it into the library checkout first (fail closed)", file=sys.stderr)
+        return 2
+    d = compute_contract_diff(from_rev, to_rev)
+    if d["errors"]:
+        for e in d["errors"]:
+            print(f"DIFF: {e}", file=sys.stderr)
+        return 2
+    if args.json_output:
+        print(json.dumps(d, indent=2, sort_keys=False))
+        return 0
+    print(f"CONTRACT DIFF {from_rev[:12]} → {to_rev[:12]}")
+    print(f"  unchanged: {d['unchanged_count']}")
+    for e in d["added"]:
+        print(f"  added:     {e['id']} @ {e['version']} ({e['status']})")
+    for e in d["removed"]:
+        print(f"  removed:   {e['id']} @ {e['version']} ({e['status']})")
+    for e in d["changed"]:
+        rot = ", receipt rotated" if e["receipt_rotated"] else ""
+        kind = "MEANINGFUL" if e["meaningful"] else "clarification"
+        print(
+            f"  changed:   {e['id']} {e['from_version']} → {e['to_version']} "
+            f"[{kind}{rot}]"
+        )
+    if d["meaningful_changes"] == 0 and not d["added"] and not d["removed"]:
+        print("  → compatible: only clarifications (or nothing) since your pin")
+    always = _manifest_always_ids(Path(args.manifest) if args.manifest else None)
+    if always:
+        touched = (
+            {e["id"] for e in d["changed"]}
+            | {e["id"] for e in d["added"]}
+            | {e["id"] for e in d["removed"]}
+        )
+        hit = sorted(touched & set(always))
+        if hit:
+            print(f"  affects your always-set: {', '.join(hit)} — re-attest required")
+        else:
+            print("  your always-set is unaffected by this diff")
     return 0
 
 
@@ -2948,6 +3451,11 @@ def _print_freshness(fr: dict) -> None:
     print(f"  library_revision: {fr['library_revision']}")
     if fr.get("detail"):
         print(f"  detail: {fr['detail']}")
+    if fr.get("equivalence"):
+        eq = fr["equivalence"]
+        print(f"  equivalence: {eq['rule']}")
+    if fr.get("equivalence_note"):
+        print(f"  equivalence_not_met: {fr['equivalence_note']}")
 
 
 def cmd_freshness(args) -> int:
@@ -3041,6 +3549,25 @@ def main(argv=None) -> int:
 
     p = sub.add_parser("lock", help="regenerate contracts.lock.json")
     p.set_defaults(func=cmd_lock)
+
+    p = sub.add_parser(
+        "diff",
+        help="compare the contract set between two library revisions",
+    )
+    p.add_argument("--from", dest="from_rev", required=True, metavar="REV")
+    p.add_argument("--to", dest="to_rev", required=True, metavar="REV")
+    p.add_argument(
+        "--manifest",
+        default=None,
+        help="also report impact on this adoption manifest's always-set",
+    )
+    p.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="machine-readable JSON output",
+    )
+    p.set_defaults(func=cmd_diff)
 
     p = sub.add_parser("attest", help="produce CONTRACT_ATTESTATION v1")
     p.add_argument("--manifest", required=True)

@@ -27,15 +27,17 @@ character. Don't be the one who proves it wrong.)
 ## How to run `contractctl`
 
 `contractctl` is **a file, not an installed command**. Everywhere in
-this repo's docs, `contractctl` means:
+this repo's docs, `contractctl` means either the executable shim or the
+Python file directly (identical behavior — the shim execs the file):
 
 ```bash
-python3 tools/contractctl/contractctl.py    # from a library checkout
+./tools/contractctl/contractctl             # from a library checkout
 python3 "$PLAY_NICE_LIBRARY/tools/contractctl/contractctl.py"  # as a consumer
 ```
 
 Consumers typically `alias` it once. There is no installer by design
-(stdlib-only).
+(stdlib-only). The same applies to `./tools/playnice/playnice`.
+One-command local verify (mirrors CI): `./tools/check.sh`.
 
 ## What governs what
 
@@ -76,8 +78,10 @@ implementation. Commitment artifacts land in `.contracts/sessions/`
 ## Rules for agents working here
 
 - **Standard library only.** Tooling imports nothing beyond Python's
-  stdlib (3.10+; CI pins 3.12). There is no pyproject and no
-  dependency list; adding a dependency is an explicit decision, not a
+  stdlib (3.10+; CI tests 3.10–3.12). `pyproject.toml` exists solely
+  to declare test-only extras (`pip install ".[dev]"` → pytest, pyyaml);
+  there is no build-system table and nothing is pip-installed as runtime.
+  Adding a runtime dependency remains an explicit decision, not a
   convenience.
 - **Contract text changes are governance changes.** State intent and
   show the diff before rewriting normative language. Per-contract
@@ -111,6 +115,13 @@ implementation. Commitment artifacts land in `.contracts/sessions/`
   Prefer writing no count over one that can rot.
 
 ## Verify (mirrors CI — all must pass before done)
+
+```bash
+./tools/check.sh   # validate + double-regen lock determinism + full suite
+                   # + secret scan + identity guard — one command, mirrors CI
+```
+
+Step-by-step equivalents:
 
 ```bash
 python3 tools/contractctl/contractctl.py validate
