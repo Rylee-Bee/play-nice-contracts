@@ -292,6 +292,91 @@ def test_index_drift_fails(tmp_repo):
     assert any("unknown contract 'ghost-contract'" in e for e in errors), errors
 
 
+def test_index_version_drift_fails(tmp_repo):
+    """The index must match canonical version AND status columns, not just ids
+    — the exact drift class that shipped silently in the wild (#21)."""
+    ct = _load_ct_from(tmp_repo)
+    idx = tmp_repo / "CONTRACT_INDEX.md"
+    text = idx.read_text().replace(
+        "| `truth-and-evidence` | Truth and Evidence | 1.0.0 | canonical |",
+        "| `truth-and-evidence` | Truth and Evidence | 9.9.9 | canonical |",
+    )
+    idx.write_text(text)
+    errors = ct.validate_library()
+    assert any("index drift: 'truth-and-evidence'" in e for e in errors), errors
+
+
+def test_index_status_drift_fails(tmp_repo):
+    ct = _load_ct_from(tmp_repo)
+    idx = tmp_repo / "CONTRACT_INDEX.md"
+    text = idx.read_text().replace(
+        "| `truth-and-evidence` | Truth and Evidence | 1.0.0 | canonical |",
+        "| `truth-and-evidence` | Truth and Evidence | 1.0.0 | draft |",
+    )
+    idx.write_text(text)
+    errors = ct.validate_library()
+    assert any("index drift: 'truth-and-evidence'" in e for e in errors), errors
+
+
+def test_changelog_requires_unreleased_section(tmp_repo):
+    ct = _load_ct_from(tmp_repo)
+    cl = tmp_repo / "CHANGELOG.md"
+    text = cl.read_text().replace("## [Unreleased]", "## [Nope]")
+    cl.write_text(text)
+    errors = ct.validate_library()
+    assert any("changelog: missing '## [Unreleased]'" in e for e in errors), errors
+
+
+def test_changelog_guard_flags_unrecorded_meaningful_change(tmp_repo):
+    """A MINOR bump vs HEAD with no new [Unreleased] bullet fails validate;
+    recording it clears the error. PATCH-only changes are exempt."""
+    ct = _load_ct_from(tmp_repo)
+    t = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
+    text = t.read_text().replace("version: 1.0.0", "version: 1.1.0")
+    text = text.replace(
+        "<!-- contract-receipt: wren-loam-sail -->",
+        "<!-- contract-receipt: basalt-quill-ember -->",
+    )
+    t.write_text(text)
+    idx = tmp_repo / "CONTRACT_INDEX.md"
+    idx.write_text(
+        idx.read_text().replace(
+            "| `truth-and-evidence` | Truth and Evidence | 1.0.0 | canonical |",
+            "| `truth-and-evidence` | Truth and Evidence | 1.1.0 | canonical |",
+        )
+    )
+    errors = ct.validate_library()
+    assert any("no new [Unreleased] bullet mentions it" in e for e in errors), errors
+    cl = tmp_repo / "CHANGELOG.md"
+    cl.write_text(
+        cl.read_text().replace(
+            "## [Unreleased]\n",
+            "## [Unreleased]\n\n- truth-and-evidence 1.0.0 → 1.1.0 (a real new rule)\n",
+        )
+    )
+    errors = ct.validate_library()
+    assert not any("changelog:" in e for e in errors), errors
+
+
+def test_diff_command_reports_changes(tmp_repo):
+    """contractctl diff answers what changed between two revisions, including
+    receipt rotation and always-set impact — the BEHIND-resolution question."""
+    base = run_ct(["diff", "--from", "HEAD~1", "--to", "HEAD"], cwd=str(tmp_repo))
+    # tmp_repo has one commit only; use HEAD..HEAD instead (zero-diff path)
+    r = run_ct(["diff", "--from", "HEAD", "--to", "HEAD"], cwd=str(tmp_repo))
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "unchanged: 66" in r.stdout
+    j = json.loads(
+        run_ct(
+            ["diff", "--from", "HEAD", "--to", "HEAD", "--json"], cwd=str(tmp_repo)
+        ).stdout
+    )
+    assert j["added"] == [] and j["removed"] == [] and j["changed"] == []
+    bad = run_ct(["diff", "--from", "deadbeef", "--to", "HEAD"], cwd=str(tmp_repo))
+    assert bad.returncode == 2
+    assert "UNKNOWN" in bad.stdout + bad.stderr  # fail closed, never guesses
+
+
 def test_lockfile_drift_detected(tmp_repo):
     ct = _load_ct_from(tmp_repo)
     lock = tmp_repo / "contracts.lock.json"

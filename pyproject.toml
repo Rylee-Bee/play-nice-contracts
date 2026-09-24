@@ -1,0 +1,20 @@
+# play-nice-contracts — dev environment declaration.
+#
+# RUNTIME INVARIANT (AGENTS.md): contractctl and playnice import nothing
+# beyond the Python standard library (3.10+). This file declares TEST-ONLY
+# dependencies so `pip install -e .[dev]` / editors / CI can resolve the
+# suite without any magic incantation. There is deliberately no build-system
+# table: this repo ships files, not wheels — there is nothing to install and
+# stdlib-only stays the runtime rule, enforced by tests, not by packaging.
+
+[project]
+name = "play-nice-contracts-dev"
+version = "0.10.0"  # mirrors VERSION; tooling itself is never pip-installed
+description = "Dev/test extras for the Play-Nice contract library (tooling stays stdlib-only)"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pyyaml>=6",
+]

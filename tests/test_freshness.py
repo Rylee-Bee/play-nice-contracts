@@ -1,4 +1,4 @@
-"""Remote freshness regression tests (contract-attestation 1.2.0).
+"""Remote freshness regression tests (contract-attestation 1.3.0).
 
 Covers the required cases with a LOCAL bare git repository substituted for
 the authoritative remote — no test depends on live GitHub network access:
@@ -314,12 +314,66 @@ def test_recommit_required_after_remote_update(tmp_repo, remote, manifest):
     assert "CONTRACT COMMITMENT: ACTIVE" in c3.stdout
 
 
+def test_automatic_equivalence_reads_current_on_docs_drift(tmp_repo, remote, manifest):
+    """The pin treadmill ends here: under update: automatic, a provable-ancestor
+    pin whose normative surfaces (contracts/ + schema/) are byte-identical to
+    the remote reads CURRENT despite post-merge docs commits ahead of the pin."""
+    manifest.write_text(
+        manifest.read_text().replace("update: review", "update: automatic")
+    )
+    assert _commit(manifest, _TASK).returncode == 0
+    advance_remote(tmp_repo, remote, "docs-only commit past the pin")
+    r = run_ct(["freshness", "--manifest", str(manifest)])
+    assert r.returncode == 0, r.stdout
+    assert "REMOTE FRESHNESS: CURRENT" in r.stdout
+    assert "equivalence" in r.stdout
+    j = json.loads(run_ct(["freshness", "--manifest", str(manifest), "--json"]).stdout)
+    assert j["status"] == "CURRENT"
+    assert j["equivalence"]["adopted_verdict"] == "EQUIVALENT"
+
+
+def test_automatic_contract_change_still_behind(tmp_repo, remote, manifest):
+    """Counter-test: when the normative set actually changes, automatic mode
+    stays BEHIND — review (sync → re-commit) is still required."""
+    manifest.write_text(
+        manifest.read_text().replace("update: review", "update: automatic")
+    )
+    assert _commit(manifest, _TASK).returncode == 0
+    # move the remote with a real contract change
+    t = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
+    t.write_text(t.read_text().replace("version: 1.0.0", "version: 1.0.1"))
+    assert git0(tmp_repo, "add", "-A").returncode == 0
+    assert git0(tmp_repo, "commit", "-qm", "contract patch", "--no-gpg-sign").returncode == 0
+    assert git0(tmp_repo, "push", "--quiet", str(remote), "main:main").returncode == 0
+    r = run_ct(["freshness", "--manifest", str(manifest)])
+    assert r.returncode == 1
+    assert "REMOTE FRESHNESS: BEHIND" in r.stdout
+    assert "equivalence_not_met" in r.stdout
+    c = _commit(manifest, _TASK)
+    assert "CONTRACT COMMITMENT: ACTIVE" not in c.stdout
+
+
+def test_review_policy_never_uses_equivalence(tmp_repo, remote, manifest):
+    """Equivalence is an update: automatic affordance only; review mode keeps
+    strict exact-match semantics (pin lag stays visible until reviewed)."""
+    advance_remote(tmp_repo, remote, "docs-only commit past the pin")
+    r = run_ct(["freshness", "--manifest", str(manifest)])
+    assert r.returncode == 1
+    assert "REMOTE FRESHNESS: BEHIND" in r.stdout
+    assert "equivalence" not in r.stdout
+
+
 def test_sync_automatic_updates_pin_but_not_commitment(tmp_repo, remote, manifest):
     manifest.write_text(
         manifest.read_text().replace("update: review", "update: automatic")
     )
     assert _commit(manifest, _TASK).returncode == 0
-    advance_remote(tmp_repo, remote)
+    # a REAL contract change: sync must repin but the old commitment stays STALE
+    t = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
+    t.write_text(t.read_text().replace("version: 1.0.0", "version: 1.0.1"))
+    assert git0(tmp_repo, "add", "-A").returncode == 0
+    assert git0(tmp_repo, "commit", "-qm", "contract patch", "--no-gpg-sign").returncode == 0
+    assert git0(tmp_repo, "push", "--quiet", str(remote), "main:main").returncode == 0
     s = run_ct(["sync", "--manifest", str(manifest)])
     assert s.returncode == 0, s.stdout
     assert "STALE" in s.stdout and "resolve" in s.stdout
@@ -468,7 +522,7 @@ def test_contract_text_states_the_requirement():
         if x["front_matter"]["contract_id"] == "contract-attestation"
     ][0]
     t = c["text"]
-    assert c["front_matter"]["version"] == "1.2.0"
+    assert c["front_matter"]["version"] == "1.3.0"
     assert "VERIFY AUTHORITATIVE REMOTE REVISION" in t
     assert "None of these is proof of remote freshness" in t
     assert "REMOTE FRESHNESS: CURRENT" in t
@@ -476,3 +530,21 @@ def test_contract_text_states_the_requirement():
         assert state in t
     assert "PLAY_NICE_SOURCE_REVISION" in t
     assert "not the same as adopting it" in t
+
+
+def test_contract_text_states_the_equivalence_rule():
+    """Rule 27 must be normative text, not just tooling behavior."""
+    sys.path.insert(0, str(REPO / "tools" / "contractctl"))
+    try:
+        import contractctl as ct
+    finally:
+        sys.path.pop(0)
+    c = [
+        x
+        for x in ct.load_library()
+        if x["front_matter"]["contract_id"] == "contract-attestation"
+    ][0]
+    t = c["text"]
+    assert "Equivalence" in t and "byte-identical" in t
+    assert "freshness.equivalence" in t
+    assert "never applies this rule" in t  # update: review exclusion is explicit

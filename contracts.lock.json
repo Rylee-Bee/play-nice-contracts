@@ -110,10 +110,10 @@
     },
     {
       "id": "contract-attestation",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "path": "contracts/agents/CONTRACT_ATTESTATION.md",
-      "sha256": "39d0630c38cd78d482cbd8f98f434accca885fdbc3f92d028dc5db15bf05a96e",
-      "receipt": "quartz-rill-ember",
+      "sha256": "ebe19dc2bc469c7cd4d4d0f6bb503a7c90d8a436dab3d4543100fe89989901bd",
+      "receipt": "flint-meadow-anchor",
       "status": "canonical"
     },
     {

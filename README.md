@@ -78,9 +78,11 @@ Each contract is dual-use: PURPOSE, NORMATIVE RULES, RATIONALE, HUMAN EXAMPLES, 
 ## Quick start
 
 `contractctl` is **a file, not an installed command**: every invocation
-below means `python3 tools/contractctl/contractctl.py` from a library
-checkout (consumers: `python3 "$PLAY_NICE_LIBRARY/tools/contractctl/contractctl.py"`,
+below means `./tools/contractctl/contractctl` (the executable shim) or
+`python3 tools/contractctl/contractctl.py` from a library checkout
+(consumers: `python3 "$PLAY_NICE_LIBRARY/tools/contractctl/contractctl.py"`,
 or `alias` it once). Stdlib-only by design; there is no installer.
+`playnice` works the same way: `./tools/playnice/playnice`.
 
 ```bash
 # orient yourself
@@ -178,7 +180,8 @@ REMOTE FRESHNESS → RESOLVE → READ → VERIFY → ATTEST → COMMIT → MUTAT
 - a local checkout, the adoption pin, a previous session, or "I checked GitHub" is **not** proof of remote freshness — the remote is actually queried;
 - `UNKNOWN`/`UNREACHABLE` → `CONTRACT COMMITMENT: INACTIVE` (fail closed); `BEHIND`/`DIVERGED` → `STALE`, requiring fetch/update → resolve → read → attest → commit again;
 - a changed authoritative revision invalidates existing commitments (re-resolve, re-attest, re-commit);
-- `contractctl sync` refreshes the pin per the update policy — **checking for the newest revision is not the same as silently adopting it**; `update: review` blocks mutation pending explicit review, and even `automatic` still forces a fresh resolve/read/attest/commit cycle.
+- `contractctl sync` refreshes the pin per the update policy — **checking for the newest revision is not the same as silently adopting it**; `update: review` blocks mutation pending explicit review, and even `automatic` still forces a fresh resolve/read/attest/commit cycle;
+- **equivalence rule** (`update: automatic` only): when both the adopted pin and the local checkout are provable ancestors of the remote and `contracts/` + `schema/` are byte-identical across all three, freshness reads CURRENT despite post-merge docs/tooling commits ahead of the pin. Any difference in the normative surfaces, or unverifiable history, stays BEHIND — fail closed. This ends the post-merge pin treadmill without weakening review; commitment artifacts record `freshness.equivalence` so equivalence-CURRENT is distinguishable from exact-match CURRENT. `contractctl diff --from <pin> --to <rev>` answers "what actually changed between my pin and current?" including receipt rotations and always-set impact.
 
 ## The playnice orchestrator (`playnice work`)
 

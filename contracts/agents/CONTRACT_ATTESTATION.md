@@ -1,7 +1,7 @@
 ---
 contract_id: contract-attestation
 title: Contract Attestation
-version: 1.2.0
+version: 1.3.0
 status: canonical
 layer: agents
 applies: [agents, contracts, workflows]
@@ -9,7 +9,7 @@ triggers: [always-before-mutating-work, contract-gate]
 rationale: Reading a contract is not applying it, and knowing one applies is not using it. The full gate proves retrieval (receipt), application (task-impact), and finally operating intent (commitment) — three checkable stages before mutating work begins — and, when policy requires current contracts, that the authoritative contract source itself is current (remote freshness).
 ---
 
-<!-- contract-receipt: quartz-rill-ember -->
+<!-- contract-receipt: flint-meadow-anchor -->
 
 # Contract Attestation
 
@@ -179,7 +179,9 @@ Force contracts to be applied, not merely retrieved. Before mutating work: estab
     The remote must actually be checked, by a deterministic operation (`git ls-remote` of the configured authoritative ref), before the resolve/read/attest stages begin.
 22. The freshness state vocabulary is exact:
     ```text
-    CURRENT      remote authoritative ref equals the source in use and the adopted pin
+    CURRENT      remote authoritative ref equals the source in use and the adopted
+                 pin — or, under `update: automatic`, both are provable ancestors
+                 of the remote with byte-identical normative surfaces (rule 27)
     BEHIND       the remote provably fast-forwards ahead of the adopted revision
     DIVERGED     the remote differs and no fast-forward relationship is proven
     UNREACHABLE  the remote could not be queried
@@ -190,6 +192,7 @@ Force contracts to be applied, not merely retrieved. Before mutating work: estab
 24. If the authoritative Play Nice revision changes after a commitment, the commitment becomes stale: it cannot be trusted `ACTIVE` and requires re-resolution, re-attestation, and re-commitment against the (re-reviewed) revision.
 25. Checking for the newest revision is not the same as adopting it. `update: review` blocks mutation pending explicit review and adoption; `update: automatic` may refresh the pin, but still forces a fresh resolve/read/attest/commit cycle. Newer contracts are never silently adopted — every policy keeps adoption explicit.
 26. Propagation: controller packets record the source revision (`PLAY_NICE_SOURCE_REVISION`). A sub-controller may strengthen freshness requirements; it must not silently weaken or bypass them, and it must still attest normally when its task triggers additional contracts.
+27. Equivalence (an `update: automatic` affordance only): a require-current manifest whose adopted pin and local checkout are both provable ancestors of the authoritative remote reads `REMOTE FRESHNESS: CURRENT` when `contracts/` and `schema/` are byte-identical across pin, checkout, and remote — post-merge documentation and tooling commits no longer invalidate an already-reviewed contract set. The verdict is recorded as `freshness.equivalence` in commitment artifacts so equivalence-CURRENT stays distinguishable from exact-match CURRENT. Any difference on the normative surfaces, unprovable ancestry, or unverifiable history yields `BEHIND` (fail closed); `update: review` never applies this rule.
 
 ### Re-commitment
 
