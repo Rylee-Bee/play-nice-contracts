@@ -9,7 +9,7 @@ schema: play-nice/adoption-v1
 project: play-nice-contracts
 source:
   repository: Rylee-Bee/play-nice-contracts
-  revision: 4bdc5d0aa77e075310ed14113ab8dde1f4fa2fb8
+  revision: 612aae6eafecaef41e5ab9b517cb2df2179b2ff2
 
 freshness:
   policy: require-current
