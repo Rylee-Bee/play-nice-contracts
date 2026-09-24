@@ -4,6 +4,48 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 
 ## [Unreleased]
 
+### Added
+- `contractctl diff --from <rev> --to <rev> [--manifest m] [--json]`:
+  deterministic revision-to-revision comparison of the normative contract
+  set — added/removed contracts, version and status changes, receipt
+  rotations, and whether a manifest's always-set is affected. Answers the
+  BEHIND-resolution question ("what changed since my pin?") without
+  CHANGELOG archaeology; unresolvable revisions report UNKNOWN and fail
+  closed rather than guessing.
+- Executable shims `tools/contractctl/contractctl` and
+  `tools/playnice/playnice` (shebang wrappers that exec the adjacent .py):
+  docs' "`contractctl` means ..." invocation wall becomes `./tools/...`.
+  Still stdlib-only, still no installer.
+- `tools/check.sh`: the full deterministic verify cycle in one command
+  (validate → double-regeneration lock determinism → test suite → secret
+  scan → commit-identity guard), mirroring CI for local pre-push use.
+- `pyproject.toml` declaring test-only extras (`pip install ".[dev]"` →
+  pytest, pyyaml). No build-system table: nothing is installed as runtime;
+  the stdlib-only invariant stands and is now documented where it lives.
+- Mechanical continuity checks in `contractctl validate`: CONTRACT_INDEX
+  rows must match canonical version AND status columns (id-membership alone
+  let a real 1.0.0-vs-1.0.1 drift pass silently); CHANGELOG.md must carry an
+  `[Unreleased]` section, and every meaningful (MINOR/MAJOR) contract change
+  vs HEAD must be mentioned by a new `[Unreleased]` bullet. Both skip
+  gracefully when Git history is unavailable, like receipt rotation.
+
+### Changed
+- `contract-attestation` 1.2.0 → 1.3.0 (receipt rotated): new rule 27, the
+  freshness **equivalence** affordance. Under `update: automatic`, a pin and
+  checkout that are provable ancestors of the authoritative remote read
+  CURRENT when `contracts/` + `schema/` are byte-identical across all three
+  (blob hashes compared; dirty checkouts compare worktree content, so
+  uncommitted normative edits never count as equivalent). Commitment
+  artifacts record `freshness.equivalence`; anything unverifiable stays
+  BEHIND; `update: review` never applies it. Ends the post-merge pin
+  treadmill where every refresh commit re-opened the lag it closed (observed
+  across eight consecutive PRs).
+- CI: Python matrix 3.10–3.12 (the promised floor is now actually tested);
+  workflow-level `concurrency` with cancel-in-progress; lock determinism
+  regenerates twice and byte-compares both outputs, matching what AGENTS.md
+  promises.
+
+
 ### Security
 - Commit identity guard (CI): author/committer emails must be GitHub
   noreply (`@users.noreply.github.com`) or `*@.invalid`; fails closed

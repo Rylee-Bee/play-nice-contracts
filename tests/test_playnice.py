@@ -97,6 +97,16 @@ def head(path) -> str:
     return git0(path, "rev-parse", "HEAD").stdout.strip()
 
 
+def run_lib_ct(lib, args):
+    """Run contractctl from a library checkout copy (keeps its own lock in sync)."""
+    return subprocess.run(
+        [sys.executable, str(lib / "tools" / "contractctl" / "contractctl.py"), *args],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+
+
 def advance_remote(repo, remote, message="new upstream commit"):
     """Commit in `repo` and push, moving the authoritative remote ahead."""
     (repo / "upstream.txt").write_text(message + "\n")
@@ -378,7 +388,35 @@ def test_pinned_policy_never_blocks_backward_compat(lib, pn_remote, tmp_path):
 
 
 def test_automatic_update_policy_repins(lib, pn_remote, tmp_path):
+    """A real contract change past an automatic pin: the equivalence rule does
+    NOT apply (normative surfaces differ); playnice syncs the pin and only
+    then reaches CURRENT."""
     consumer = make_consumer(tmp_path, lib, pn_remote, update="automatic")
+    # mutate AFTER the consumer pinned a clean HEAD, keeping lib self-consistent
+    t = lib / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
+    text = t.read_text()
+    # rotate the receipt too: MINOR-class change semantics (validate enforces it)
+    m = re.search(r"<!-- contract-receipt: ([a-z-]+) -->", text)
+    assert m and m.group(1) == "wren-loam-sail", m  # fixture sanity
+    text = text.replace(m.group(0), "<!-- contract-receipt: basalt-quill-ember -->")
+    text = text.replace("version: 1.0.0", "version: 1.1.0")
+    t.write_text(text)
+    cl = lib / "CHANGELOG.md"
+    cl.write_text(
+        cl.read_text().replace(
+            "## [Unreleased]\n",
+            "## [Unreleased]\n\n- truth-and-evidence 1.0.0 → 1.1.0 (test fixture change)\n",
+        )
+    )
+    idx = lib / "CONTRACT_INDEX.md"
+    idx.write_text(
+        idx.read_text().replace(
+            "| `truth-and-evidence` | Truth and Evidence | 1.0.0 | canonical |",
+            "| `truth-and-evidence` | Truth and Evidence | 1.1.0 | canonical |",
+        )
+    )
+    lk = run_lib_ct(lib, ["lock"])
+    assert lk.returncode == 0, lk.stdout + lk.stderr  # lock regenerated before commit
     advance_remote(lib, pn_remote, "new attested revision")
     env = pn_env(tmp_path, lib)
     r = run_pn(
@@ -391,6 +429,25 @@ def test_automatic_update_policy_repins(lib, pn_remote, tmp_path):
     assert "REMOTE FRESHNESS: CURRENT  (after sync)" in r.stdout
     manifest = (consumer / ".contracts" / "adoption.yaml").read_text(encoding="utf-8")
     assert head(lib) in manifest, "manifest pin must be re-pinned to the remote head"
+
+
+def test_automatic_equivalence_skips_sync_treadmill(lib, pn_remote, tmp_path):
+    """Docs-only commits past an automatic pin read CURRENT via the
+    equivalence rule: no sync churn, permit issued at the pinned revision."""
+    consumer = make_consumer(tmp_path, lib, pn_remote, update="automatic")
+    pinned = head(lib)
+    advance_remote(lib, pn_remote, "docs-only commit past the pin")
+    env = pn_env(tmp_path, lib)
+    r = run_pn(
+        ["work", "--repo", str(consumer), "--no-github", "--no-launch", _TASK],
+        env,
+        consumer,
+    )
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "REMOTE FRESHNESS: CURRENT" in r.stdout
+    assert "WORK PERMIT: ACTIVE" in r.stdout
+    manifest = (consumer / ".contracts" / "adoption.yaml").read_text(encoding="utf-8")
+    assert pinned in manifest, "pin must stay put — equivalence makes syncing pointless"
 
 
 # ========================================================= 2. repository state
