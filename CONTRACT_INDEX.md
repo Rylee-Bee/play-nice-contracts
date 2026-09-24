@@ -63,7 +63,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 | `failure-and-degradation` | Failure and Degradation | 1.1.0 | canonical | Shared status vocabulary; optional failure contained; errors answer seven questions; no blame |
 | `idempotency` | Idempotency | 1.0.0 | canonical | Repeated invocation never double-applies destruction |
 | `polling-webhooks-and-caching` | Polling, Webhooks, and Caching | 1.0.0 | canonical | Prefer events; poll politely; cached data never masquerades as current |
-| `external-mutations` | External Mutations | 1.0.0 | canonical | Observe → smallest mutation → verify → attribute; approval gates |
+| `external-mutations` | External Mutations | 1.0.1 | canonical | Observe → smallest mutation → verify → attribute; approval gates |
 
 ## Security
 
