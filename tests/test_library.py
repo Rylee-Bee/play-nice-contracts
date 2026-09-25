@@ -2460,3 +2460,93 @@ def test_onboard_play_nice_together_always_high(lib):
         assert "play-nice-together" in ids, (
             f"role {role}: play-nice-together not in high_priority"
         )
+
+
+# ------------------------------------------------- adopter toolkit (new surfaces)
+
+
+def test_scan_reports_redacted_findings(lib, tmp_path):
+    leak = tmp_path / "leak.txt"
+    leak.write_text("key = " + ("AK" + "IA") + "0EXAMPLE1234567890\n")
+    hits = lib.scan_surface(tmp_path)
+    assert hits and hits[0]["path"] == "leak.txt", hits
+    assert hits[0]["kind"] == "credential"
+    blob = json.dumps(hits)
+    assert ("AK" + "IA") not in blob, "findings must be redacted (never the value)"
+    assert "EXAMPLE1234567890" not in blob
+
+
+def test_scan_clean_tree(lib, tmp_path):
+    (tmp_path / "ok.txt").write_text("nothing sensitive here\n")
+    assert lib.scan_surface(tmp_path) == []
+
+
+def test_scan_skips_vcs_and_cache_dirs(lib, tmp_path):
+    g = tmp_path / ".git" / "config"
+    g.parent.mkdir()
+    g.write_text("token = " + ("gh" + "p_") + "0123456789abcdef\n")
+    assert lib.scan_surface(tmp_path) == []
+
+
+def test_index_write_repairs_column_drift(tmp_repo):
+    import argparse
+
+    ct = _load_ct_from(tmp_repo)
+    idx = tmp_repo / "CONTRACT_INDEX.md"
+    idx.write_text(
+        idx.read_text().replace(
+            "| `truth-and-evidence` | Truth and Evidence | 1.0.0 | canonical |",
+            "| `truth-and-evidence` | Truth and Evidence | 9.9.9 | canonical |",
+        )
+    )
+    details = ct.index_drift_details(ct.load_library())
+    assert details and details[0][0] == "truth-and-evidence", details
+    assert ct.cmd_index(argparse.Namespace(write=True)) == 0
+    assert ct.index_drift_details(ct.load_library()) == []
+    assert "| 1.0.0 | canonical |" in idx.read_text().split("truth-and-evidence", 1)[1][:120]
+
+
+def test_index_write_refuses_when_otherwise_invalid(tmp_repo, capsys):
+    import argparse
+
+    ct = _load_ct_from(tmp_repo)
+    # break a contract version to make the library invalid, then ask index to write
+    t = tmp_repo / "contracts" / "core" / "PROVENANCE_AND_AUDIT.md"
+    t.write_text(t.read_text().replace("version: 1.0.0", "version: banana"))
+    assert ct.cmd_index(argparse.Namespace(write=True)) == 1
+    assert "unresolved errors" in capsys.readouterr().err
+
+
+def test_init_adoption_writes_a_valid_manifest(tmp_repo, tmp_path):
+    dest = tmp_path / "consumer"
+    dest.mkdir()
+    copydir = tmp_repo / "tools" / "contractctl" / "contractctl.py"
+    r = run_ct(
+        ["init-adoption", "--project", "demo-app"],
+        cwd=str(dest),
+        ct_path=copydir,
+    )
+    assert r.returncode == 0, r.stdout + r.stderr
+    m = dest / ".contracts" / "adoption.yaml"
+    assert m.is_file()
+    data = _load_ct_from(tmp_repo).load_adoption(m)
+    assert data["source"]["revision"]
+    assert "truth-and-evidence" in data["always"]
+    assert data["freshness"]["policy"] == "require-current"
+    # never clobbers an existing manifest
+    r2 = run_ct(["init-adoption"], cwd=str(dest), ct_path=copydir)
+    assert r2.returncode == 2
+    assert "refusing to overwrite" in r2.stderr
+
+
+def test_onboard_includes_maintainer_role(tmp_repo):
+    copydir = tmp_repo / "tools" / "contractctl" / "contractctl.py"
+    r = run_ct(
+        ["onboard", "--role", "maintainer", "--json"], cwd=str(tmp_repo), ct_path=copydir
+    )
+    assert r.returncode == 0, r.stdout + r.stderr
+    data = json.loads(r.stdout)
+    ids = {c["id"] for c in data["high_priority"]}
+    assert "contract-attestation" in ids
+    assert "documentation-and-continuity" in ids
+    assert "deterministic-first" in ids

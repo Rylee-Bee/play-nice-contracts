@@ -98,8 +98,9 @@ python3 tools/contractctl/contractctl.py validate
 python3 tools/contractctl/contractctl.py lock
 
 # as a project: adopt (consume, don't fork)
-cp examples/personal-world.adoption.yaml  .contracts/adoption.yaml   # in your repo
-# pin the revision to the commit you adopted
+contractctl init-adoption --project my-app   # writes .contracts/adoption.yaml, pinned
+contractctl upgrade-check --manifest .contracts/adoption.yaml  # current? what changed? what next?
+contractctl scan                              # the same public-boundary check, in your tree
 contractctl resolve --manifest .contracts/adoption.yaml --task "your task"
 contractctl attest --manifest .contracts/adoption.yaml --task "your task" \
   --impact truth-and-evidence="unknown stays unknown in my status output" ...
