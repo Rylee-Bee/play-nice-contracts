@@ -33,29 +33,7 @@ else
 fi
 
 echo "==> secret / private-material scan (library surfaces)"
-python3 - <<'PYEOF'
-import sys
-from pathlib import Path
-banned = ["gh" + "p_", "gh" + "o_", "AK" + "IA",
-          "BEGIN PRIVATE " + "KEY", "BEGIN " + "RSA",
-          "192.168" + ".", "hulganfamily.duck" + "dns.org", "10.0" + "."]
-repo = Path(".")
-hits = []
-for f in repo.rglob("*"):
-    if not f.is_file() or any(p in f.parts for p in (".git", ".venv", "__pycache__", ".pytest_cache", ".contract-commitments")):
-        continue
-    try:
-        text = f.read_text()
-    except (UnicodeDecodeError, ValueError):
-        continue
-    for b in banned:
-        if b in text:
-            hits.append(f"{f}: contains {b!r}")
-if hits:
-    print("\n".join(hits))
-    sys.exit(1)
-print("secret/private-material scan clean")
-PYEOF
+python3 tools/contractctl/contractctl.py scan
 
 echo "==> commit identity guard (last 20 commits vs allowed classes)"
 # Mirrors CI's guard: a commit whose committer is exactly the GitHub

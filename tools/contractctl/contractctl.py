@@ -411,34 +411,97 @@ def _index_contract_ids() -> set[str]:
     return ids
 
 
-def check_index_sync(lib: list[dict]) -> list[str]:
-    """CONTRACT_INDEX.md rows must match the canonical library exactly — not
-    just id membership, but version and status too. The index routes; when
-    its columns drift from the contracts, agents trust a wrong registry."""
-    errors: list[str] = []
+_INDEX_ROW_RE = re.compile(
+    r"^\|\s*`([a-z0-9]+(?:-[a-z0-9]+)*)`\s*\|[^|]*\|\s*([0-9]+\.[0-9]+\.[0-9]+)\s*\|\s*([a-z]+)\s*\|",
+    re.MULTILINE,
+)
+
+
+def index_rows() -> dict[str, tuple[str, str]]:
+    """{id: (version, status)} parsed from CONTRACT_INDEX.md rows."""
     if not INDEX_FILE.is_file():
-        return ["index drift: CONTRACT_INDEX.md is missing"]
-    text = INDEX_FILE.read_text(encoding="utf-8")
-    rows: dict[str, tuple[str, str]] = {}
-    for m in re.finditer(
-        r"^\|\s*`([a-z0-9]+(?:-[a-z0-9]+)*)`\s*\|[^|]*\|\s*([0-9]+\.[0-9]+\.[0-9]+)\s*\|\s*([a-z]+)\s*\|",
-        text,
-        re.MULTILINE,
-    ):
-        rows[m.group(1)] = (m.group(2), m.group(3))
+        return {}
+    return {
+        m.group(1): (m.group(2), m.group(3))
+        for m in _INDEX_ROW_RE.finditer(INDEX_FILE.read_text(encoding="utf-8"))
+    }
+
+
+def index_drift_details(lib: list[dict]) -> list[tuple[str, str, str, str, str]]:
+    """(id, got_version, got_status, want_version, want_status) for every index
+    row whose version/status disagrees with canonical. Membership drift (rows
+    present/missing) is reported separately by validate_library."""
+    rows = index_rows()
+    out: list[tuple[str, str, str, str, str]] = []
     for c in lib:
         fm = c["front_matter"]
         cid = fm["contract_id"]
         want = (str(fm.get("version", "")), str(fm.get("status", "")))
         got = rows.get(cid)
-        if got is None:
-            continue  # membership drift already reported elsewhere
-        if got != want:
-            errors.append(
-                f"index drift: '{cid}' row says {got[0]}/{got[1]}, "
-                f"canonical is {want[0]}/{want[1]}"
-            )
-    return errors
+        if got is not None and got != want:
+            out.append((cid, got[0], got[1], want[0], want[1]))
+    return out
+
+
+def check_index_sync(lib: list[dict]) -> list[str]:
+    """CONTRACT_INDEX.md rows must match the canonical library exactly — not
+    just id membership, but version and status too. The index routes; when
+    its columns drift from the contracts, agents trust a wrong registry."""
+    if not INDEX_FILE.is_file():
+        return ["index drift: CONTRACT_INDEX.md is missing"]
+    return [
+        f"index drift: '{cid}' row says {gv}/{gs}, canonical is {wv}/{ws}"
+        for cid, gv, gs, wv, ws in index_drift_details(lib)
+    ]
+
+
+def rewrite_index_row(text: str, cid: str, want_version: str, want_status: str) -> tuple[str, int]:
+    """Replace one row's version and status cells in place (deterministic;
+    leaves every other byte of the index untouched)."""
+    pat = re.compile(
+        r"^(\|\s*`" + re.escape(cid)
+        + r"`\s*\|[^|]*\|\s*)([0-9]+\.[0-9]+\.[0-9]+)(\s*\|\s*)([a-z]+)(\s*\|)",
+        re.MULTILINE,
+    )
+    return pat.subn(lambda m: f"{m.group(1)}{want_version}{m.group(3)}{want_status}{m.group(5)}", text)
+
+
+# ---------------------------------------------------------------- public-boundary scan
+# The same check this library runs on itself, made reusable by adopters.
+# Findings report a pattern LABEL and path — never the matched text — so the
+# output stays redacted (public-private-boundaries). Needles are assembled by
+# concatenation so this list never contains the literal shapes it scans for.
+SCAN_PATTERNS: tuple[tuple[str, str], ...] = (
+    ("credential:github-token-prefix", "gh" + "p_"),
+    ("credential:github-oauth-prefix", "gh" + "o_"),
+    ("credential:aws-access-key-prefix", "AK" + "IA"),
+    ("key-header:private-key", "BEGIN PRIVATE " + "KEY"),
+    ("key-header:rsa", "BEGIN " + "RSA"),
+    ("topology:private-ip", "192.168" + "."),
+    ("topology:private-domain", "hulganfamily.duck" + "dns.org"),
+    ("topology:private-ip", "10.0" + "."),
+)
+SCAN_SKIP_PARTS = (".git", ".venv", "__pycache__", ".pytest_cache", ".contract-commitments")
+
+
+def scan_surface(root: Path) -> list[dict]:
+    """Banned public-boundary shapes under root. Redacted findings only."""
+    hits: list[dict] = []
+    for f in sorted(root.rglob("*")):
+        if not f.is_file() or any(part in SCAN_SKIP_PARTS for part in f.parts):
+            continue
+        try:
+            text = f.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, ValueError, OSError):
+            continue  # binary/unreadable: the text scanner skips (documented)
+        for label, needle in SCAN_PATTERNS:
+            if needle in text:
+                hits.append({
+                    "path": f.relative_to(root).as_posix(),
+                    "kind": label.split(":", 1)[0],
+                    "pattern": label,
+                })
+    return hits
 
 
 # ---------------------------------------------------------------- lockfile
@@ -3216,6 +3279,7 @@ ROLE_KEYWORDS = {
     "cli": {"cli", "tools"},
     "service": {"api", "infrastructure", "operations", "integration"},
     "human": {"humans", "product", "ui"},
+    "maintainer": {"contracts", "governance", "documentation", "engineering", "agents"},
 }
 
 ROLE_HIGH_PRIORITY = {
@@ -3290,6 +3354,21 @@ ROLE_HIGH_PRIORITY = {
         "progress-and-closure",
         "collaborative-good-faith",
         "copy-and-language",
+    ],
+    "maintainer": [
+        "play-nice-together",
+        "truth-and-evidence",
+        "contract-attestation",
+        "provenance-and-audit",
+        "stable-truth-replaceable-machinery",
+        "documentation-and-continuity",
+        "deterministic-first",
+        "testing-and-verification",
+        "versioning-and-compatibility",
+        "git-and-worktrees",
+        "dependency-discipline",
+        "search-before-inventing",
+        "public-private-boundaries",
     ],
 }
 
@@ -3523,6 +3602,247 @@ def cmd_sync(args) -> int:
     return 0
 
 
+def cmd_scan(args) -> int:
+    """Public-boundary scan, reusable by the library AND its adopters."""
+    root = Path(args.root).resolve()
+    if not root.is_dir():
+        print(f"SCAN: UNKNOWN — not a directory: {root}", file=sys.stderr)
+        return 2
+    hits = scan_surface(root)
+    if getattr(args, "json_output", False):
+        print(json.dumps({"root": str(root), "hits": hits, "clean": not hits}, indent=2))
+    elif not hits:
+        print(f"SCAN: CLEAN — {root} has no banned public-boundary shapes")
+    else:
+        print(f"SCAN: {len(hits)} finding(s) in {root} (values redacted):")
+        for h in hits:
+            print(f"  - {h['path']}: {h['pattern']}")
+    return 1 if hits else 0
+
+
+def cmd_index(args) -> int:
+    """Report or repair CONTRACT_INDEX.md version/status columns.
+
+    The index is derived data (see Stable Truth, Replaceable Machinery): the
+    canonical files are the source, the index routes. This command makes the
+    version/status columns auto-repairable so that drift class cannot recur.
+    Membership drift (a missing or unknown row) is not auto-generated — a
+    human/agent adds the row once, with its purpose line.
+    """
+    lib = load_library()
+    errors = validate_library(lib)
+    details = index_drift_details(lib)
+    other = [
+        e for e in errors
+        if not (e.startswith("index drift: '") and "row says" in e)
+    ]
+    if not args.write:
+        if not details:
+            print("INDEX: version/status columns in sync with canonical")
+            return 0 if not errors else 1
+        print(f"INDEX DRIFT — {len(details)} row(s) disagree with canonical:")
+        for cid, gv, gs, wv, ws in details:
+            print(f"  - {cid}: {gv}/{gs} → {wv}/{ws}")
+        print("  repair: contractctl index --write")
+        return 1
+    if other:
+        print("cannot rewrite an index with unresolved errors:", file=sys.stderr)
+        for e in other:
+            print(f"  - {e}", file=sys.stderr)
+        return 1
+    if not details:
+        print("INDEX: already in sync (no changes)")
+        return 0
+    text = INDEX_FILE.read_text(encoding="utf-8")
+    for cid, _gv, _gs, wv, ws in details:
+        text, n = rewrite_index_row(text, cid, wv, ws)
+        if n != 1:
+            print(
+                f"INDEX: FAILED — could not rewrite row for '{cid}' deterministically",
+                file=sys.stderr,
+            )
+            return 2
+    INDEX_FILE.write_text(text, encoding="utf-8", newline="\n")
+    print(f"INDEX: repaired {len(details)} row(s) from canonical")
+    for cid, gv, gs, wv, ws in details:
+        print(f"  - {cid}: {gv}/{gs} → {wv}/{ws}")
+    return 0
+
+
+ADOPTION_ALWAYS_FLOOR = (
+    "truth-and-evidence",
+    "explicit-state",
+    "recovery-and-reversibility",
+    "provenance-and-audit",
+    "ask-for-help",
+    "assume-unknown",
+)
+
+
+def _default_repository() -> str:
+    own = REPO_ROOT / ".contracts" / "adoption.yaml"
+    if own.is_file():
+        try:
+            return str((load_adoption(own).get("source") or {}).get("repository", "") or "")
+        except CTError:
+            pass
+    return "Rylee-Bee/play-nice-contracts"
+
+
+def render_adoption_manifest(
+    *,
+    repository: str,
+    revision: str,
+    project: str,
+    policy: str = "require-current",
+    ref: str = "main",
+    update: str = "review",
+) -> str:
+    """A minimal, schema-valid adoption manifest. `update: review` is the
+    default because it never silently adopts newer contracts."""
+    lines = [
+        "schema: play-nice/adoption-v1",
+        f"project: {project}",
+        "source:",
+        f"  repository: {repository}",
+        f"  revision: {revision}",
+        "always:",
+    ]
+    lines += [f"  - {cid}" for cid in ADOPTION_ALWAYS_FLOOR]
+    lines += [
+        "freshness:",
+        f"  policy: {policy}",
+        f"  ref: {ref}",
+        f"  update: {update}",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def cmd_init_adoption(args) -> int:
+    """Seed a consumer adoption manifest instead of copying an example."""
+    target = Path(args.manifest)
+    if target.exists() and not args.force:
+        print(
+            f"INIT-ADOPTION: refusing to overwrite {target} (use --force)",
+            file=sys.stderr,
+        )
+        return 2
+    errors = validate_library(load_library())
+    if errors:
+        print(
+            "cannot seed an adoption from an invalid library "
+            "(run: contractctl validate):",
+            file=sys.stderr,
+        )
+        for e in errors:
+            print(f"  - {e}", file=sys.stderr)
+        return 1
+    revision = args.revision or library_revision()
+    repository = args.repository or _default_repository()
+    project = args.project or Path.cwd().name
+    text = render_adoption_manifest(
+        repository=repository,
+        revision=revision,
+        project=project,
+        policy=args.policy,
+        update=args.update,
+    )
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(text, encoding="utf-8", newline="\n")
+    try:
+        load_adoption(target)  # self-check: fail closed on our own output
+    except CTError as e:
+        target.unlink(missing_ok=True)
+        print(f"INIT-ADOPTION: generated manifest failed validation: {e}", file=sys.stderr)
+        return 1
+    print(f"wrote {target}")
+    print(f"  repository: {repository}")
+    print(f"  revision:   {revision[:12]} (pinned)")
+    print(f"  policy:     {args.policy} (update: {args.update})")
+    print("next:")
+    print(f'  contractctl resolve --manifest {target} --task "your task"')
+    print(f'  contractctl attest  --manifest {target} --task "your task" --impact <id>=<sentence> ...')
+    print(f'  contractctl commit  --manifest {target} --task "your task" --impact <id>=<sentence> ...')
+    return 0
+
+
+def cmd_upgrade_check(args) -> int:
+    """One question: what must I do about my Play-Nice pin?
+
+    Composes freshness (am I current?) with the contract diff (what changed?)
+    and the manifest's always-set impact (does it require re-attestation?),
+    then prints the exact next command. Exit 0 = no action, 1 = action needed,
+    2 = freshness/diff could not be established (fail closed).
+    """
+    manifest = Path(args.manifest)
+    if not manifest.is_file():
+        print(f"UPGRADE-CHECK: UNKNOWN — no adoption manifest at {manifest}", file=sys.stderr)
+        return 2
+    m = load_adoption(manifest)
+    cfg = freshness_config(m)
+    fr = check_freshness(manifest)
+    adopted = str((m.get("source") or {}).get("revision", "") or "")
+    remote = fr.get("remote_revision")
+    if getattr(args, "json_output", False):
+        print(json.dumps({
+            "manifest": str(manifest),
+            "status": fr["status"],
+            "policy": fr["policy"],
+            "update": cfg["update"],
+            "adopted_revision": adopted,
+            "remote_revision": remote,
+        }, indent=2))
+        return 0 if fr["status"] == "CURRENT" else (1 if fr["status"] in ("BEHIND", "DIVERGED") else 2)
+    print(f"UPGRADE CHECK — {manifest}")
+    print(f"  freshness: {fr['status']} (policy: {fr['policy']}, update: {cfg['update']})")
+    if fr["status"] == "CURRENT":
+        print("  → no action: you are current with the authoritative revision")
+        return 0
+    if fr["status"] not in ("BEHIND", "DIVERGED"):
+        print(f"  → {fr['status']}: freshness cannot be established (fail closed)")
+        print("    contractctl freshness --manifest <m>   # inspect")
+        return 2
+    a = _rev_or_fail(adopted) if adopted else None
+    b = _rev_or_fail(remote) if remote else None
+    d = compute_contract_diff(a, b) if (a and b) else None
+    print(f"  adopted: {adopted[:12] if adopted else 'unknown'}")
+    print(f"  remote:  {remote[:12] if remote else 'unknown'}")
+    if not d or d.get("errors"):
+        print("  changes: UNKNOWN — the remote revision is not local yet")
+        print("    git fetch  (in the library checkout), then re-run")
+    else:
+        print(
+            f"  changes: {len(d['changed'])} changed, {len(d['added'])} added, "
+            f"{len(d['removed'])} removed, {d['meaningful_changes']} meaningful"
+        )
+        for e in d["changed"]:
+            kind = "MEANINGFUL" if e["meaningful"] else "clarification"
+            print(f"    - {e['id']} {e['from_version']} → {e['to_version']} [{kind}]")
+        for e in d["added"]:
+            print(f"    - added {e['id']} @ {e['version']}")
+        for e in d["removed"]:
+            print(f"    - removed {e['id']} @ {e['version']}")
+        always = _manifest_always_ids(manifest)
+        if always:
+            touched = (
+                {e["id"] for e in d["changed"]}
+                | {e["id"] for e in d["added"]}
+                | {e["id"] for e in d["removed"]}
+            )
+            hit = sorted(touched & set(always))
+            if hit:
+                print(f"  always-set impact: {', '.join(hit)} — re-attestation required")
+            else:
+                print("  always-set impact: none (your floor contracts are unchanged)")
+    if cfg["update"] == "review":
+        print("  next: review the change above, then pin source.revision to the remote")
+        print("        and re-run: resolve → read → attest → commit")
+    else:
+        print("  next: contractctl sync --manifest <m>  (update: automatic)")
+        print("        then: resolve → read → attest → commit")
+    return 1
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
         prog="contractctl",
@@ -3568,6 +3888,47 @@ def main(argv=None) -> int:
         help="machine-readable JSON output",
     )
     p.set_defaults(func=cmd_diff)
+
+    p = sub.add_parser(
+        "scan", help="scan a tree for banned public-boundary shapes (adopter-reusable)"
+    )
+    p.add_argument("--root", default=".", help="directory to scan (default: .)")
+    p.add_argument(
+        "--json", action="store_true", dest="json_output", help="machine-readable JSON"
+    )
+    p.set_defaults(func=cmd_scan)
+
+    p = sub.add_parser(
+        "index", help="report or repair CONTRACT_INDEX.md version/status columns"
+    )
+    p.add_argument(
+        "--write", action="store_true", help="rewrite drifted rows in place (deterministic)"
+    )
+    p.set_defaults(func=cmd_index)
+
+    p = sub.add_parser(
+        "init-adoption", help="write a starter adoption manifest (instead of copying an example)"
+    )
+    p.add_argument("--manifest", default=".contracts/adoption.yaml")
+    p.add_argument("--repository", default=None, help="defaults to this library's own source")
+    p.add_argument("--revision", default=None, help="defaults to this checkout's revision")
+    p.add_argument("--project", default=None, help="project name (default: current dir name)")
+    p.add_argument(
+        "--policy", default="require-current", choices=["pinned", "require-current"]
+    )
+    p.add_argument("--update", default="review", choices=["review", "automatic"])
+    p.add_argument("--force", action="store_true", help="overwrite an existing manifest")
+    p.set_defaults(func=cmd_init_adoption)
+
+    p = sub.add_parser(
+        "upgrade-check",
+        help="one answer: is my pin current, what changed, and what do I run next?",
+    )
+    p.add_argument("--manifest", required=True)
+    p.add_argument(
+        "--json", action="store_true", dest="json_output", help="machine-readable JSON"
+    )
+    p.set_defaults(func=cmd_upgrade_check)
 
     p = sub.add_parser("attest", help="produce CONTRACT_ATTESTATION v1")
     p.add_argument("--manifest", required=True)
@@ -3711,7 +4072,7 @@ def main(argv=None) -> int:
     p.add_argument(
         "--role",
         required=True,
-        choices=["orchestrator", "worker", "ui", "cli", "service", "human"],
+        choices=["orchestrator", "worker", "ui", "cli", "service", "human", "maintainer"],
         help="participant role determining reading order and emphasis",
     )
     p.add_argument(
