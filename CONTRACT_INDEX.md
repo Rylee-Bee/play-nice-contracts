@@ -108,7 +108,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 |---|---|---|---|---|
 | `cli` | CLI | 1.0.0 | canonical | First-class surface; --json; exit codes; quiet success, loud failure |
 | `api` | API | 1.0.0 | canonical | The programmable seam; versioned, honest envelopes, documented |
-| `room` | Room | 1.0.0 | canonical | Uniform five-endpoint contract a front door uses to render and act on any room |
+| `room` | Room | 1.1.0 | canonical | Uniform five-endpoint contract a front door uses to render and act on any room |
 | `web-ui` | Web UI | 1.0.0 | canonical | A view, never the source of truth; honest states; floor applies |
 | `machine-readable-output` | Machine Readable Output | 1.0.0 | canonical | Stable parseable shapes for scripts/agents/future tools |
 | `human-and-machine-parity` | Human and Machine Parity | 1.1.0 | canonical | Every state legible twice; surfaces are views of one truth |

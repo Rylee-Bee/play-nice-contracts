@@ -21,6 +21,18 @@
       "enum": ["personal", "work"],
       "description": "Card lane."
     },
+    "card_tone": {
+      "type": "string",
+      "enum": ["good_news", "update", "when_ready"],
+      "description": "Optional card display hint. It is never a priority: there is no critical/alert/warning tone (urgency lives in needs-you). Absent or unknown values are treated as 'update' by consumers, logged, and never crash."
+    },
+    "same_origin_path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500,
+      "pattern": "^/(?![\\\\/])",
+      "description": "Same-origin path that opens the exact item: starts with a single '/', never '//' (protocol-relative) or '/\\\\' (browser-normalized to '//'), and carries no scheme. Consumers MUST reject any other value rather than following it."
+    },
     "autonomy": {
       "type": "string",
       "enum": ["auto", "check_in", "ask_first"],
@@ -77,6 +89,7 @@
         "body": { "type": "string", "maxLength": 2000 },
         "link": { "type": "string", "minLength": 1, "maxLength": 500, "description": "Same-origin path the front door may follow." },
         "lane": { "$ref": "#/$defs/lane" },
+        "tone": { "$ref": "#/$defs/card_tone" },
         "freshness": { "$ref": "#/$defs/freshness" }
       }
     },
@@ -98,6 +111,7 @@
           "items": { "type": "string", "minLength": 1, "maxLength": 64 },
           "description": "Action ids published by GET /room/actions that resolve this need."
         },
+        "link": { "$ref": "#/$defs/same_origin_path" },
         "created_at": { "type": "string", "format": "date-time" }
       }
     },

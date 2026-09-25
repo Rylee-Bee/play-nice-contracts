@@ -2567,10 +2567,10 @@ def _room_text(lib):
 
 def test_room_contract_exists(lib):
     c = _room_text(lib)
-    assert c["front_matter"]["version"] == "1.0.0"
+    assert c["front_matter"]["version"] == "1.1.0"
     assert c["front_matter"]["status"] == "canonical"
     assert c["front_matter"]["layer"] == "interfaces"
-    assert c["receipts"] == ["fathom-ridge-wren"]
+    assert c["receipts"] == ["lumen-quill-marsh"]
 
 
 def test_room_contract_declares_five_endpoints(lib):
@@ -2671,6 +2671,13 @@ def test_room_schema_covers_five_response_shapes():
     ]
     assert defs["lane"]["enum"] == ["personal", "work"]
     assert defs["autonomy"]["enum"] == ["auto", "check_in", "ask_first"]
+    assert defs["card_tone"]["enum"] == ["good_news", "update", "when_ready"]
+    # new fields are optional: absent from required, present in properties
+    assert "tone" not in defs["card"]["required"]
+    assert "tone" in defs["card"]["properties"]
+    assert "link" not in defs["need"]["required"]
+    assert "link" in defs["need"]["properties"]
+    assert defs["need"]["properties"]["link"] == {"$ref": "#/$defs/same_origin_path"}
     assert set(defs["action_receipt"]["required"]) == {
         "action_id",
         "ok",
@@ -2678,3 +2685,162 @@ def test_room_schema_covers_five_response_shapes():
         "changed",
         "at",
     }
+
+
+# ------------------------------------------------- room 1.1.0 tone + link
+
+
+def _room_schema_defs():
+    return json.loads((REPO / "schema" / "room.schema.json").read_text())["$defs"]
+
+
+def _room_text_schema():
+    """ROOM.md text, whitespace-normalized so line wrapping never breaks a
+    prose assertion."""
+    raw = (REPO / "contracts" / "interfaces" / "ROOM.md").read_text(encoding="utf-8")
+    return " ".join(raw.split())
+
+
+def _resolve_def(defs, prop):
+    while "$ref" in prop:
+        prop = defs[prop["$ref"].split("/")[-1]]
+    return prop
+
+
+def _room_shape_errors(defs, shape, obj):
+    """Minimal schema check for a ROOM shape: required, additionalProperties,
+    enum, pattern, and $ref-resolved property constraints. Not a general JSON
+    Schema engine — just enough to exercise the room/0 shapes hermetically
+    (the suite stays stdlib + pytest/pyyaml only)."""
+    errors = []
+    d = defs[shape]
+    props = d.get("properties", {})
+    for key in d.get("required", []):
+        if key not in obj:
+            errors.append(f"missing required '{key}'")
+    if d.get("additionalProperties") is False:
+        for key in obj:
+            if key not in props:
+                errors.append(f"unexpected property '{key}'")
+    py_types = {
+        "string": str,
+        "integer": int,
+        "boolean": bool,
+        "object": dict,
+        "array": list,
+    }
+    for key, value in obj.items():
+        p = props.get(key)
+        if p is None:
+            continue
+        p = _resolve_def(defs, p)
+        if "enum" in p and value not in p["enum"]:
+            errors.append(f"'{key}' {value!r} not in enum {p['enum']}")
+        if "pattern" in p and isinstance(value, str):
+            if re.match(p["pattern"], value) is None:
+                errors.append(f"'{key}' {value!r} fails pattern {p['pattern']!r}")
+        if p.get("type") in py_types and not isinstance(value, py_types[p["type"]]):
+            errors.append(f"'{key}' is not a {p['type']}")
+    return errors
+
+
+_V1_CARD = {
+    "id": "card-1",
+    "title": "Rent due soon",
+    "body": "Next withdrawal is scheduled.",
+    "link": "/ledger/rent",
+    "lane": "personal",
+    "freshness": {"observed_at": "2026-09-25T12:00:00Z", "stale_after_s": 3600},
+}
+
+_V1_NEED = {
+    "id": "need-1",
+    "title": "Confirm the transfer",
+    "why": "A withdrawal above the usual threshold is waiting.",
+    "actions": ["confirm-transfer"],
+    "created_at": "2026-09-25T12:30:00Z",
+}
+
+
+def test_room_v1_0_0_shaped_payload_still_validates():
+    defs = _room_schema_defs()
+    # a card and a need shaped exactly as room/0 v1.0.0 defined them (no tone,
+    # no link) must still validate: the additions are optional.
+    assert _room_shape_errors(defs, "card", _V1_CARD) == []
+    assert _room_shape_errors(defs, "need", _V1_NEED) == []
+
+
+@pytest.mark.parametrize("tone", ["good_news", "update", "when_ready"])
+def test_room_card_tone_values_validate(tone):
+    defs = _room_schema_defs()
+    card = {**_V1_CARD, "tone": tone}
+    assert _room_shape_errors(defs, "card", card) == []
+
+
+def test_room_card_tone_absent_is_treated_as_update():
+    # absent tone validates; the contract documents the lenient consumer rule
+    defs = _room_schema_defs()
+    assert _room_shape_errors(defs, "card", _V1_CARD) == []
+    t = _room_text_schema()
+    assert "treated as `update`" in t
+    assert "never crashes or drops the card" in t
+    assert "there is no critical, alert, or warning tone" in t
+
+
+def test_room_card_tone_bad_value_rejected_by_schema_consumers_lenient():
+    defs = _room_schema_defs()
+    # e.g. a value that looks like an urgency tone is NOT in the closed enum
+    errors = _room_shape_errors(defs, "card", {**_V1_CARD, "tone": "critical"})
+    assert any("not in enum" in e for e in errors), errors
+    # ...but consumers neither crash nor drop the card: they fall back to
+    # `update` and log the unrecognized value (documented in ROOM.md).
+    t = _room_text_schema()
+    assert "does not recognize" in t
+    assert "logs the unrecognized" in t
+    # the task's urgency vocabulary must not be a card tone
+    assert "critical" not in defs["card_tone"]["enum"]
+    assert "alert" not in defs["card_tone"]["enum"]
+    assert "warning" not in defs["card_tone"]["enum"]
+
+
+@pytest.mark.parametrize("good", ["/tasks/2", "/", "/ledger/rent"])
+def test_room_need_link_same_origin_path_accepted(good):
+    defs = _room_schema_defs()
+    assert _room_shape_errors(defs, "need", {**_V1_NEED, "link": good}) == []
+
+
+@pytest.mark.parametrize(
+    "bad",
+    ["//evil.com", "https://x", "http://x", "/\\evil.com", "tasks/2", "javascript:x"],
+)
+def test_room_need_link_rejected(bad):
+    defs = _room_schema_defs()
+    errors = _room_shape_errors(defs, "need", {**_V1_NEED, "link": bad})
+    assert any("fails pattern" in e for e in errors), errors
+
+
+def test_room_contract_documents_tone_link_and_independence_rule(lib):
+    t = " ".join(_room_text(lib)["text"].split())
+    # tone semantics + UI tier names
+    assert "`good_news`, `update`, `when_ready`" in t
+    assert '"NEEDS YOU"' in t
+    assert '"GOOD NEWS"' in t
+    assert '"A SMALL UPDATE"' in t
+    assert '"WHEN YOU\'RE READY"' in t
+    # link semantics
+    assert "opens the exact item" in t
+    assert "does not start with `//`" in t
+    assert "MUST reject any other value" in t
+    # the verbatim independence requirement (rule 15)
+    verbatim = (
+        "Worlds MUST support independently built, versioned, deployed, and "
+        "rolled-back rooms. Integrating a room MUST NOT require bundling its "
+        "source code into the Worlds build or redeploying unrelated "
+        "applications. Rooms MUST expose a versioned Play-Nice contract and be "
+        "registered through a runtime-discoverable manifest. Worlds MUST "
+        "validate compatibility before loading a room and preserve independent "
+        "repository ownership, release lifecycles, and owner approval gates. "
+        "Shared shell or contract changes MAY require coordinated releases when "
+        "compatibility cannot otherwise be maintained."
+    )
+    assert verbatim in t

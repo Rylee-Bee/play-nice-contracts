@@ -63,6 +63,18 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
   gracefully when Git history is unavailable, like receipt rotation.
 
 ### Changed
+- `room` 1.0.0 → 1.1.0 (receipt rotated): additive, room/0-compatible
+  additions. Cards gain an optional `tone` (`good_news | update | when_ready`);
+  absent or unknown values are treated as `update` — logged, never fatal — and
+  there is deliberately no critical/alert/warning tone because urgency lives in
+  needs-you. Needs gain an optional `link`, a same-origin path (`/…`, never
+  `//…`, no scheme) that opens the exact item; consumers MUST reject anything
+  else. New normative rule 15 requires independently built, versioned,
+  deployed, and rolled-back rooms registered through a runtime-discoverable
+  versioned Play-Nice manifest, with Worlds validating compatibility before
+  load and preserving repo ownership, release lifecycles, and owner approval
+  gates. Machine shapes updated in `schema/room.schema.json`; every new field
+  is optional, so a v1.0.0-shaped room still validates.
 - `contract-attestation` 1.2.0 → 1.3.0 (receipt rotated): new rule 27, the
   freshness **equivalence** affordance. Under `update: automatic`, a pin and
   checkout that are provable ancestors of the authoritative remote read
