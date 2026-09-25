@@ -5,6 +5,29 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 ## [Unreleased]
 
 ### Added
+- `contractctl scan [--root DIR] [--json]`: the public-boundary check
+  (credential shapes, key headers, private topology) as a reusable command,
+  so adopters run the library's own boundary test in their trees instead of
+  copying it. Findings report a pattern label and path — never the matched
+  value (redacted, per `public-private-boundaries`). CI and `tools/check.sh`
+  now call it, collapsing three duplicated copies of the banlist into one.
+- `contractctl index [--write]`: CONTRACT_INDEX.md version/status columns
+  are derived data; this reports drift and repairs it in place,
+  deterministically, leaving every other byte alone. The drift class that
+  shipped silently now cannot recur. `validate` still fails closed on drift.
+- `contractctl init-adoption`: seed a consumer adoption manifest pinned to
+  the current revision with a sane always-floor, `require-current` +
+  `update: review` defaults, and a self-check that deletes its own output if
+  it would not validate. Replaces "copy an example, then hand-edit the pin".
+- `contractctl upgrade-check --manifest m`: one composed answer — freshness
+  (current?), the contract diff since the pin (what changed, meaningful vs
+  clarification), always-set impact (re-attestation required?), and the exact
+  next command for the manifest's update policy. Exit 0 no-action /
+  1 action-needed / 2 fail-closed.
+- `onboard --role maintainer`: onboarding for the contract author — the role
+  most able to break the library had no path. Adds governance reading order
+  (attestation, provenance, stable-truth, documentation-and-continuity,
+  versioning, deterministic-first, public-private-boundaries).
 - `contractctl diff --from <rev> --to <rev> [--manifest m] [--json]`:
   deterministic revision-to-revision comparison of the normative contract
   set — added/removed contracts, version and status changes, receipt

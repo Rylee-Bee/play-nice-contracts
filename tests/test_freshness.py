@@ -548,3 +548,34 @@ def test_contract_text_states_the_equivalence_rule():
     assert "Equivalence" in t and "byte-identical" in t
     assert "freshness.equivalence" in t
     assert "never applies this rule" in t  # update: review exclusion is explicit
+
+
+# ---------------------------------------- 11. upgrade-check (composed answer)
+
+
+def test_upgrade_check_current_says_no_action(tmp_repo, remote, manifest):
+    r = run_ct(["upgrade-check", "--manifest", str(manifest)])
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "no action" in r.stdout
+
+
+def test_upgrade_check_docs_drift_needs_review_only(tmp_repo, remote, manifest):
+    advance_remote(tmp_repo, remote, "docs-only commit past the pin")
+    r = run_ct(["upgrade-check", "--manifest", str(manifest)])
+    assert r.returncode == 1, r.stdout
+    assert "BEHIND" in r.stdout
+    assert "next:" in r.stdout
+
+
+def test_upgrade_check_flags_always_set_impact(tmp_repo, remote, manifest):
+    t = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
+    t.write_text(t.read_text().replace("version: 1.0.0", "version: 1.1.0"))
+    assert git0(tmp_repo, "add", "-A").returncode == 0
+    assert git0(tmp_repo, "commit", "-qm", "contract bump", "--no-gpg-sign").returncode == 0
+    assert git0(tmp_repo, "push", "--quiet", str(remote), "main:main").returncode == 0
+    r = run_ct(["upgrade-check", "--manifest", str(manifest)])
+    assert r.returncode == 1, r.stdout
+    assert "MEANINGFUL" in r.stdout
+    assert "always-set impact" in r.stdout
+    assert "truth-and-evidence" in r.stdout
+    assert "re-attestation required" in r.stdout
