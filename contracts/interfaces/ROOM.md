@@ -1,7 +1,7 @@
 ---
 contract_id: room
 title: Room
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: interfaces
 applies: [api, ui, integration, automation]
@@ -9,7 +9,7 @@ triggers: [api-design, api-work, room-contract, interface-design, mutations, aut
 rationale: Many small independent backends can share one front door only if each serves the same five endpoints with the same honest shapes, the same idempotent writes, and a non-lowerable autonomy floor for consequential actions.
 ---
 
-<!-- contract-receipt: fathom-ridge-wren -->
+<!-- contract-receipt: lumen-quill-marsh -->
 
 # Room
 
@@ -59,6 +59,7 @@ and can display, link, and act on every room generically.
        "body": "Next withdrawal is scheduled.",
        "link": "/ledger/rent",
        "lane": "personal",
+       "tone": "update",
        "freshness": { "observed_at": "2026-09-25T12:00:00Z", "stale_after_s": 3600 }
      }
    ]
@@ -66,6 +67,14 @@ and can display, link, and act on every room generically.
    `lane` is exactly one of `personal`, `work`. `freshness.observed_at` is RFC
    3339 and `freshness.stale_after_s` is integer seconds after which the card is
    stale. `link` is a same-origin path the front door may follow.
+   `tone` is optional and, when present, is exactly one of `good_news`,
+   `update`, `when_ready`. It is a display hint, never a priority: there is no
+   critical, alert, or warning tone, and urgency lives in needs-you, not in
+   card tone. A card with no `tone`, or with a `tone` value the consumer does
+   not recognize, is treated as `update` — the consumer logs the unrecognized
+   value and never crashes or drops the card. The UI tier names are
+   informative: `needs` = "NEEDS YOU", `good_news` = "GOOD NEWS", `update` =
+   "A SMALL UPDATE", `when_ready` = "WHEN YOU'RE READY".
 4. `GET /room/needs-you` returns a list of needs:
    ```json
    [
@@ -74,12 +83,17 @@ and can display, link, and act on every room generically.
        "title": "Confirm the transfer",
        "why": "A withdrawal above the usual threshold is waiting.",
        "actions": ["confirm-transfer"],
+       "link": "/tasks/2",
        "created_at": "2026-09-25T12:30:00Z"
      }
    ]
    ```
    Each `actions` entry is an `id` published by `GET /room/actions`; a need that
    charges attention names the action that resolves it. `created_at` is RFC 3339.
+   `link` is optional: a same-origin path that opens the exact item. When
+   present it starts with `/`, does not start with `//`, and carries no scheme.
+   A consumer MUST reject any other value (`//evil.com` and `https://x` are both
+   rejected; `/tasks/2` is accepted) rather than following it.
 5. `GET /room/actions` returns a list of actions:
    ```json
    [
@@ -149,6 +163,7 @@ and can display, link, and act on every room generically.
     value; a breaking change requires a new contract value and an explicit
     migration path. A consumer that does not understand a contract value fails
     clearly rather than guessing. `room/0` is pre-1.0 and may change.
+15. Worlds MUST support independently built, versioned, deployed, and rolled-back rooms. Integrating a room MUST NOT require bundling its source code into the Worlds build or redeploying unrelated applications. Rooms MUST expose a versioned Play-Nice contract and be registered through a runtime-discoverable manifest. Worlds MUST validate compatibility before loading a room and preserve independent repository ownership, release lifecycles, and owner approval gates. Shared shell or contract changes MAY require coordinated releases when compatibility cannot otherwise be maintained.
 
 ## RATIONALE
 
