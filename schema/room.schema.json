@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "play-nice/room-v1",
+  "title": "Play-Nice Room Contract Responses",
+  "description": "Machine shapes for the ROOM contract v0 (contracts/interfaces/ROOM.md). A room is any service that serves the same five HTTP endpoints so a front door can render and act on it without owning its code. Root schema is the union of the five response shapes; named shapes live in $defs. Honesty rules are structural: status is a closed vocabulary where unknown is not healthy, freshness carries observed_at + stale_after_s, and no shape admits a secret value.",
+  "oneOf": [
+    { "$ref": "#/$defs/room" },
+    { "$ref": "#/$defs/cards_response" },
+    { "$ref": "#/$defs/needs_you_response" },
+    { "$ref": "#/$defs/actions_response" },
+    { "$ref": "#/$defs/action_receipt" }
+  ],
+  "$defs": {
+    "room_status": {
+      "type": "string",
+      "enum": ["healthy", "degraded", "unhealthy", "unknown"],
+      "description": "Room status vocabulary. healthy/degraded/unknown are shared-vocabulary states; unhealthy is the room observed not-ok (the shared vocabulary's needs_attention/unavailable class). unknown is NOT healthy and NOT failed."
+    },
+    "lane": {
+      "type": "string",
+      "enum": ["personal", "work"],
+      "description": "Card lane."
+    },
+    "autonomy": {
+      "type": "string",
+      "enum": ["auto", "check_in", "ask_first"],
+      "description": "Autonomy level. Effective autonomy is the strictest of caller policy, room default, and the non-lowerable class floor (deploy, secrets, default-branch pushes, deletes, spending are always ask_first)."
+    },
+    "freshness": {
+      "type": "object",
+      "required": ["observed_at", "stale_after_s"],
+      "additionalProperties": false,
+      "properties": {
+        "observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "RFC 3339 time the data was observed."
+        },
+        "stale_after_s": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Seconds after observed_at at which the data is stale and must be labelled, never shown as current."
+        }
+      }
+    },
+    "room": {
+      "title": "GET /room",
+      "type": "object",
+      "required": ["contract", "id", "name", "icon", "version", "commit", "status", "updated_at"],
+      "additionalProperties": false,
+      "properties": {
+        "contract": {
+          "const": "room/0",
+          "description": "Interface version marker. The path stays /room; this field declares the contract value. A consumer that does not understand it fails clearly (Versioning and Compatibility)."
+        },
+        "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "icon": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "voice": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Optional display persona label the front door may caption the room with. Never a claim about a person."
+        },
+        "version": { "type": "string", "minLength": 1, "maxLength": 64, "description": "The room's own code version." },
+        "commit": { "type": "string", "minLength": 1, "maxLength": 64, "description": "The room's own code revision." },
+        "status": { "$ref": "#/$defs/room_status" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "card": {
+      "type": "object",
+      "required": ["id", "title", "body", "link", "lane", "freshness"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "body": { "type": "string", "maxLength": 2000 },
+        "link": { "type": "string", "minLength": 1, "maxLength": 500, "description": "Same-origin path the front door may follow." },
+        "lane": { "$ref": "#/$defs/lane" },
+        "freshness": { "$ref": "#/$defs/freshness" }
+      }
+    },
+    "cards_response": {
+      "title": "GET /room/cards",
+      "type": "array",
+      "items": { "$ref": "#/$defs/card" }
+    },
+    "need": {
+      "type": "object",
+      "required": ["id", "title", "why", "actions", "created_at"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "why": { "type": "string", "minLength": 1, "maxLength": 2000, "description": "Why this needs the owner's attention now." },
+        "actions": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 64 },
+          "description": "Action ids published by GET /room/actions that resolve this need."
+        },
+        "created_at": { "type": "string", "format": "date-time" }
+      }
+    },
+    "needs_you_response": {
+      "title": "GET /room/needs-you",
+      "type": "array",
+      "items": { "$ref": "#/$defs/need" }
+    },
+    "action": {
+      "type": "object",
+      "required": ["id", "label", "input_schema", "default_autonomy", "writes"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-z0-9][a-z0-9-]*$" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "input_schema": { "type": "object", "description": "JSON Schema describing the action's input." },
+        "default_autonomy": { "$ref": "#/$defs/autonomy" },
+        "writes": { "type": "boolean", "description": "True when invoking the action can change state outside the room's response." }
+      }
+    },
+    "actions_response": {
+      "title": "GET /room/actions",
+      "type": "array",
+      "items": { "$ref": "#/$defs/action" }
+    },
+    "action_receipt": {
+      "title": "POST /room/actions/{id}",
+      "type": "object",
+      "description": "Idempotent receipt for an action invocation, keyed by the Idempotency-Key header (see Idempotency). Returned for success, refusal, and failure alike; never a silent success.",
+      "required": ["action_id", "ok", "summary", "changed", "at"],
+      "additionalProperties": false,
+      "properties": {
+        "action_id": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "ok": { "type": "boolean", "description": "False for a refusal or failure; the summary must still be honest." },
+        "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "changed": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "description": "Exactly what changed; empty when nothing did."
+        },
+        "at": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

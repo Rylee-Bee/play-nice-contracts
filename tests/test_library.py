@@ -139,7 +139,7 @@ def test_all_contracts_dual_use_structure(lib):
 
 
 def test_contract_count(lib):
-    assert len(lib.load_library()) == 66
+    assert len(lib.load_library()) == 67
 
 
 def test_lock_paths_and_bytes_are_portable(tmp_repo):
@@ -365,7 +365,7 @@ def test_diff_command_reports_changes(tmp_repo):
     # tmp_repo has one commit only; use HEAD..HEAD instead (zero-diff path)
     r = run_ct(["diff", "--from", "HEAD", "--to", "HEAD"], cwd=str(tmp_repo))
     assert r.returncode == 0, r.stdout + r.stderr
-    assert "unchanged: 66" in r.stdout
+    assert "unchanged: 67" in r.stdout
     j = json.loads(
         run_ct(
             ["diff", "--from", "HEAD", "--to", "HEAD", "--json"], cwd=str(tmp_repo)
@@ -2292,7 +2292,7 @@ def test_offline_validation_works():
 def test_cli_status():
     r = run_ct(["status"])
     assert r.returncode == 0
-    assert "contracts: 66" in r.stdout
+    assert "contracts: 67" in r.stdout
 
 
 def test_cli_show():
@@ -2419,7 +2419,7 @@ def test_onboard_json_output(lib):
     total = (
         len(data["high_priority"]) + len(data["applicable"]) + len(data["remaining"])
     )
-    assert total == 66
+    assert total == 67
 
 
 def test_onboard_role_does_not_change_applicability(lib):
@@ -2437,7 +2437,7 @@ def test_onboard_role_does_not_change_applicability(lib):
             + len(data["applicable"])
             + len(data["remaining"])
         )
-        assert total == 66, f"role {role}: total {total} != 66"
+        assert total == 67, f"role {role}: total {total} != 67"
 
 
 def test_onboard_invalid_role():
@@ -2550,3 +2550,131 @@ def test_onboard_includes_maintainer_role(tmp_repo):
     assert "contract-attestation" in ids
     assert "documentation-and-continuity" in ids
     assert "deterministic-first" in ids
+
+
+# --------------------------------------------------------------- room contract
+
+
+def _room_text(lib):
+    c = [
+        x
+        for x in lib.load_library()
+        if x["front_matter"]["contract_id"] == "room"
+    ]
+    assert len(c) == 1, "exactly one ROOM contract"
+    return c[0]
+
+
+def test_room_contract_exists(lib):
+    c = _room_text(lib)
+    assert c["front_matter"]["version"] == "1.0.0"
+    assert c["front_matter"]["status"] == "canonical"
+    assert c["front_matter"]["layer"] == "interfaces"
+    assert c["receipts"] == ["fathom-ridge-wren"]
+
+
+def test_room_contract_declares_five_endpoints(lib):
+    t = _room_text(lib)["text"]
+    for endpoint in (
+        "GET /room",
+        "GET /room/cards",
+        "GET /room/needs-you",
+        "GET /room/actions",
+        "POST /room/actions/{id}",
+    ):
+        assert endpoint in t, endpoint
+
+
+def test_room_contract_shapes_and_vocabulary(lib):
+    t = _room_text(lib)["text"]
+    # shape fields the front door depends on
+    for field in (
+        '"freshness"',
+        '"lane"',
+        '"input_schema"',
+        '"default_autonomy"',
+        '"writes"',
+        '"changed"',
+        '"contract": "room/0"',
+    ):
+        assert field in t, field
+    # closed vocabularies
+    assert "`healthy`, `degraded`, `unhealthy`, `unknown`" in t
+    assert "`personal`, `work`" in t
+    assert "`auto`, `check_in`, `ask_first`" in t
+
+
+def test_room_contract_idempotent_writes(lib):
+    t = _room_text(lib)["text"]
+    assert "Idempotency-Key" in t
+    assert "MUST be idempotent" in t
+    assert "Idempotency" in t  # references the Idempotency contract
+
+
+def test_room_contract_autonomy_floor_is_non_lowerable(lib):
+    t = _room_text(lib)["text"]
+    for action_class in (
+        "deploys",
+        "secret access or change",
+        "pushes to a default branch",
+        "deletes",
+        "spending",
+    ):
+        assert action_class in t, action_class
+    assert "cannot be lowered" in t
+    assert "approval token" in t
+
+
+def test_room_contract_honesty_and_unreachable(lib):
+    t = _room_text(lib)["text"]
+    assert "reports `unknown`" in t
+    assert "never `healthy`" in t
+    assert "stale_after_s" in t
+    assert "MUST NOT render as current" in t
+    assert "render an unreachable room as unreachable" in t
+    assert "last-seen time" in t
+
+
+def test_room_contract_auth_and_secrets(lib):
+    t = _room_text(lib)["text"]
+    assert "same-origin behind the front door's auth proxy" in t
+    assert "scoped bearer tokens" in t
+    assert "No response may contain" in t
+
+
+def test_room_contract_versioning(lib):
+    t = _room_text(lib)["text"]
+    assert "path stays `/room`" in t
+    assert "Versioning and Compatibility" in t
+    assert "`contract` field in `GET /room`" in t
+
+
+def test_room_schema_covers_five_response_shapes():
+    schema = json.loads((REPO / "schema" / "room.schema.json").read_text())
+    assert schema["$id"] == "play-nice/room-v1"
+    defs = schema["$defs"]
+    for shape in (
+        "room",
+        "cards_response",
+        "needs_you_response",
+        "actions_response",
+        "action_receipt",
+    ):
+        assert shape in defs, shape
+    assert defs["room"]["properties"]["contract"]["const"] == "room/0"
+    assert defs["room"]["properties"]["status"] == {"$ref": "#/$defs/room_status"}
+    assert defs["room_status"]["enum"] == [
+        "healthy",
+        "degraded",
+        "unhealthy",
+        "unknown",
+    ]
+    assert defs["lane"]["enum"] == ["personal", "work"]
+    assert defs["autonomy"]["enum"] == ["auto", "check_in", "ask_first"]
+    assert set(defs["action_receipt"]["required"]) == {
+        "action_id",
+        "ok",
+        "summary",
+        "changed",
+        "at",
+    }

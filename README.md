@@ -37,8 +37,8 @@ Rylee's preferred experience is a first-class profile (`profiles/`), not a hidde
 ```text
 schema/                     JSON Schemas: contract, adoption, attestation,
                             capability, status, question, project, participant,
-                            references, global Play-Nice config
-contracts/                  66 canonical contracts in 8 topic areas (normative)
+                            references, room, global Play-Nice config
+contracts/                  67 canonical contracts in 8 topic areas (normative)
 .contracts/adoption.yaml    this repo's own adoption of its library — the
                             contract gate is dogfooded here (see AGENTS.md)
 docs/                       QUICK_REFERENCE.md (non-normative reminder card),

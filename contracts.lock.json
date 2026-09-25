@@ -1,7 +1,7 @@
 {
   "schema": "play-nice/lock-v1",
   "generated_from": {
-    "contract_count": 66
+    "contract_count": 67
   },
   "contracts": [
     {
@@ -442,6 +442,14 @@
       "path": "contracts/agents/REVIEW_AND_INTEGRATION.md",
       "sha256": "154a8441c2cc1d606b9ccbfdf01734854cba48b3bc0aeca5ae304133807f34bf",
       "receipt": "harbor-zenith-ember",
+      "status": "canonical"
+    },
+    {
+      "id": "room",
+      "version": "1.0.0",
+      "path": "contracts/interfaces/ROOM.md",
+      "sha256": "4632c5b3c62d8954d4894ffcb35abe7337586fc24fdf9c3855623271c0a2512f",
+      "receipt": "fathom-ridge-wren",
       "status": "canonical"
     },
     {
