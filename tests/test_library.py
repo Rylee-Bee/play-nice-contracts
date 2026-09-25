@@ -139,7 +139,7 @@ def test_all_contracts_dual_use_structure(lib):
 
 
 def test_contract_count(lib):
-    assert len(lib.load_library()) == 66
+    assert len(lib.load_library()) == 67
 
 
 def test_lock_paths_and_bytes_are_portable(tmp_repo):
@@ -365,7 +365,7 @@ def test_diff_command_reports_changes(tmp_repo):
     # tmp_repo has one commit only; use HEAD..HEAD instead (zero-diff path)
     r = run_ct(["diff", "--from", "HEAD", "--to", "HEAD"], cwd=str(tmp_repo))
     assert r.returncode == 0, r.stdout + r.stderr
-    assert "unchanged: 66" in r.stdout
+    assert "unchanged: 67" in r.stdout
     j = json.loads(
         run_ct(
             ["diff", "--from", "HEAD", "--to", "HEAD", "--json"], cwd=str(tmp_repo)
@@ -2292,7 +2292,7 @@ def test_offline_validation_works():
 def test_cli_status():
     r = run_ct(["status"])
     assert r.returncode == 0
-    assert "contracts: 66" in r.stdout
+    assert "contracts: 67" in r.stdout
 
 
 def test_cli_show():
@@ -2419,7 +2419,7 @@ def test_onboard_json_output(lib):
     total = (
         len(data["high_priority"]) + len(data["applicable"]) + len(data["remaining"])
     )
-    assert total == 66
+    assert total == 67
 
 
 def test_onboard_role_does_not_change_applicability(lib):
@@ -2437,7 +2437,7 @@ def test_onboard_role_does_not_change_applicability(lib):
             + len(data["applicable"])
             + len(data["remaining"])
         )
-        assert total == 66, f"role {role}: total {total} != 66"
+        assert total == 67, f"role {role}: total {total} != 67"
 
 
 def test_onboard_invalid_role():
