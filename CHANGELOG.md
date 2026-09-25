@@ -5,6 +5,16 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 ## [Unreleased]
 
 ### Added
+- `room` 1.0.0 (new interface contract): the ROOM contract v0 — a uniform
+  five-endpoint seam (`GET /room`, `GET /room/cards`, `GET /room/needs-you`,
+  `GET /room/actions`, `POST /room/actions/{id}`) so one front door can render
+  and operate many small independent backends without owning their code.
+  Normative: honest status (`unknown` is never `healthy`), stale labelling,
+  unreachable rendering with last-seen time, idempotent writes keyed by
+  `Idempotency-Key`, and a non-lowerable `ask_first` floor for deploys, secrets,
+  default-branch pushes, deletes, and spending. Machine shapes live in
+  `schema/room.schema.json`; the contract is registered in `CONTRACT_INDEX.md`
+  and `contracts.lock.json`.
 - `contractctl scan [--root DIR] [--json]`: the public-boundary check
   (credential shapes, key headers, private topology) as a reusable command,
   so adopters run the library's own boundary test in their trees instead of
