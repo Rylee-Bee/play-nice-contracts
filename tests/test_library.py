@@ -369,7 +369,13 @@ def test_diff_command_reports_changes(tmp_repo):
     # tmp_repo has one commit only; use HEAD..HEAD instead (zero-diff path)
     r = run_ct(["diff", "--from", "HEAD", "--to", "HEAD"], cwd=str(tmp_repo))
     assert r.returncode == 0, r.stdout + r.stderr
-    assert "unchanged: 67" in r.stdout
+    # Count comes from the committed library, not a hard-coded number.
+    committed = subprocess.run(
+        ["git", "ls-tree", "-r", "--name-only", "HEAD", "contracts/"],
+        cwd=str(tmp_repo), capture_output=True, text=True, check=True,
+    ).stdout.split()
+    n = sum(1 for f in committed if f.endswith(".md") and not f.endswith("LICENSE.md"))
+    assert f"unchanged: {n}" in r.stdout
     j = json.loads(
         run_ct(
             ["diff", "--from", "HEAD", "--to", "HEAD", "--json"], cwd=str(tmp_repo)
