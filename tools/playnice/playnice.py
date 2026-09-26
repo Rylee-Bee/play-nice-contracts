@@ -1673,73 +1673,98 @@ def cmd_work(args) -> int:
         cfg["agent"]["command"] = args.agent
     repo = Path(args.repo).resolve()
     task = args.task
+    json_mode = bool(getattr(args, "json_output", False))
+
+    def emit(line: str = "", *, err: bool = False) -> None:
+        """Human prose, suppressed under --json (which gets one JSON object)."""
+        if not json_mode:
+            print(line, file=sys.stderr if err else sys.stdout)
+
+    def finish(rc: int, state: str, **fields) -> int:
+        if json_mode:
+            payload: dict = {
+                "command": "work",
+                "state": state,
+                "task": task or None,
+                "freshness": None,
+                "permit_path": None,
+                "handoff_path": None,
+                "next": None,
+            }
+            payload.update(fields)
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        return rc
+
     if not task:
-        print(
+        emit(
             'playnice: a task is required (e.g. playnice work "fix the settings page")',
-            file=sys.stderr,
+            err=True,
         )
-        return 1
+        return finish(1, "NO_TASK")
     manifest_path = find_adoption_manifest(repo, args.manifest)
     if manifest_path is None:
-        print(
+        emit(
             "PLAY NICE: UNKNOWN — no adoption manifest found in this repository.\n"
             "  A participating repo carries `.contracts/adoption.yaml` (or\n"
             "  `.project/contracts/adoption.yaml`). Copy an example and pin the\n"
             "  reviewed revision: `cp examples/<repo>.adoption.yaml <repo>/.contracts/adoption.yaml`",
-            file=sys.stderr,
+            err=True,
         )
-        return 2
+        return finish(2, "NO_MANIFEST")
 
     lib = find_library(cfg, Path.cwd(), env)
     fr = play_nice_check(manifest_path, lib, cfg)
-    print(
+    emit(
         f"REMOTE FRESHNESS: {fr.get('status')}  (enforced={bool(fr.get('enforced'))})"
     )
     if fr.get("remote_revision"):
-        print(f"  authoritative revision: {fr['remote_revision']}")
+        emit(f"  authoritative revision: {fr['remote_revision']}")
     if freshness_blocked(fr):
-        print(f"  - {fr.get('detail', '')}")
+        emit(f"  - {fr.get('detail', '')}")
         sync = sync_pin_if_allowed(manifest_path, fr, lib)
         if sync["performed"]:
-            print(f"  synced: {sync['detail']}")
+            emit(f"  synced: {sync['detail']}")
             fr = play_nice_check(manifest_path, lib, cfg)
-            print(f"REMOTE FRESHNESS: {fr.get('status')}  (after sync)")
+            emit(f"REMOTE FRESHNESS: {fr.get('status')}  (after sync)")
         else:
             if sync.get("detail"):
-                print(f"  (no auto-sync: {sync['detail']})")
+                emit(f"  (no auto-sync: {sync['detail']})")
         if freshness_blocked(fr):
-            print(
+            emit(
                 "CONTRACT COMMITMENT: INACTIVE — mutating work stays blocked (fail closed)"
             )
-            return 2
+            return finish(2, "INACTIVE", freshness=fr.get("status"))
 
     repo_state = reconcile_repo(repo, cfg)
     gh = None
     if cfg["github"]["inspect_pull_requests"] or cfg["github"]["inspect_issues"]:
         gh = collect_github_state(repo, cfg, env)
         if gh.get("note") and not gh.get("available"):
-            print(f"GITHUB STATE: {gh['note']}")
+            emit(f"GITHUB STATE: {gh['note']}")
     carryover = discover_carryover(repo, cfg, gh)
     for item in carryover["items"]:
-        print(
+        emit(
             f"  carryover: {item.get('disposition'):16s} {item.get('label')} — {item.get('action')}"
         )
     if carryover["state"] != "RECONCILED":
-        print(
+        emit(
             f"CARRYOVER: {carryover['state']} — unknown items are preserved, never guessed"
         )
 
     gate = run_contract_gate(manifest_path, task, lib, role="orchestrator")
     if not gate["ok"]:
-        print(gate["output"])
-        print(f"\nCONTRACT GATE: {gate['state']}")
-        print("CONTRACT COMMITMENT: INACTIVE")
-        return 2
-    print(gate["output"])
+        emit(gate["output"])
+        emit(f"\nCONTRACT GATE: {gate['state']}")
+        emit("CONTRACT COMMITMENT: INACTIVE")
+        return finish(
+            2, "GATE_BLOCKED", freshness=fr.get("status"), gate_state=gate["state"]
+        )
+    emit(gate["output"])
 
     permit = write_permit(repo, manifest_path, task, fr, repo_state, carryover, gate)
-    _print_permit(fr, repo_state, carryover, gate)
-    print(f"permit: {permit.get('_path')}")
+    if not json_mode:
+        _print_permit(fr, repo_state, carryover, gate)
+    emit(f"permit: {permit.get('_path')}")
 
     if args.no_launch:
         next_line = compute_next(fr, repo_state, carryover, gate, [], None, cfg, False)
@@ -1760,14 +1785,21 @@ def cmd_work(args) -> int:
                 next_line,
             ),
         )
-        print(f"handoff: {hd}")
-        print(f"NEXT: {next_line}")
-        return 0
+        emit(f"handoff: {hd}")
+        emit(f"NEXT: {next_line}")
+        return finish(
+            0,
+            "PERMITTED",
+            freshness=fr.get("status"),
+            permit_path=permit.get("_path"),
+            handoff_path=str(hd),
+            next=next_line,
+        )
 
     agent_rc = launch_agent(cfg, repo, task, permit, lib, env)
     ops: list[dict] = []
     if agent_rc == 0:
-        print("agent finished; reconciling post-work ...")
+        emit("agent finished; reconciling post-work ...")
         if (
             cfg["github"]["merge_ready_pull_requests"]
             or cfg["github"]["close_proven_resolved_issues"]
@@ -1776,13 +1808,13 @@ def cmd_work(args) -> int:
             gh2 = collect_github_state(repo, cfg, env)
             ops = reconcile_github(repo, cfg, permit, gh2, env)
             for op in ops:
-                print(
+                emit(
                     f"  reconcile: {op.get('op')}: {op.get('target')} — {op.get('detail', '')}"
                 )
         else:
-            print("  (github reconcile disabled in config)")
+            emit("  (github reconcile disabled in config)")
     else:
-        print(f"agent exited {agent_rc}")
+        emit(f"agent exited {agent_rc}")
 
     next_line = compute_next(fr, repo_state, carryover, gate, ops, agent_rc, cfg, True)
     hd = write_handoff(
@@ -1802,9 +1834,17 @@ def cmd_work(args) -> int:
             next_line,
         ),
     )
-    print(f"handoff: {hd}")
-    print(f"NEXT: {next_line}")
-    return 0 if agent_rc == 0 else 3
+    emit(f"handoff: {hd}")
+    emit(f"NEXT: {next_line}")
+    return finish(
+        0 if agent_rc == 0 else 3,
+        "COMPLETED" if agent_rc == 0 else "AGENT_FAILED",
+        freshness=fr.get("status"),
+        permit_path=permit.get("_path"),
+        handoff_path=str(hd),
+        next=next_line,
+        agent_rc=agent_rc,
+    )
 
 
 def cmd_status(args) -> int:
@@ -1819,6 +1859,17 @@ def cmd_status(args) -> int:
         }
     env = dict(os.environ)
     repo = Path(args.repo).resolve()
+    # a repo that cannot be opened is an error, not an UNKNOWN that exits 0
+    # (matches `playnice work`, which fails closed the same way)
+    if not repo.is_dir() or not is_git_repo(repo):
+        print(
+            f"error: repo not found or not a git repository: {repo}", file=sys.stderr
+        )
+        print(
+            "  next: point --repo at an existing git checkout, or run this inside one",
+            file=sys.stderr,
+        )
+        return 2
     manifest_path = find_adoption_manifest(repo, args.manifest)
     lib = find_library(cfg, Path.cwd(), env)
     out: dict = {}
@@ -1903,43 +1954,88 @@ def cmd_reconcile(args) -> int:
         }
     env = dict(os.environ)
     repo = Path(args.repo).resolve()
+    json_mode = bool(getattr(args, "json_output", False))
+
+    def emit(line: str = "", *, err: bool = False) -> None:
+        """Human prose, suppressed under --json (which gets one JSON object)."""
+        if not json_mode:
+            print(line, file=sys.stderr if err else sys.stdout)
+
+    def finish(rc: int, state: str, **fields) -> int:
+        if json_mode:
+            payload: dict = {
+                "command": "reconcile",
+                "state": state,
+                "carryover": None,
+                "permit_path": None,
+                "handoff_path": None,
+                "next": None,
+            }
+            payload.update(fields)
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        return rc
+
     manifest_path = find_adoption_manifest(repo, args.manifest)
     lib = find_library(cfg, Path.cwd(), env)
     if manifest_path is None:
-        print(
-            "reconcile: no adoption manifest found; run a gate first", file=sys.stderr
-        )
-        return 2
+        emit("reconcile: no adoption manifest found; run a gate first", err=True)
+        return finish(2, "NO_MANIFEST")
     permit = load_permit(repo, manifest_path)
+    permit_path = None
+    if permit is not None:
+        for cand in (
+            manifest_path.parent / "work-permit.json",
+            repo / ".contracts" / "work-permit.json",
+            repo / ".project" / "contracts" / "work-permit.json",
+        ):
+            if cand.is_file():
+                permit_path = str(cand)
+                break
     gh = None
     if cfg["github"]["inspect_pull_requests"] or cfg["github"]["inspect_issues"]:
         gh = collect_github_state(repo, cfg, env)
         if gh.get("note"):
-            print(f"GITHUB STATE: {gh['note']}")
+            emit(f"GITHUB STATE: {gh['note']}")
     co = discover_carryover(repo, cfg, gh)
     for item in co["items"]:
-        print(
+        emit(
             f"  carryover: {item.get('disposition'):16s} {item.get('label')} — {item.get('action')}"
         )
+    carryover_state = co["state"]
     if not permit or permit.get("work_permit") != "ACTIVE":
-        print(
+        emit(
             "reconcile: no ACTIVE work permit on file — run `playnice work` to gate first"
         )
-        print("read-only reconciliation above; mutations stay blocked")
-        return 4
+        emit("read-only reconciliation above; mutations stay blocked")
+        return finish(
+            4, "READ_ONLY", carryover=carryover_state, permit_path=permit_path
+        )
     ok, detail = commitment_still_active(manifest_path, permit.get("task", ""), lib)
     if not ok:
-        print(f"reconcile: {detail}")
-        print("mutations stay blocked until a fresh gate passes")
-        return 4
+        emit(f"reconcile: {detail}")
+        emit("mutations stay blocked until a fresh gate passes")
+        return finish(
+            4,
+            "STALE_COMMITMENT",
+            carryover=carryover_state,
+            permit_path=permit_path,
+            reason=detail,
+        )
     ops = reconcile_github(repo, cfg, permit, gh, env)
     for op in ops:
-        print(
+        emit(
             f"  reconcile: {op.get('op')}: {op.get('target')} — {op.get('detail', '')}"
         )
     next_line = compute_next({}, {}, co, {"ok": True}, ops, None, cfg, True)
-    print(f"NEXT: {next_line}")
-    return 0
+    emit(f"NEXT: {next_line}")
+    return finish(
+        0,
+        "RECONCILED",
+        carryover=carryover_state,
+        permit_path=permit_path,
+        next=next_line,
+        ops=ops,
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
