@@ -63,10 +63,10 @@ apply to a task (the resolver and the packs say).
 9. If two applicable contracts genuinely conflict, say so and stop
    with the pair and the tension named — an honest blocked answer is
    compliant behavior (see the floor, rule 9).
-10. The old eight-step gate — freshness check, resolve, read, hash
-    verify, attest, commitment — and the legacy `contractctl` tooling
-    around it are retired; they are documented in
-    `docs/PLAYNICE.md` for existing adopters.
+10. The old attest/commit gate is retired; do not use it for new work.
+    Projects that pinned it before v2 can find it in
+    `docs/MAINTAINING.md`. (`contractctl resolve` is still current: it
+    answers "which rules apply to this task".)
 
 ## Examples
 

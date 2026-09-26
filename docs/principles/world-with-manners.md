@@ -1,5 +1,7 @@
 # A World with Manners
 
+> **Status:** Optional reading · a case study. Not needed to use Play-Nice: start at [the floor](../../contracts/everyone/FLOOR.md).
+
 > **The world knows how loudly to exist.**
 
 ## Status and provenance

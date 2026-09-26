@@ -1,5 +1,7 @@
 # Trusted Translation
 
+> **Status:** Optional reading · the idea behind Play-Nice, as a story. Not needed to use it: start at [the floor](../../contracts/everyone/FLOOR.md).
+
 > **Different languages. Different systems. Shared understanding. Earned trust.**
 
 ---

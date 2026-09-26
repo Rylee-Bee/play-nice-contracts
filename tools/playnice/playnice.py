@@ -2068,7 +2068,7 @@ CONTACT_RE = re.compile(r"^(mailto:|https:|http:|tel:)")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 WALK_SKIP_DIRS = {
-    ".git", "node_modules", ".venv", "venv", "__pycache__", ".pytest_cache",
+    ".git", "node_modules", "vendor", "third_party", "dist", "build", ".venv", "venv", "__pycache__", ".pytest_cache",
     ".tox", ".mypy_cache", "dist", "build", ".contract-commitments",
 }
 FRONTEND_DEPS = {

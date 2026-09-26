@@ -22,9 +22,14 @@ floor everyone follows, plus packs of rules for what you're building.
    | [Integration](contracts/integration/) | connecting to other services |
    | [Access](contracts/access/) | identity and roles, secrets and data, public and private |
 
-3. **Prove you read it.** Agents start each handoff with one line:
-   `Play-Nice floor <version> · receipt <word>` (details:
+3. **Prove you read it.** Agents put one line at the top of their handoff:
+   `Play-Nice floor <version> · receipt <word> · read <contract ids>`, and
+   check it with `playnice verify` (details:
    [contract-proof](contracts/work/CONTRACT_PROOF.md)).
+
+Two version numbers, on purpose: the **library** is 2.0.0 (all contracts
+together); the **floor** has its own version (1.0.0), which is what the
+proof line names.
 
 ## Use it in a project
 
@@ -44,7 +49,8 @@ its `/.well-known/play-nice.json` (see [friendly-site](contracts/sites/FRIENDLY_
 
 <img src="assets/badge/bee.svg" width="48" alt="The Play-Nice bee">
 
-A project shows the badge that `check` writes: **plays nice**, **behind**
+A project shows the badge that `check` writes (in CI, or run `check
+--badge playnice-badge.svg` yourself and commit the file): **plays nice**, **behind**
 (a newer version is out), or **fix needed**. The badge links to the check
 that made it; a copied picture proves nothing. How the badge and the docs
 look and sound: [design philosophy](docs/DESIGN_PHILOSOPHY.md).
