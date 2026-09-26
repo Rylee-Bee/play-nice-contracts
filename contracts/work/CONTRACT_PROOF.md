@@ -100,6 +100,11 @@ staying quiet about failing is not allowed) at near-zero cost.
 
 ## Machine notes
 
+The receipt word appears in the floor and in the Play-Nice block that
+`playnice start` writes into a project's AGENTS.md (that block carries the
+floor's rules verbatim), so copying it from either is fine. `playnice verify`
+never prints the word.
+
 Line grammar: `Play-Nice floor <version> · receipt <word>[ · read
 <id>[, <id>...]]` — version and receipt word copied verbatim from the
 floor page's front matter and receipt comment; `read` lists the

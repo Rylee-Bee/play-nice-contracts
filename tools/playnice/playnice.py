@@ -2243,7 +2243,8 @@ def cmd_verify(args) -> int:
         return 2
     out["floor_version"] = floor["version"]
     out["example"] = (
-        f"Play-Nice floor {floor['version']} · receipt {floor['receipt']} · read floor"
+        # Never print the real receipt word: it is the proof of reading.
+        f"Play-Nice floor {floor['version']} · receipt <word from the floor> · read floor"
     )
     parsed, problem = parse_verify_line(line, index)
     if problem:
@@ -2263,6 +2264,12 @@ def cmd_verify(args) -> int:
             state="CURRENT", exit=0,
             message=f"floor {floor['version']} and the receipt word match this library",
             next="keep working",
+        )
+    elif version_tuple(parsed["version"]) == version_tuple(floor["version"]):
+        out.update(
+            state="INVALID", exit=2,
+            message=f"that receipt word is not on floor {floor['version']}",
+            next=f"read {FLOOR_REL} and copy the receipt word from it",
         )
     else:
         out.update(
@@ -2984,7 +2991,7 @@ def cmd_start(args) -> int:
         actions.append("no .github/ — skipped the workflow")
 
     nxt = ("CI will redraw the badge on every push" if has_github
-           else "next: playnice check")
+           else "playnice check")
     if args.json_output:
         print(json.dumps({
             "command": "start", "path": str(target), "dry_run": False,

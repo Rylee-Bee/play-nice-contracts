@@ -115,17 +115,22 @@ def test_verify_out_of_date_old_version(tmp_path):
     assert f"OUT OF DATE: floor is now {FLOOR_V}, read contracts/everyone/FLOOR.md" in r.stdout
 
 
-def test_verify_out_of_date_wrong_receipt_current_version(tmp_path):
+def test_verify_wrong_receipt_on_current_version_is_invalid(tmp_path):
     r = run_pn(["verify", f"Play-Nice floor {FLOOR_V} · receipt wrong-word-here"], tmp_path)
-    assert r.returncode == 1
-    assert "OUT OF DATE" in r.stdout
+    assert r.returncode == 2
+    assert "not on floor" in r.stdout
+    assert FLOOR_R not in r.stdout + r.stderr
 
 
 def test_verify_invalid_malformed_shows_example(tmp_path):
     r = run_pn(["verify", "I read the rules, promise"], tmp_path)
     assert r.returncode == 2
     assert "INVALID:" in r.stdout
-    assert f"example: Play-Nice floor {FLOOR_V} · receipt {FLOOR_R}" in r.stdout
+    assert f"example: Play-Nice floor {FLOOR_V} · receipt <word from the floor>" in r.stdout
+    # The receipt word is the proof of reading: verify never reveals it.
+    assert FLOOR_R not in r.stdout + r.stderr
+    j = run_pn(["verify", "I read the rules, promise", "--json"], tmp_path)
+    assert FLOOR_R not in j.stdout
 
 
 def test_verify_invalid_bad_version_shape(tmp_path):
