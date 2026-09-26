@@ -46,16 +46,33 @@ CONTRACT_ID_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 SEMVER_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
 GITSHA_RE = re.compile(r"^[a-f0-9]{7,64}$")
+# v2 packs: the layer is the pack, and the directory is named after it.
 LAYER_DIRS = {
-    "core": "core",
-    "human": "human",
-    "experience": "experience",
-    "interoperability": "interoperability",
-    "security": "security",
-    "engineering": "engineering",
-    "agents": "agents",
-    "interfaces": "interfaces",
+    "everyone": "everyone",
+    "work": "work",
+    "people": "people",
+    "surfaces": "surfaces",
+    "sites": "sites",
+    "integration": "integration",
+    "access": "access",
 }
+
+ALIASES_FILE = REPO_ROOT / "aliases.json"
+
+
+def load_aliases() -> dict[str, str]:
+    """Old (v1) contract ids -> the v2 contract that holds their rules."""
+    try:
+        return dict(json.loads(ALIASES_FILE.read_text()).get("aliases", {}))
+    except (OSError, ValueError):
+        return {}
+
+
+def canonical_id(cid: str, lib_ids) -> str:
+    """Map an old id to its v2 id; unknown ids come back unchanged."""
+    if cid in lib_ids:
+        return cid
+    return load_aliases().get(cid, cid)
 VALID_STATUS = {"canonical", "draft", "deprecated", "retired"}
 ATTEST_STATUSES = {"ACCEPTED", "CONFLICT", "N/A"}
 
@@ -728,6 +745,7 @@ def resolve_set(
     errors: list[str] = []
 
     def add(cid: str, why: str):
+        cid = canonical_id(cid, lib)
         if cid in lib:
             selected[cid] = why
         else:
@@ -827,8 +845,15 @@ FLOOR_IMPACT = "the floor applies to all work; proof is the floor receipt line"
 
 
 def _with_floor_impact(task_impact: dict[str, str]) -> dict[str, str]:
-    """The floor needs no per-task sentence: add a standard one if absent."""
-    return {"floor": FLOOR_IMPACT, **(task_impact or {})}
+    """The floor needs no per-task sentence: add a standard one if absent.
+    Impacts written under an old (v1) id count for the v2 contract that
+    now holds it."""
+    aliases = load_aliases()
+    merged: dict[str, str] = {"floor": FLOOR_IMPACT}
+    for cid, sentence in (task_impact or {}).items():
+        new = aliases.get(cid, cid)
+        merged[new] = f"{merged[new]}; {sentence}" if new in merged and new != "floor" else sentence
+    return merged
 
 
 def make_attestation(
@@ -1850,14 +1875,14 @@ def validate_adoption_manifest(manifest_path: Path) -> list[str]:
     ):
         errors.append("adoption: source.repository and source.revision are required")
     for cid in manifest.get("always", []) or []:
-        if cid not in lib:
+        if canonical_id(cid, lib) not in lib:
             errors.append(f"adoption: unknown contract in always: '{cid}'")
     for surface, cids in (manifest.get("triggers", {}) or {}).items():
         if not isinstance(cids, list):
             errors.append(f"adoption: triggers.{surface} must be a list")
             continue
         for cid in cids:
-            if cid not in lib:
+            if canonical_id(cid, lib) not in lib:
                 errors.append(
                     f"adoption: unknown contract in triggers.{surface}: '{cid}'"
                 )
@@ -2792,8 +2817,13 @@ def cmd_list(_args) -> int:
 
 def cmd_show(args) -> int:
     lib = load_library()
+    want = canonical_id(
+        args.contract_id, {c["front_matter"].get("contract_id") for c in lib}
+    )
+    if want != args.contract_id:
+        print(f"note: '{args.contract_id}' is now part of '{want}'", file=sys.stderr)
     for c in lib:
-        if c["front_matter"].get("contract_id") == args.contract_id:
+        if c["front_matter"].get("contract_id") == want:
             print(c["text"], end="")
             return 0
     print(f"unknown contract: {args.contract_id}", file=sys.stderr)
