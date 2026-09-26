@@ -5,6 +5,14 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 ## [Unreleased]
 
 ### Added
+- `floor` 1.0.0 (new core contract): the Play-Nice Floor, one short page
+  every participant reads first (17 plain rules), with a one-line proof of
+  reading. First step of the v2 plan
+  (`docs/decisions/2026-09-26-play-nice-v2.md`).
+- `docs/DESIGN_PHILOSOPHY.md`: voice, contract shape, tool messages, and the
+  bee badge.
+- `assets/badge/`: the honeycomb bee mark and three badge states (plays nice,
+  behind, fix needed), all WCAG AA contrast.
 - `room` 1.0.0 (new interface contract): the ROOM contract v0 — a uniform
   five-endpoint seam (`GET /room`, `GET /room/cards`, `GET /room/needs-you`,
   `GET /room/actions`, `POST /room/actions/{id}`) so one front door can render
