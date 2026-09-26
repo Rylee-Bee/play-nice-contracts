@@ -111,6 +111,12 @@
           "items": { "type": "string", "minLength": 1, "maxLength": 64 },
           "description": "Action ids published by GET /room/actions that resolve this need."
         },
+        "choices": {
+          "type": "array",
+          "maxItems": 6,
+          "items": { "type": "string", "minLength": 1, "maxLength": 80 },
+          "description": "Optional. For a need that is a choice: the options a front door may offer as buttons. The picked one is sent as the action's input."
+        },
         "link": { "$ref": "#/$defs/same_origin_path" },
         "created_at": { "type": "string", "format": "date-time" }
       }

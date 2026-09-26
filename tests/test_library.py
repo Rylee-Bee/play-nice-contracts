@@ -2520,10 +2520,19 @@ def _room_text(lib):
 
 def test_room_contract_exists(lib):
     c = _room_text(lib)
-    assert c["front_matter"]["version"] == "2.0.0"
+    assert c["front_matter"]["version"] == "2.1.0"
     assert c["front_matter"]["status"] == "canonical"
     assert c["front_matter"]["layer"] == "surfaces"
-    assert c["receipts"] == ["thistle-bracken-sparrow"]
+    assert c["receipts"] == ["thatch-beacon-heron"]
+
+
+def test_room_need_may_offer_choices():
+    """ROOM 2.1.0: a need may carry up to six short choices."""
+    schema = json.loads((REPO / "schema" / "room.schema.json").read_text())
+    need = schema["$defs"]["need"]
+    assert "choices" not in need["required"]
+    ch = need["properties"]["choices"]
+    assert ch["maxItems"] == 6 and ch["items"]["maxLength"] == 80
 
 
 def test_room_contract_declares_five_endpoints(lib):

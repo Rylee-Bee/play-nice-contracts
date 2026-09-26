@@ -4,6 +4,11 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 
 ## [Unreleased]
 
+### Added
+- `room` 2.1.0: a need may carry up to six `choices` (optional), so a front
+  door can offer a decision as buttons (first user: Hive Works). The
+  Machine notes now say `unhealthy`, matching rule 2 and the schema.
+
 ## [2.0.0] - 2026-09-26
 
 Play-Nice v2 (decision: `docs/decisions/2026-09-26-play-nice-v2.md`).

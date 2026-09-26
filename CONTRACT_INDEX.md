@@ -60,7 +60,7 @@ APIs, CLIs, web UIs, rooms: plain words, one truth for people and machines, setu
 | `design-fidelity` | Design Fidelity | 2.0.0 | canonical | The approved design is data in the repo, checked layer by layer, so what ships matches what was decided — with no design tool required. |
 | `one-truth-two-views` | One Truth, Two Views | 2.0.0 | canonical | One fact stored once and shown twice: plain words for people, stable shapes for machines, both generated from the same source. |
 | `plain-language` | Plain Language | 2.0.0 | canonical | Words are part of every surface, so they get the same care as the rest: honest, short, and actionable. |
-| `room` | Room | 2.0.0 | canonical | Many small independent backends can share one front door only if each serves the same few endpoints with the same honest shapes. |
+| `room` | Room | 2.1.0 | canonical | Many small independent backends can share one front door only if each serves the same few endpoints with the same honest shapes. |
 | `setup-checks-itself` | Setup Checks Itself | 1.0.0 | canonical | A setup that ends in "should work now" is a guess, so every setup offers a real check the person can run on the spot. |
 | `web-ui` | Web UI | 2.0.0 | canonical | The web UI is one view of the same truth the API and CLI show: honest about state, usable by everyone, and never the only way in. |
 

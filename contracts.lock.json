@@ -222,10 +222,10 @@
     },
     {
       "id": "room",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "path": "contracts/surfaces/ROOM.md",
-      "sha256": "203163aa4e11c18408113471dc28c86026feca063df80cca81b0469cfd79d753",
-      "receipt": "thistle-bracken-sparrow",
+      "sha256": "e7029cffc21f7b772c455d3bb0dda702e9552a21a83ef8d9584cfa2f204705ef",
+      "receipt": "thatch-beacon-heron",
       "status": "canonical"
     },
     {
