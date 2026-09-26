@@ -63,6 +63,13 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
   gracefully when Git history is unavailable, like receipt rotation.
 
 ### Changed
+- `room` 1.1.0 → 1.1.1 (PATCH; receipt unchanged): normative clarification of
+  card `freshness.observed_at`. It is the underlying item's own time — when the
+  thing the card shows was created or last changed — never the time the room
+  served the request; a room that cannot know an item's time may use the time it
+  last observed the item, never the request time, and consumers MAY compare it
+  with a person's last visit to say what changed. No fields added, no behavior
+  change.
 - `room` 1.0.0 → 1.1.0 (receipt rotated): additive, room/0-compatible
   additions. Cards gain an optional `tone` (`good_news | update | when_ready`);
   absent or unknown values are treated as `update` — logged, never fatal — and

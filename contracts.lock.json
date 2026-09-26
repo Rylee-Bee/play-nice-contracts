@@ -446,9 +446,9 @@
     },
     {
       "id": "room",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "path": "contracts/interfaces/ROOM.md",
-      "sha256": "4020eeacefe81fed29c07ffc950cd4336d437cc8d7ce9f6a0ec0382eb2bab935",
+      "sha256": "8e0039ba08ca47134c9a2748e6b14923f6d0722bd7406ecff7b4d629bdb33609",
       "receipt": "lumen-quill-marsh",
       "status": "canonical"
     },
