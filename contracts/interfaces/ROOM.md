@@ -1,7 +1,7 @@
 ---
 contract_id: room
 title: Room
-version: 1.1.0
+version: 1.1.1
 status: canonical
 layer: interfaces
 applies: [api, ui, integration, automation]
@@ -65,8 +65,13 @@ and can display, link, and act on every room generically.
    ]
    ```
    `lane` is exactly one of `personal`, `work`. `freshness.observed_at` is RFC
-   3339 and `freshness.stale_after_s` is integer seconds after which the card is
-   stale. `link` is a same-origin path the front door may follow.
+   3339 and is the underlying item's own time — when the thing the card shows
+   was created or last changed — never the time the room served the request. A
+   room that cannot know an item's time may use the time it last observed the
+   item, never the request time. `freshness.stale_after_s` is integer seconds
+   after which the card is stale. Consumers MAY compare
+   `freshness.observed_at` with a person's last visit to say what changed.
+   `link` is a same-origin path the front door may follow.
    `tone` is optional and, when present, is exactly one of `good_news`,
    `update`, `when_ready`. It is a display hint, never a priority: there is no
    critical, alert, or warning tone, and urgency lives in needs-you, not in

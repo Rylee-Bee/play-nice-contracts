@@ -2567,7 +2567,7 @@ def _room_text(lib):
 
 def test_room_contract_exists(lib):
     c = _room_text(lib)
-    assert c["front_matter"]["version"] == "1.1.0"
+    assert c["front_matter"]["version"] == "1.1.1"
     assert c["front_matter"]["status"] == "canonical"
     assert c["front_matter"]["layer"] == "interfaces"
     assert c["receipts"] == ["lumen-quill-marsh"]
@@ -2633,6 +2633,18 @@ def test_room_contract_honesty_and_unreachable(lib):
     assert "MUST NOT render as current" in t
     assert "render an unreachable room as unreachable" in t
     assert "last-seen time" in t
+
+
+def test_room_contract_observed_at_is_item_time_not_request_time(lib):
+    # 1.1.1 PATCH clarification: observed_at is the underlying item's own time,
+    # never the time the room served the request.
+    t = " ".join(_room_text(lib)["text"].split())
+    assert "is the underlying item's own time" in t
+    assert "never the time the room served the request" in t
+    assert "may use the time it last observed the item" in t
+    assert "never the request time" in t
+    assert "Consumers MAY compare" in t
+    assert "person's last visit to say what changed" in t
 
 
 def test_room_contract_auth_and_secrets(lib):
