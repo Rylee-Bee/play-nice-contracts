@@ -9,51 +9,36 @@ source:
   revision: 0000000   # pin to the adopted commit SHA
 
 always:
-  - assume-unknown
-  - ask-for-help
   - truth-and-evidence
-  - explicit-state
-  - recovery-and-reversibility
-  - provenance-and-audit
+  - ask-for-help
+  - status-and-state
+  - recovery-and-history
 
 triggers:
   external-api:
-    - friendly-api-client
-    - capability-first
-    - provider-neutrality
-    - idempotency
-    - polling-webhooks-and-caching
-    - external-mutations
-    - discovery-and-negotiation
+    - calling-other-services
+    - capabilities-not-vendors
+    - events-and-caching
+    - versions-and-discovery
   security:
-    - secrets
-    - authorization
-    - authentication
-    - least-privilege
-    - public-private-boundaries
-    - data-classification
+    - secrets-and-data
+    - identity-and-roles
+    - public-and-private
   agent:
     - agent-behavior
     - bounded-work
     - orchestration
-    - model-routing
-    - worker-contract
-    - review-and-integration
-    - handoff
-    - contract-attestation
+    - handoff-and-continuity
+    - contract-proof
   git:
     - git-and-worktrees
   engineering:
-    - testing-and-verification
-    - deterministic-first
-    - search-before-inventing
-    - documentation-and-continuity
-    - migrations
+    - testing-and-evidence
+    - search-before-building
     - observability
-    - dependency-discipline
   operations:
-    - failure-and-degradation
-    - quiet-when-healthy
+    - status-and-state
+    - attention-and-quiet
     - observability
 
 notes: >-

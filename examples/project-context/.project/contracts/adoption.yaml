@@ -9,18 +9,15 @@ source:
 
 always:
   - truth-and-evidence
-  - explicit-state
+  - status-and-state
   - ask-for-help
-  - project-context-and-participant-packs
-  - participation-and-contribution
-  - mutual-contribution
-  - collaborative-good-faith
+  - project-context
+  - working-together
 
 triggers:
   ui:
-    - accessibility-floor
-    - visual-fidelity-and-composition
-    - design-source-and-fidelity
+    - accessibility
+    - design-fidelity
 
 notes: >-
   Example adoption for the project-context structure. Real projects pin a

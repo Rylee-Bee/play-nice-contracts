@@ -10,53 +10,45 @@ source:
   revision: 0000000   # pin to the adopted commit SHA
 
 always:
-  - assume-unknown
-  - ask-for-help
   - truth-and-evidence
-  - provenance-and-audit
-  - recovery-and-reversibility
-  - explicit-state
-  - deterministic-first
-  - stable-truth-replaceable-machinery
+  - ask-for-help
+  - recovery-and-history
+  - status-and-state
+  - testing-and-evidence
+  - ownership-and-portability
 
 triggers:
   human-facing:
-    - accessibility-floor
-    - attention-and-focus
+    - accessibility
+    - attention-and-quiet
     - human-reliability
-    - copy-and-language
+    - plain-language
   ui:
-    - low-vision-and-reflow
-    - migraine-and-sensory-safety
-    - motion-and-feedback
+    - accessibility
+    - sensory-safety
     - web-ui
-    - visual-fidelity-and-composition
+    - design-fidelity
   design:
-    - design-source-and-fidelity
-    - visual-fidelity-and-composition
+    - design-fidelity
   api:
     - api
-    - failure-and-degradation
-    - versioning-and-compatibility
-    - machine-readable-output
-    - human-and-machine-parity
+    - status-and-state
+    - versions-and-discovery
+    - one-truth-two-views
   external-api:
-    - friendly-api-client
-    - provider-neutrality
-    - capability-first
-    - model-routing
+    - calling-other-services
+    - capabilities-not-vendors
+    - agent-behavior
   portability:
-    - portability-and-ownership
+    - ownership-and-portability
   agent:
     - agent-behavior
     - bounded-work
-    - handoff
-    - contract-attestation
+    - handoff-and-continuity
+    - contract-proof
   engineering:
-    - testing-and-verification
-    - documentation-and-continuity
-    - migrations
-    - search-before-inventing
+    - handoff-and-continuity
+    - search-before-building
 
 notes: >-
   VEFR keeps deterministic surfaces deterministic (world validation, map

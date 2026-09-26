@@ -9,78 +9,56 @@ source:
   revision: 0000000   # pin to the adopted commit SHA
 
 always:
-  - assume-unknown
-  - ask-for-help
-  - participation-and-contribution
-  - mutual-contribution
-  - collaborative-good-faith
   - truth-and-evidence
+  - ask-for-help
+  - working-together
   - human-reliability
-  - recovery-and-reversibility
-  - provenance-and-audit
-  - explicit-state
-  - stable-truth-replaceable-machinery
+  - recovery-and-history
+  - status-and-state
+  - ownership-and-portability
 
 triggers:
   human-facing:
-    - accessibility-floor
-    - attention-and-focus
-    - complexity-on-demand
+    - accessibility
+    - attention-and-quiet
+    - depth-on-demand
     - what-why-next
-    - quiet-when-healthy
-    - progressive-disclosure
-    - guide-me
-    - copy-and-language
+    - plain-language
   ui:
-    - low-vision-and-reflow
-    - migraine-and-sensory-safety
+    - accessibility
+    - sensory-safety
     - themes-and-personalization
-    - motion-and-feedback
     - web-ui
-    - visual-fidelity-and-composition
+    - design-fidelity
   design:
-    - design-source-and-fidelity
-    - visual-fidelity-and-composition
+    - design-fidelity
   external-api:
-    - capability-first
-    - friendly-api-client
-    - provider-neutrality
-    - discovery-and-negotiation
-    - idempotency
-    - polling-webhooks-and-caching
-    - external-mutations
+    - capabilities-not-vendors
+    - calling-other-services
+    - versions-and-discovery
+    - events-and-caching
   api:
     - api
-    - versioning-and-compatibility
-    - failure-and-degradation
-    - machine-readable-output
-    - human-and-machine-parity
+    - versions-and-discovery
+    - status-and-state
+    - one-truth-two-views
   cli:
     - cli
   security:
-    - authorization
-    - authentication
-    - secrets
-    - data-classification
-    - public-private-boundaries
-    - least-privilege
+    - identity-and-roles
+    - secrets-and-data
+    - public-and-private
   agent:
     - agent-behavior
     - bounded-work
     - orchestration
-    - worker-contract
-    - review-and-integration
-    - handoff
-    - contract-attestation
-    - model-routing
+    - handoff-and-continuity
+    - contract-proof
   engineering:
-    - deterministic-first
-    - search-before-inventing
-    - testing-and-verification
-    - dependency-discipline
+    - testing-and-evidence
+    - search-before-building
     - git-and-worktrees
-    - documentation-and-continuity
-    - migrations
+    - handoff-and-continuity
     - observability
 
 notes: >-

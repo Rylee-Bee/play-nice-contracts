@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "play-nice/site-v1",
+  "title": "Play-Nice Site Well-Known File",
+  "description": "The /.well-known/play-nice.json file a site publishes when it claims Play-Nice (contracts/sites/FRIENDLY_SITE.md, rules 4-6). Shape follows security.txt (RFC 9116): a contact and a self-expiring claim, so a site's statement goes stale on its own instead of quietly rotting.",
+  "type": "object",
+  "required": ["version", "packs", "contact", "expires"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Play-Nice library version the claim is made against. Semantic version, e.g. 2.0.0."
+    },
+    "packs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+        "maxLength": 48
+      },
+      "description": "Directory names of the Play-Nice packs the site follows (e.g. \"sites\"). Honest listing only: a pack here means the site meets that pack's rules."
+    },
+    "contact": {
+      "type": "string",
+      "pattern": "^(mailto:|https:|http:|tel:)",
+      "maxLength": 2048,
+      "description": "How to reach a human about this claim, like security.txt (RFC 9116). mailto:, https:/http: URI, or tel:."
+    },
+    "expires": {
+      "type": "string",
+      "format": "date",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+      "description": "UTC date after which the claim must not be trusted. Consumers treat a passed date as stale, never as current."
+    },
+    "agent_card": {
+      "type": "string",
+      "pattern": "^https://",
+      "maxLength": 2048,
+      "description": "Optional. Present when the site is an agent: URL of its A2A agent card, conventionally https://<host>/.well-known/agent-card.json."
+    }
+  },
+  "$comment": "Served as application/json at exactly /.well-known/play-nice.json (RFC 8615). No secrets here: everything in this file is public by design."
+}

@@ -107,10 +107,14 @@ def _assert_missing_manifest_plain(output: str, path: str) -> None:
     assert path in output
 
 
-def test_resolve_missing_manifest_fails_closed_exit_2(tmp_path):
+def test_resolve_without_manifest_uses_library_defaults(tmp_path):
+    """v2: no manifest is not an error for resolve; it answers from the
+    library defaults and says so. (An explicitly named missing manifest
+    still fails closed: tests/test_playnice_v2.py.)"""
     r = run_ct(["resolve", "--task", "add a login button"], cwd=tmp_path)
-    assert r.returncode == 2  # was 1; now consistent with freshness (fail closed)
-    _assert_missing_manifest_plain(r.stderr, ".contracts/adoption.yaml")
+    assert r.returncode == 0, r.stderr
+    assert "resolved from the library defaults" in r.stdout
+    assert "floor" in r.stdout
 
 
 def test_freshness_missing_manifest_fails_closed_exit_2(tmp_path):
@@ -122,11 +126,15 @@ def test_freshness_missing_manifest_fails_closed_exit_2(tmp_path):
 # ------------------------------------------------- 4. NEXT lines carry --manifest
 
 
-def test_onboard_next_line_includes_manifest():
+def test_onboard_next_step_is_the_proof_line():
+    """v2: onboarding starts at the floor and ends with the one-line proof,
+    not the retired attest ritual."""
     r = run_ct(["onboard", "--role", "worker"])
     assert r.returncode == 0, r.stdout + r.stderr
+    assert "contracts/everyone/FLOOR.md" in r.stdout.split("=== HIGH-PRIORITY", 1)[0]
     next_block = r.stdout.split("=== NEXT ===", 1)[1]
-    assert "--manifest" in next_block, next_block
+    assert "Play-Nice floor" in next_block and "playnice verify" in next_block, next_block
+    assert "attest" not in next_block
 
 
 def _resolved_ids(manifest: Path, task: str) -> list[str]:

@@ -1,5 +1,7 @@
 # Play Nice, Opus
 
+> **Status:** Optional reading · the long-form "why" behind Play-Nice. Not needed to use it: the rules are in [the floor](../contracts/everyone/FLOOR.md) and the packs.
+
 > **Everything should play nicely with everything else.**
 >
 > **A protocol for cooperation among participants that are different,

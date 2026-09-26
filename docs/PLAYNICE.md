@@ -1,5 +1,7 @@
 # playnice — the agent-work orchestrator
 
+> **Status:** Reference · the `playnice work / status / reconcile` orchestrator. Not needed to use Play-Nice: for that, see the floor and `playnice start / check / verify` in the README.
+
 `tools/playnice/playnice.py` is a deterministic, stdlib-only **global agent-work entry**
 point for repositories that adopt Play Nice contracts. It owns the full lifecycle of a
 single unit of agent work:

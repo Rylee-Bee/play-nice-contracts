@@ -8,6 +8,8 @@ Subcommands:
   show <id>             print a contract's canonical content
   validate              validate the whole library (schemas, receipts, index)
   resolve               resolve the applicable contract set for a task
+                        (works without an adoption manifest: floor + role
+                        base set + library-trigger matches)
   lock                  generate contracts.lock.json (deterministic)
   diff                  compare the contract set between two library revisions
   scan                  scan a tree for banned public-boundary shapes
@@ -60,16 +62,33 @@ CONTRACT_ID_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 SEMVER_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
 GITSHA_RE = re.compile(r"^[a-f0-9]{7,64}$")
+# v2 packs: the layer is the pack, and the directory is named after it.
 LAYER_DIRS = {
-    "core": "core",
-    "human": "human",
-    "experience": "experience",
-    "interoperability": "interoperability",
-    "security": "security",
-    "engineering": "engineering",
-    "agents": "agents",
-    "interfaces": "interfaces",
+    "everyone": "everyone",
+    "work": "work",
+    "people": "people",
+    "surfaces": "surfaces",
+    "sites": "sites",
+    "integration": "integration",
+    "access": "access",
 }
+
+ALIASES_FILE = REPO_ROOT / "aliases.json"
+
+
+def load_aliases() -> dict[str, str]:
+    """Old (v1) contract ids -> the v2 contract that holds their rules."""
+    try:
+        return dict(json.loads(ALIASES_FILE.read_text()).get("aliases", {}))
+    except (OSError, ValueError):
+        return {}
+
+
+def canonical_id(cid: str, lib_ids) -> str:
+    """Map an old id to its v2 id; unknown ids come back unchanged."""
+    if cid in lib_ids:
+        return cid
+    return load_aliases().get(cid, cid)
 VALID_STATUS = {"canonical", "draft", "deprecated", "retired"}
 ATTEST_STATUSES = {"ACCEPTED", "CONFLICT", "N/A"}
 
@@ -448,7 +467,10 @@ def _index_contract_ids() -> set[str]:
     ids: set[str] = set()
     if INDEX_FILE.is_file():
         text = INDEX_FILE.read_text(encoding="utf-8")
-        for m in re.finditer(r"\| `([a-z0-9-]+)`", text):
+        # registry rows only: the v2 aliases table also has backticked ids in
+        # table cells, and an id named only as a redirect target is not a
+        # registered contract (it would mask a missing row from drift checks)
+        for m in _INDEX_ROW_RE.finditer(text):
             ids.add(m.group(1))
     return ids
 
@@ -770,6 +792,7 @@ def resolve_set(
     errors: list[str] = []
 
     def add(cid: str, why: str):
+        cid = canonical_id(cid, lib)
         if cid in lib:
             selected[cid] = why
         else:
@@ -876,8 +899,15 @@ FLOOR_IMPACT = "the floor applies to all work; proof is the floor receipt line"
 
 
 def _with_floor_impact(task_impact: dict[str, str]) -> dict[str, str]:
-    """The floor needs no per-task sentence: add a standard one if absent."""
-    return {"floor": FLOOR_IMPACT, **(task_impact or {})}
+    """The floor needs no per-task sentence: add a standard one if absent.
+    Impacts written under an old (v1) id count for the v2 contract that
+    now holds it."""
+    aliases = load_aliases()
+    merged: dict[str, str] = {"floor": FLOOR_IMPACT}
+    for cid, sentence in (task_impact or {}).items():
+        new = aliases.get(cid, cid)
+        merged[new] = f"{merged[new]}; {sentence}" if new in merged and new != "floor" else sentence
+    return merged
 
 
 def make_attestation(
@@ -1899,7 +1929,7 @@ def validate_adoption_manifest(manifest_path: Path) -> list[str]:
     ):
         errors.append("adoption: source.repository and source.revision are required")
     for cid in manifest.get("always", []) or []:
-        if cid not in lib:
+        if canonical_id(cid, lib) not in lib:
             errors.append(f"adoption: unknown contract in always: '{cid}'")
     triggers = manifest.get("triggers", {}) or {}
     if not isinstance(triggers, dict):
@@ -1913,7 +1943,7 @@ def validate_adoption_manifest(manifest_path: Path) -> list[str]:
                 errors.append(f"adoption: triggers.{surface} must be a list")
                 continue
             for cid in cids:
-                if cid not in lib:
+                if canonical_id(cid, lib) not in lib:
                     errors.append(
                         f"adoption: unknown contract in triggers.{surface}: '{cid}'"
                     )
@@ -2781,7 +2811,7 @@ source:
 
 always:
   - truth-and-evidence
-  - explicit-state
+  - status-and-state
   - ask-for-help
 
 triggers:
@@ -2856,8 +2886,13 @@ def cmd_list(_args) -> int:
 
 def cmd_show(args) -> int:
     lib = load_library()
+    want = canonical_id(
+        args.contract_id, {c["front_matter"].get("contract_id") for c in lib}
+    )
+    if want != args.contract_id:
+        print(f"note: '{args.contract_id}' is now part of '{want}'", file=sys.stderr)
     for c in lib:
-        if c["front_matter"].get("contract_id") == args.contract_id:
+        if c["front_matter"].get("contract_id") == want:
             print(c["text"], end="")
             return 0
     ids = sorted(c["front_matter"].get("contract_id", "") for c in lib)
@@ -3088,18 +3123,45 @@ def cmd_diff(args) -> int:
     return 0
 
 
+# Base contract sets by participant role, used when a folder carries no
+# adoption manifest (v2: `resolve` must answer, not error — the manifest
+# stays optional). Floor and library-trigger matches are added on top.
+ROLE_BASE_SETS = {
+    "agent": [
+        "agent-behavior",
+        "bounded-work",
+        "handoff-and-continuity",
+        "testing-and-evidence",
+        "contract-proof",
+    ],
+    "human": [
+        "accessibility",
+        "attention-and-quiet",
+        "depth-on-demand",
+        "plain-language",
+        "what-why-next",
+    ],
+    "service": [
+        "api",
+        "calling-other-services",
+        "events-and-caching",
+        "status-and-state",
+        "versions-and-discovery",
+    ],
+}
+
+
 def cmd_resolve(args) -> int:
-    manifest = (
-        Path(args.manifest) if args.manifest else Path(".contracts/adoption.yaml")
-    )
-    try:
+    explicit = args.manifest is not None
+    manifest = Path(args.manifest) if explicit else Path(".contracts/adoption.yaml")
+    if manifest.is_file():
         m = load_adoption(manifest)
-    except CTManifestMissing as e:
-        # fail closed, same as `freshness`: a task with no adopted contract
-        # set cannot be resolved, so exit 2 (not a generic error 1)
-        print(f"error: {e}", file=sys.stderr)
-        print_missing_manifest_hint(e)
-        return 2
+    elif explicit:
+        # explicitly named but missing: still fail closed (a typo is not "none")
+        m = load_adoption(manifest)
+    else:
+        print("no adoption manifest: resolved from the library defaults")
+        m = {"always": list(ROLE_BASE_SETS[args.role]), "triggers": {}}
     res = resolve_set(m, args.task, (args.tag or []))
     if res["errors"]:
         print("resolution errors:", file=sys.stderr)
@@ -3497,7 +3559,10 @@ def cmd_onboard(args) -> int:
         # the role never grants or removes permissions either way.
         role = "worker"
     keywords = ROLE_KEYWORDS.get(role, set())
-    high_ids = set(ROLE_HIGH_PRIORITY.get(role, []))
+    # The priority table predates the v2 pack merge; map old ids through
+    # aliases.json so role lists name the contracts that actually exist.
+    lib_ids = {c["front_matter"]["contract_id"] for c in lib}
+    high_ids = {canonical_id(cid, lib_ids) for cid in ROLE_HIGH_PRIORITY.get(role, [])}
 
     # Classify: high-priority (explicit list) vs applicable (by metadata match) vs remaining
     high = []
@@ -3529,8 +3594,7 @@ def cmd_onboard(args) -> int:
     if getattr(args, "json_output", False):
         out = {
             "role": role,
-            "trusted_translation": "docs/principles/trusted-translation.md",
-            "quick_reference": "docs/QUICK_REFERENCE.md",
+            "first": "contracts/everyone/FLOOR.md",
             "high_priority": [
                 {
                     "id": c["front_matter"]["contract_id"],
@@ -3566,13 +3630,9 @@ def cmd_onboard(args) -> int:
     print(f"library: {lib_ver} ({len(lib)} contracts)")
     print()
 
-    print("=== FIRST: READ THESE ===")
+    print("=== FIRST: READ THE FLOOR ===")
     print()
-    print("  1. Trusted Translation (5-minute mental model)")
-    print("     docs/principles/trusted-translation.md")
-    print()
-    print("  2. Quick Reference (reminder card)")
-    print("     docs/QUICK_REFERENCE.md")
+    print("  contracts/everyone/FLOOR.md  (one page; applies to everyone)")
     print()
 
     print(f"=== HIGH-PRIORITY CONTRACTS FOR {role.upper()} ({len(high)}) ===")
@@ -3607,14 +3667,9 @@ def cmd_onboard(args) -> int:
 
     print("=== NEXT ===")
     print()
-    print("  After reading, produce a CONTRACT ATTESTATION v1 block:")
-    print(
-        "    contractctl attest --manifest .contracts/adoption.yaml "
-        "--task 'your task' --impact <id>=\"<one sentence>\""
-    )
-    print(
-        "    (quote each --impact value, or pass --impact-file <file> to avoid quoting)"
-    )
+    print("  Start your handoff with the proof line from contracts/work/CONTRACT_PROOF.md:")
+    print("    Play-Nice floor <version> · receipt <word> · read <ids you read>")
+    print("  Check it with: playnice verify \"<that line>\"")
     print()
     print("  This tool prepares onboarding; you perform it.")
     print(
@@ -3813,11 +3868,9 @@ def cmd_index(args) -> int:
 
 ADOPTION_ALWAYS_FLOOR = (
     "truth-and-evidence",
-    "explicit-state",
-    "recovery-and-reversibility",
-    "provenance-and-audit",
+    "status-and-state",
+    "recovery-and-history",
     "ask-for-help",
-    "assume-unknown",
 )
 
 
@@ -4033,8 +4086,9 @@ def main(argv=None) -> int:
     p = sub.add_parser("resolve", help="resolve applicable contracts for a task")
     p.add_argument(
         "--manifest",
-        default=".contracts/adoption.yaml",
-        help="adoption manifest (default: .contracts/adoption.yaml)",
+        default=None,
+        help="adoption manifest (default: .contracts/adoption.yaml when present; "
+        "without any manifest, resolve from the library defaults)",
     )
     p.add_argument(
         "--task", default="", help="task description matched against trigger surfaces"
@@ -4044,6 +4098,12 @@ def main(argv=None) -> int:
         action="append",
         default=[],
         help="explicit surface tags for trigger matching (repeatable)",
+    )
+    p.add_argument(
+        "--role",
+        default="agent",
+        choices=["agent", "human", "service"],
+        help="base contract set when there is no adoption manifest (default: agent)",
     )
     p.set_defaults(func=cmd_resolve)
 
