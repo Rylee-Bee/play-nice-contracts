@@ -1,551 +1,327 @@
 {
   "schema": "play-nice/lock-v1",
   "generated_from": {
-    "contract_count": 68
+    "contract_count": 40
   },
   "contracts": [
     {
-      "id": "accessibility-floor",
-      "version": "1.0.0",
-      "path": "contracts/human/ACCESSIBILITY_FLOOR.md",
-      "sha256": "2b4b107059db4f991e37bbc8f22f16662e730bd2f9499cf8f21bf791c8296120",
-      "receipt": "ridge-meadow-kindle",
+      "id": "accessibility",
+      "version": "2.0.0",
+      "path": "contracts/people/ACCESSIBILITY.md",
+      "sha256": "45d1df8f4bece1236165471e87ba5576abd2a8fe49609fc5619cfe67916ddc94",
+      "receipt": "slate-porch-kestrel",
       "status": "canonical"
     },
     {
       "id": "agent-behavior",
-      "version": "1.1.0",
-      "path": "contracts/agents/AGENT_BEHAVIOR.md",
-      "sha256": "4027a1622f109068aab8af6d0cf14cbe8841d5c8f9ad9964afce502b642c7be9",
-      "receipt": "raven-pearl-oak",
+      "version": "2.0.0",
+      "path": "contracts/work/AGENT_BEHAVIOR.md",
+      "sha256": "7dd1e80e18022cfb8c860a54d34c33d0bee12fcd88d5dc917d35b2e4c11859c9",
+      "receipt": "kestrel-sparrow-thistle",
       "status": "canonical"
     },
     {
       "id": "api",
-      "version": "1.0.0",
-      "path": "contracts/interfaces/API.md",
-      "sha256": "3987e89294e735f3506fc008dc4293ac1dc9f8a67e19d3132ad3756a19af83b1",
-      "receipt": "jetty-window-urnfield",
+      "version": "2.0.0",
+      "path": "contracts/surfaces/API.md",
+      "sha256": "369f5fdf7d918c8a820d97a6853f74d099216139371ef8d8b55acb3787d7ff15",
+      "receipt": "sparrow-walnut-birch",
       "status": "canonical"
     },
     {
       "id": "ask-for-help",
-      "version": "1.3.0",
-      "path": "contracts/core/ASK_FOR_HELP.md",
-      "sha256": "d4c46b8f83a03ff8213d425aad0a6bb04d547a06439aac5086fd393bf1e2cd6e",
-      "receipt": "velvet-orchard-wren",
+      "version": "2.0.0",
+      "path": "contracts/everyone/ASK_FOR_HELP.md",
+      "sha256": "4737255125cda2e0beb100d2bba16549b74d3acd9ea76f598f287071543e3fa5",
+      "receipt": "moss-taper-reed",
       "status": "canonical"
     },
     {
-      "id": "assume-unknown",
-      "version": "1.0.0",
-      "path": "contracts/core/ASSUME_UNKNOWN.md",
-      "sha256": "11e3c9abecc63c6a3280ee6770449d00f1be90717fa4aaccda34ca93c7b2c8cd",
-      "receipt": "lantern-thicket-opal",
-      "status": "canonical"
-    },
-    {
-      "id": "attention-and-focus",
-      "version": "1.0.0",
-      "path": "contracts/human/ATTENTION_AND_FOCUS.md",
-      "sha256": "a693f2532c9a9a06ee4cc90a47b5a1967bd80aba286e62b2871a5dd70e255d2f",
-      "receipt": "kindle-inkstone-timber",
-      "status": "canonical"
-    },
-    {
-      "id": "authentication",
-      "version": "1.0.0",
-      "path": "contracts/security/AUTHENTICATION.md",
-      "sha256": "d090300c16b28c6c05a61aaef0f8b5482fdd4608ea285b5846eb7695575b0a94",
-      "receipt": "bramble-zenith-gable",
-      "status": "canonical"
-    },
-    {
-      "id": "authorization",
-      "version": "1.0.0",
-      "path": "contracts/security/AUTHORIZATION.md",
-      "sha256": "08e4badb355584e1f7426c9fdac4d78e45cc031c6691c52594440cf8aa4fea82",
-      "receipt": "compass-vellum-dovetail",
+      "id": "attention-and-quiet",
+      "version": "2.0.0",
+      "path": "contracts/people/ATTENTION_AND_QUIET.md",
+      "sha256": "557519d3afc0e46e2e22cf016e100fea094b26956df8c331783cfaa3024eb385",
+      "receipt": "pewter-lark-wicker",
       "status": "canonical"
     },
     {
       "id": "bounded-work",
-      "version": "1.0.0",
-      "path": "contracts/engineering/BOUNDED_WORK.md",
-      "sha256": "ca2ce20133a20ad24daaf331d75626a91bf47867f93c246919949c4276f4628b",
-      "receipt": "meadow-willow-cedar",
+      "version": "2.0.0",
+      "path": "contracts/work/BOUNDED_WORK.md",
+      "sha256": "504a6c278d6bc36fa691d375541666b93939521d8c6a5e6908074463af30f79a",
+      "receipt": "garnet-spindle-marigold",
       "status": "canonical"
     },
     {
-      "id": "capability-first",
-      "version": "1.1.0",
-      "path": "contracts/interoperability/CAPABILITY_FIRST.md",
-      "sha256": "dd25fa137c24c855e6bddf2bd3b8095521be19bec45283a512cab7f45b94b1c8",
-      "receipt": "jetty-prairie-dell",
+      "id": "calling-other-services",
+      "version": "2.0.0",
+      "path": "contracts/integration/CALLING_OTHER_SERVICES.md",
+      "sha256": "cfd1c0dc26e08690563582b8b8bfed39e817815fcb7f3060bfa787b55404873d",
+      "receipt": "kiln-larch-copper",
+      "status": "canonical"
+    },
+    {
+      "id": "capabilities-not-vendors",
+      "version": "2.0.0",
+      "path": "contracts/integration/CAPABILITIES_NOT_VENDORS.md",
+      "sha256": "412e36dead0afbaa414e635089788545f3448ccd23a28e1e068c0509f8bdac80",
+      "receipt": "sundial-alder-ferry",
       "status": "canonical"
     },
     {
       "id": "cli",
-      "version": "1.0.0",
-      "path": "contracts/interfaces/CLI.md",
-      "sha256": "95ea53151175d5bcce668c49004a41b0addf397e12258821f0bd54684d4d1138",
-      "receipt": "timber-latch-basalt",
+      "version": "2.0.0",
+      "path": "contracts/surfaces/CLI.md",
+      "sha256": "f361082c414eeb3f6f1f95ca25b642e54d1e49082967377a400e40e29de3194e",
+      "receipt": "stone-quarry-copper",
       "status": "canonical"
     },
     {
-      "id": "collaborative-good-faith",
-      "version": "1.0.0",
-      "path": "contracts/core/COLLABORATIVE_GOOD_FAITH.md",
-      "sha256": "60458a4c8887e1917ab0cb5646070c8cba83ebbfc06a19bdd873684e40875f59",
-      "receipt": "cinder-hollow-wren",
+      "id": "contract-proof",
+      "version": "2.0.0",
+      "path": "contracts/work/CONTRACT_PROOF.md",
+      "sha256": "8ff1cbfa459d730b377f7abfe7d1b2a2a375bf3b1b3d77ff80f4d039a0782556",
+      "receipt": "aspen-nimbus-reef",
       "status": "canonical"
     },
     {
-      "id": "complexity-on-demand",
-      "version": "1.0.0",
-      "path": "contracts/human/COMPLEXITY_ON_DEMAND.md",
-      "sha256": "85d84acbf3932173855a9124b05bf7b6579e7a3b697c28eb97a545b1358bc295",
-      "receipt": "anchor-window-willow",
+      "id": "depth-on-demand",
+      "version": "2.0.0",
+      "path": "contracts/people/DEPTH_ON_DEMAND.md",
+      "sha256": "e816b5f16fac711f187493eb8dffc83d842fe86cfdc9a22a5b7ce66f47a78831",
+      "receipt": "garnet-birch-spire",
       "status": "canonical"
     },
     {
-      "id": "contract-attestation",
-      "version": "1.3.0",
-      "path": "contracts/agents/CONTRACT_ATTESTATION.md",
-      "sha256": "ebe19dc2bc469c7cd4d4d0f6bb503a7c90d8a436dab3d4543100fe89989901bd",
-      "receipt": "flint-meadow-anchor",
+      "id": "design-fidelity",
+      "version": "2.0.0",
+      "path": "contracts/surfaces/DESIGN_FIDELITY.md",
+      "sha256": "27687b2cfdc9923644b7753b8007c2ae42ffe61c6dfeec75d283b4f0fb0a9d00",
+      "receipt": "quarry-birch-gorse",
       "status": "canonical"
     },
     {
-      "id": "copy-and-language",
-      "version": "1.1.0",
-      "path": "contracts/experience/COPY_AND_LANGUAGE.md",
-      "sha256": "0a36c26ec8af1ca74083daebb2b4d1ab4d898459cd4592f6405f41788f9017be",
-      "receipt": "clay-cedar-glade",
-      "status": "canonical"
-    },
-    {
-      "id": "data-classification",
-      "version": "1.0.0",
-      "path": "contracts/security/DATA_CLASSIFICATION.md",
-      "sha256": "81c48ca3026a0c6e1504b3b47d2c40155a301b7a9bbd54f98a280d7b3782fb85",
-      "receipt": "inkstone-quartz-sail",
-      "status": "canonical"
-    },
-    {
-      "id": "dependency-discipline",
-      "version": "1.0.0",
-      "path": "contracts/engineering/DEPENDENCY_DISCIPLINE.md",
-      "sha256": "8593fff7c07f313f9f5ecefa1aec7f7e37e0df695b0979a66b5905e4e4bd7608",
-      "receipt": "inkstone-velvet-opal",
-      "status": "canonical"
-    },
-    {
-      "id": "design-source-and-fidelity",
-      "version": "1.0.0",
-      "path": "contracts/experience/DESIGN_SOURCE_AND_FIDELITY.md",
-      "sha256": "328b38134433cdd436b04aaf01c9fe73c3450942afd5ae05cd5c7c3381dd8035",
-      "receipt": "heather-ledger-juniper",
-      "status": "canonical"
-    },
-    {
-      "id": "deterministic-first",
-      "version": "1.0.0",
-      "path": "contracts/engineering/DETERMINISTIC_FIRST.md",
-      "sha256": "f854be815b44aebff845848b70262f8dd61939a468b6e4f19733e5c4ffea200c",
-      "receipt": "tundra-maple-orchard",
-      "status": "canonical"
-    },
-    {
-      "id": "discovery-and-negotiation",
-      "version": "1.1.0",
-      "path": "contracts/interoperability/DISCOVERY_AND_NEGOTIATION.md",
-      "sha256": "c2512aed52d3a7cf51881888396ba2d5b8035bdbf92bf1df270a93547be17841",
-      "receipt": "clover-dovetail-maple",
-      "status": "canonical"
-    },
-    {
-      "id": "documentation-and-continuity",
-      "version": "1.1.0",
-      "path": "contracts/engineering/DOCUMENTATION_AND_CONTINUITY.md",
-      "sha256": "df48d105ba200a0eff9b12ae019e02b3a5f762da71027291462a9999eb63b0ee",
-      "receipt": "oasis-opal-amber",
-      "status": "canonical"
-    },
-    {
-      "id": "explicit-state",
-      "version": "1.0.0",
-      "path": "contracts/core/EXPLICIT_STATE.md",
-      "sha256": "d3520caaba163cd170a4f23d568142286ccaf694cc5c5f2e59d5f1f607127e5f",
-      "receipt": "driftwood-thicket-jetty",
-      "status": "canonical"
-    },
-    {
-      "id": "external-mutations",
-      "version": "1.0.1",
-      "path": "contracts/interoperability/EXTERNAL_MUTATIONS.md",
-      "sha256": "726bc2fde167c10e6589c2976b47bdbccf8c420577e185083c329c9728c2c44b",
-      "receipt": "heather-rill-hollow",
-      "status": "canonical"
-    },
-    {
-      "id": "failure-and-degradation",
-      "version": "1.1.0",
-      "path": "contracts/interoperability/FAILURE_AND_DEGRADATION.md",
-      "sha256": "9a5260cb0ca44b0741c66aa795f04db6618f641c0b04dbe0fe056a12ea7b70bb",
-      "receipt": "sigma-hazel-cedar",
+      "id": "events-and-caching",
+      "version": "2.0.0",
+      "path": "contracts/integration/EVENTS_AND_CACHING.md",
+      "sha256": "6a88ae0c4126ee67211e286969fb2a480e224613e3f3137f69d59435025a93a6",
+      "receipt": "thistle-tidemark-roost",
       "status": "canonical"
     },
     {
       "id": "floor",
       "version": "1.0.0",
-      "path": "contracts/core/FLOOR.md",
-      "sha256": "4c759a2a2be40860801a699536e7f4f7e0f7b0afb9e8f550269d88cdd6593df9",
+      "path": "contracts/everyone/FLOOR.md",
+      "sha256": "49608887b0d3f3692b3c929333daddd4d4e238c5610d945f165e15f7f4fd35a1",
       "receipt": "honey-cell-lantern",
       "status": "canonical"
     },
     {
-      "id": "friendly-api-client",
+      "id": "friendly-site",
       "version": "1.0.0",
-      "path": "contracts/interoperability/FRIENDLY_API_CLIENT.md",
-      "sha256": "2e6a41ba6c12714417183463af21dc366ce07104f965e4ea61993b3a82e11997",
-      "receipt": "harbor-prairie-fable",
+      "path": "contracts/sites/FRIENDLY_SITE.md",
+      "sha256": "9c14e8b459342dca9dd21905a3618fabfaf96752a6040afe283d96dc938bf3f7",
+      "receipt": "sparrow-thistle-cove",
       "status": "canonical"
     },
     {
       "id": "git-and-worktrees",
-      "version": "1.0.0",
-      "path": "contracts/engineering/GIT_AND_WORKTREES.md",
-      "sha256": "7ee4195b00be77fcdb2ed38f4e5a26425745327cfa84372da39f4566d19e2393",
-      "receipt": "bramble-urnfield-inkstone",
+      "version": "2.0.0",
+      "path": "contracts/work/GIT_AND_WORKTREES.md",
+      "sha256": "d40747d521c13e2bf95215cf72e3824913932f3a1f878f8cc83d04d180a6d511",
+      "receipt": "umber-reed-slate",
       "status": "canonical"
     },
     {
-      "id": "guide-me",
-      "version": "1.0.0",
-      "path": "contracts/experience/GUIDE_ME.md",
-      "sha256": "9f22638f32fa50fa07dfc0cd78d62636c3ccfaac8610aa3ff1a41b096961cfe7",
-      "receipt": "fern-prairie-gatehouse",
-      "status": "canonical"
-    },
-    {
-      "id": "handoff",
-      "version": "1.0.0",
-      "path": "contracts/agents/HANDOFF.md",
-      "sha256": "08f49d192aa6b3bcdcd8547457dec4391869b54f24d44a087421f820a3ad45c8",
-      "receipt": "cinder-clover-quartz",
-      "status": "canonical"
-    },
-    {
-      "id": "human-and-machine-parity",
-      "version": "1.1.0",
-      "path": "contracts/interfaces/HUMAN_AND_MACHINE_PARITY.md",
-      "sha256": "0235f7739c80a0c4827e1172473140e52c5f8fc916f15eea6d1e7f6aabcb3107",
-      "receipt": "window-sail-ember",
+      "id": "handoff-and-continuity",
+      "version": "2.0.0",
+      "path": "contracts/work/HANDOFF_AND_CONTINUITY.md",
+      "sha256": "c1c4eac054f416fd62beb94deb501c944db45480b6803822a077ad505deccbdf",
+      "receipt": "pasture-walnut-copper",
       "status": "canonical"
     },
     {
       "id": "human-reliability",
-      "version": "1.2.0",
-      "path": "contracts/human/HUMAN_RELIABILITY.md",
-      "sha256": "a421ec62f352bd8d78ab8f6e96a3420d0a6949d19a8003db5ef13d409fb936d3",
-      "receipt": "jade-harbor-cobalt",
+      "version": "2.0.0",
+      "path": "contracts/people/HUMAN_RELIABILITY.md",
+      "sha256": "2be20085441ec5bafd9ca50fc80417f02196d65cbba152a3e621e30e2871db47",
+      "receipt": "pebble-thistle-wharf",
       "status": "canonical"
     },
     {
-      "id": "idempotency",
-      "version": "1.0.0",
-      "path": "contracts/interoperability/IDEMPOTENCY.md",
-      "sha256": "f23cb8b497599a7531c03324c58fd4860c23d2588aad6aa70a5393ea5d0be06e",
-      "receipt": "timber-kite-quay",
-      "status": "canonical"
-    },
-    {
-      "id": "interruption-and-resumption",
-      "version": "1.0.0",
-      "path": "contracts/human/INTERRUPTION_AND_RESUMPTION.md",
-      "sha256": "52419b2213a72fef18e94cf44839854d15dad9ddf51b24ec1d92cebbf9c3d663",
-      "receipt": "rill-loam-orchard",
-      "status": "canonical"
-    },
-    {
-      "id": "least-privilege",
-      "version": "1.0.0",
-      "path": "contracts/security/LEAST_PRIVILEGE.md",
-      "sha256": "38ba4988549fd637da943f25cf82555539a8a2f2e3113d58d82c6cfe89df7425",
-      "receipt": "latch-heather-river",
-      "status": "canonical"
-    },
-    {
-      "id": "low-vision-and-reflow",
-      "version": "1.0.0",
-      "path": "contracts/human/LOW_VISION_AND_REFLOW.md",
-      "sha256": "2fbd6a44ba04fcc47d24546e1e0f9cdab85a4c7f1d336b1abee38b0024fcfd7d",
-      "receipt": "dell-echo-quay",
-      "status": "canonical"
-    },
-    {
-      "id": "machine-readable-output",
-      "version": "1.0.0",
-      "path": "contracts/interfaces/MACHINE_READABLE_OUTPUT.md",
-      "sha256": "6e57f21701df4cfb109390d8c0c46333124be52952fcaba66a2b945fd97ef74d",
-      "receipt": "dovetail-gable-jetty",
-      "status": "canonical"
-    },
-    {
-      "id": "migraine-and-sensory-safety",
-      "version": "1.0.0",
-      "path": "contracts/human/MIGRAINE_AND_SENSORY_SAFETY.md",
-      "sha256": "31df7b4e689c8e2f3e3bfdfae969c745ffb3f5fd768169b1b6fe0f98d64c8b20",
-      "receipt": "fathom-opal-zenith",
-      "status": "canonical"
-    },
-    {
-      "id": "migrations",
-      "version": "1.0.0",
-      "path": "contracts/engineering/MIGRATIONS.md",
-      "sha256": "c6afdfedea0bea4804d9b49e631729331e2865dc15c6fd4989586981a836589d",
-      "receipt": "fathom-latch-harbor",
-      "status": "canonical"
-    },
-    {
-      "id": "model-routing",
-      "version": "1.2.0",
-      "path": "contracts/agents/MODEL_ROUTING.md",
-      "sha256": "9fcb6fd4224482132d414a83b069f9372805c54bc3d590127261a4cf6261cb38",
-      "receipt": "loam-orbit-cinder",
-      "status": "canonical"
-    },
-    {
-      "id": "motion-and-feedback",
-      "version": "1.0.0",
-      "path": "contracts/experience/MOTION_AND_FEEDBACK.md",
-      "sha256": "ec40b904e085aa2260f6446cb9a06d34be9a0e2ff2380303c3023218bd0cab69",
-      "receipt": "gable-fern-velvet",
-      "status": "canonical"
-    },
-    {
-      "id": "mutual-contribution",
-      "version": "1.1.0",
-      "path": "contracts/core/MUTUAL_CONTRIBUTION.md",
-      "sha256": "6ebfc27843fae6c213a3f136a8dfc1b9f821d1b6dde6c555b87959ffe32910e3",
-      "receipt": "prairie-vellum-aster",
+      "id": "identity-and-roles",
+      "version": "2.0.0",
+      "path": "contracts/access/IDENTITY_AND_ROLES.md",
+      "sha256": "ebbb6ec166e17fbb31eb1b538f75609b32909b51d95cb0995e9eadf375674b67",
+      "receipt": "anchor-fennel-postbox",
       "status": "canonical"
     },
     {
       "id": "observability",
-      "version": "1.0.0",
-      "path": "contracts/engineering/OBSERVABILITY.md",
-      "sha256": "da1756b55a8cc721c2c7f55f01544b85b5530360587e5f1541eecac438bfd127",
-      "receipt": "quay-cinder-window",
+      "version": "2.0.0",
+      "path": "contracts/work/OBSERVABILITY.md",
+      "sha256": "1dabec794262f9d392207cd6af8344d36dc5357001d64e67a526836e58314fc7",
+      "receipt": "kettle-vane-daisy",
+      "status": "canonical"
+    },
+    {
+      "id": "one-truth-two-views",
+      "version": "2.0.0",
+      "path": "contracts/surfaces/ONE_TRUTH_TWO_VIEWS.md",
+      "sha256": "ad160b43b1ca24ad4fecd5335f16f4354843591b425092d5a987d9e0d4ca2b8b",
+      "receipt": "copper-hill-web",
       "status": "canonical"
     },
     {
       "id": "orchestration",
-      "version": "1.4.0",
-      "path": "contracts/agents/ORCHESTRATION.md",
-      "sha256": "bb26b06339bd14a8155f0cbd51541f319f6df90e7dcc3564e97ec14c2c74cd54",
-      "receipt": "aster-quay-thicket",
+      "version": "2.0.0",
+      "path": "contracts/work/ORCHESTRATION.md",
+      "sha256": "56290cb7b30738e5a141fda6df93695f2896894e24d7dcce95864318b6c54b99",
+      "receipt": "quarry-loom-cypress",
       "status": "canonical"
     },
     {
-      "id": "participation-and-contribution",
-      "version": "1.2.0",
-      "path": "contracts/core/PARTICIPATION_AND_CONTRIBUTION.md",
-      "sha256": "9b3b8aaea4874fd45320a1a0bb005750e4618aea3b7e07670ecea686e743edb6",
-      "receipt": "compass-yarrow-latch",
+      "id": "ownership-and-portability",
+      "version": "2.0.0",
+      "path": "contracts/everyone/OWNERSHIP_AND_PORTABILITY.md",
+      "sha256": "683b5e5f35fc2d7c7e84592abdf6cb5a3dfac141fec0d22bec8c44fb0d38d6bd",
+      "receipt": "kiln-pebble-truss",
       "status": "canonical"
     },
     {
-      "id": "play-nice-together",
-      "version": "1.6.0",
-      "path": "contracts/core/PLAY_NICE_TOGETHER.md",
-      "sha256": "d8ccf68bd963848875c596cd9a10cdf8b0699deccd4a9200f001097ee1e4e958",
-      "receipt": "compass-fern-harbor",
+      "id": "plain-language",
+      "version": "2.0.0",
+      "path": "contracts/surfaces/PLAIN_LANGUAGE.md",
+      "sha256": "eddf9c739bf2a8aa45cf66e9d9f65475b73a62df8b9af079d16102e1a3bf4f7e",
+      "receipt": "birch-poplar-stone",
       "status": "canonical"
     },
     {
-      "id": "polling-webhooks-and-caching",
-      "version": "1.0.0",
-      "path": "contracts/interoperability/POLLING_WEBHOOKS_AND_CACHING.md",
-      "sha256": "7f68f22ba40673092b676329b44eb77173434b3aec8523f30e181cc3baa4a89f",
-      "receipt": "ellsworth-sail-wren",
+      "id": "project-context",
+      "version": "2.0.0",
+      "path": "contracts/everyone/PROJECT_CONTEXT.md",
+      "sha256": "6e3027a54f4232df3c4f2dab033f4588223e1013980a2e3baa014071d5a12f87",
+      "receipt": "warp-nettle-cuff",
       "status": "canonical"
     },
     {
-      "id": "portability-and-ownership",
-      "version": "1.0.0",
-      "path": "contracts/core/PORTABILITY_AND_OWNERSHIP.md",
-      "sha256": "e9259bab46c5f0cda5da4048500327959d701bfb80de25273ccf9414bf427c01",
-      "receipt": "tundra-orchard-echo",
+      "id": "public-and-private",
+      "version": "2.0.0",
+      "path": "contracts/access/PUBLIC_AND_PRIVATE.md",
+      "sha256": "f9f653030a441452b57ce81732ffab9e37c941df05d006bbf244460f27246043",
+      "receipt": "meadow-lighthouse-fence",
       "status": "canonical"
     },
     {
-      "id": "progress-and-closure",
-      "version": "1.0.0",
-      "path": "contracts/experience/PROGRESS_AND_CLOSURE.md",
-      "sha256": "b0655053fcf773b2d8b37bbe4773b07bdf0b2444cce346323606b38f8f8b73e9",
-      "receipt": "inkstone-tundra-cedar",
-      "status": "canonical"
-    },
-    {
-      "id": "progressive-disclosure",
-      "version": "1.1.0",
-      "path": "contracts/experience/PROGRESSIVE_DISCLOSURE.md",
-      "sha256": "09b34d7f87495411f8a107971f4531e2458732a0a4390ec83ddfc6bca96c133b",
-      "receipt": "glade-lagoon-tulip",
-      "status": "canonical"
-    },
-    {
-      "id": "project-context-and-participant-packs",
-      "version": "1.2.0",
-      "path": "contracts/core/PROJECT_CONTEXT_AND_PARTICIPANT_PACKS.md",
-      "sha256": "17de115b230d33d9a0757c5bf9eed563ad84723a5021fe413e0c8e7e6e028bf2",
-      "receipt": "sail-dell-ember",
-      "status": "canonical"
-    },
-    {
-      "id": "provenance-and-audit",
-      "version": "1.0.0",
-      "path": "contracts/core/PROVENANCE_AND_AUDIT.md",
-      "sha256": "c9bfec4b0102fcaa0deca3a11b0d2c3025638a6a8852cd23c08169b72c975307",
-      "receipt": "window-prairie-gatehouse",
-      "status": "canonical"
-    },
-    {
-      "id": "provider-neutrality",
-      "version": "1.0.0",
-      "path": "contracts/interoperability/PROVIDER_NEUTRALITY.md",
-      "sha256": "5aa845addee0273bc00250af5f828284b1000a3c0b5ac40f632781cb80a7e0ee",
-      "receipt": "bramble-ledger-inkstone",
-      "status": "canonical"
-    },
-    {
-      "id": "public-private-boundaries",
-      "version": "1.0.0",
-      "path": "contracts/security/PUBLIC_PRIVATE_BOUNDARIES.md",
-      "sha256": "e15241b17cf08c251308feaf0e3a6aa1dd47bebf3550e0d5fa79f470ac27dbf8",
-      "receipt": "beacon-sable-echo",
-      "status": "canonical"
-    },
-    {
-      "id": "quiet-when-healthy",
-      "version": "1.0.0",
-      "path": "contracts/experience/QUIET_WHEN_HEALTHY.md",
-      "sha256": "ee1d1d7a635982311573b66f74215e39a32cfb54fba26ff850f9b9db9651852f",
-      "receipt": "fable-thicket-cinder",
-      "status": "canonical"
-    },
-    {
-      "id": "recovery-and-reversibility",
-      "version": "1.0.0",
-      "path": "contracts/core/RECOVERY_AND_REVERSIBILITY.md",
-      "sha256": "d0e07dd26de36a4a72972e6a7edaf34c3dfcd190441b7c10fe769b705d03ed2b",
-      "receipt": "meadow-fathom-aster",
-      "status": "canonical"
-    },
-    {
-      "id": "review-and-integration",
-      "version": "1.0.0",
-      "path": "contracts/agents/REVIEW_AND_INTEGRATION.md",
-      "sha256": "154a8441c2cc1d606b9ccbfdf01734854cba48b3bc0aeca5ae304133807f34bf",
-      "receipt": "harbor-zenith-ember",
+      "id": "recovery-and-history",
+      "version": "2.0.0",
+      "path": "contracts/everyone/RECOVERY_AND_HISTORY.md",
+      "sha256": "51696283e05efa1e12f506fa294edbf8c4097a32e6b0a63fd7a6e0194991ae7f",
+      "receipt": "sill-coral-moat",
       "status": "canonical"
     },
     {
       "id": "room",
-      "version": "1.1.1",
-      "path": "contracts/interfaces/ROOM.md",
-      "sha256": "8e0039ba08ca47134c9a2748e6b14923f6d0722bd7406ecff7b4d629bdb33609",
-      "receipt": "lumen-quill-marsh",
+      "version": "2.0.0",
+      "path": "contracts/surfaces/ROOM.md",
+      "sha256": "203163aa4e11c18408113471dc28c86026feca063df80cca81b0469cfd79d753",
+      "receipt": "thistle-bracken-sparrow",
       "status": "canonical"
     },
     {
-      "id": "search-before-inventing",
-      "version": "1.0.0",
-      "path": "contracts/engineering/SEARCH_BEFORE_INVENTING.md",
-      "sha256": "397cfa123f7e64ddef476128af5f80337efc6313ca19e14c5dbe7b554e3243b9",
-      "receipt": "beacon-wren-fathom",
+      "id": "search-before-building",
+      "version": "2.0.0",
+      "path": "contracts/work/SEARCH_BEFORE_BUILDING.md",
+      "sha256": "957ea180f6d1a428a4abfaa0b68aa70aaacdb97cba38a913f75b09a9a60c1fba",
+      "receipt": "cobble-zephyr-pine",
       "status": "canonical"
     },
     {
-      "id": "secrets",
-      "version": "1.0.0",
-      "path": "contracts/security/SECRETS.md",
-      "sha256": "24bd70bc77453d9f4b4f3b35732d2af35d77354a6835986d383f4899bf3e6915",
-      "receipt": "prairie-latch-gatehouse",
+      "id": "secrets-and-data",
+      "version": "2.0.0",
+      "path": "contracts/access/SECRETS_AND_DATA.md",
+      "sha256": "b472e81dbabd5ea56ff5cc2d15c00aeff14dbd5d638d91b588874ce2d6268950",
+      "receipt": "quiet-cedar-satchel",
       "status": "canonical"
     },
     {
-      "id": "stable-truth-replaceable-machinery",
-      "version": "1.0.0",
-      "path": "contracts/core/STABLE_TRUTH_REPLACEABLE_MACHINERY.md",
-      "sha256": "bf5964edbc90dcdfd03f9c6d1c65f058f91143525c8e983169b575dda4731b7b",
-      "receipt": "quiet-bramble-fable",
+      "id": "sensory-safety",
+      "version": "2.0.0",
+      "path": "contracts/people/SENSORY_SAFETY.md",
+      "sha256": "170a9b8ca59c48964e7d8036585ed2c674594fbb97328f66c0964f8c2532f02e",
+      "receipt": "moss-cove-spindle",
       "status": "canonical"
     },
     {
-      "id": "testing-and-verification",
+      "id": "setup-checks-itself",
       "version": "1.0.0",
-      "path": "contracts/engineering/TESTING_AND_VERIFICATION.md",
-      "sha256": "1f7308e1452cc5a0399be894805084267e83530aa37d292d6d6798ad8c8a1e28",
-      "receipt": "prairie-yarrow-quartz",
+      "path": "contracts/surfaces/SETUP_CHECKS_ITSELF.md",
+      "sha256": "9d4e57e1853a728a746525f2f7922bde38d4d013fdd35ff4c38d2f271826aa94",
+      "receipt": "harvest-web-thistle",
+      "status": "canonical"
+    },
+    {
+      "id": "status-and-state",
+      "version": "2.0.0",
+      "path": "contracts/everyone/STATUS_AND_STATE.md",
+      "sha256": "6571f16b4556c9c2214fd0f6a2e6563960f0ccf330a24f2049d9432065ebbfba",
+      "receipt": "sedge-harbor-porch",
+      "status": "canonical"
+    },
+    {
+      "id": "testing-and-evidence",
+      "version": "2.0.0",
+      "path": "contracts/work/TESTING_AND_EVIDENCE.md",
+      "sha256": "e89937b8a5cbe5a652460598bb1872d762ff2fa927d4c37544353e39cd09a95a",
+      "receipt": "hearth-anvil-tamarack",
       "status": "canonical"
     },
     {
       "id": "themes-and-personalization",
-      "version": "1.0.0",
-      "path": "contracts/experience/THEMES_AND_PERSONALIZATION.md",
-      "sha256": "74d0a5bad6fda3dcf64e8e9282731acd37918c4654a2c6174894143dd51cbef9",
-      "receipt": "cinder-opal-window",
+      "version": "2.0.0",
+      "path": "contracts/people/THEMES_AND_PERSONALIZATION.md",
+      "sha256": "7640131083bcf34cd11920e8b71ba11d3991bb3bf7c4e2001f65404d5577451c",
+      "receipt": "ochre-fabric-mill",
       "status": "canonical"
     },
     {
       "id": "truth-and-evidence",
-      "version": "1.0.0",
-      "path": "contracts/core/TRUTH_AND_EVIDENCE.md",
-      "sha256": "634cf3e11234fd83be585a7eb5a09bb38bc0fee3be011c184d3fafe4cb7eff2e",
-      "receipt": "wren-loam-sail",
+      "version": "2.0.0",
+      "path": "contracts/everyone/TRUTH_AND_EVIDENCE.md",
+      "sha256": "c69c81e63d244b117f9bbc0f005952a58d9575c7a69c7fb3debcddd2dcc33dbb",
+      "receipt": "kestrel-flint-loom",
       "status": "canonical"
     },
     {
-      "id": "versioning-and-compatibility",
-      "version": "1.0.0",
-      "path": "contracts/interoperability/VERSIONING_AND_COMPATIBILITY.md",
-      "sha256": "e898f7bc22e6a6a23737438fc3f992481961b62372bb16919db82cff04d322e2",
-      "receipt": "opal-dell-prairie",
-      "status": "canonical"
-    },
-    {
-      "id": "visual-fidelity-and-composition",
-      "version": "1.0.0",
-      "path": "contracts/experience/VISUAL_FIDELITY_AND_COMPOSITION.md",
-      "sha256": "c915c7d643846a81e1ac55879114e9f586ad6178c1a28387a1ab34d535abb478",
-      "receipt": "vellum-fen-cedar",
+      "id": "versions-and-discovery",
+      "version": "2.0.0",
+      "path": "contracts/integration/VERSIONS_AND_DISCOVERY.md",
+      "sha256": "66ec884809501a55839298ffc6f0d4a6521ef2a85cb40b81b563aeec57e33d3c",
+      "receipt": "signpost-alabaster-crag",
       "status": "canonical"
     },
     {
       "id": "web-ui",
-      "version": "1.0.0",
-      "path": "contracts/interfaces/WEB_UI.md",
-      "sha256": "f9f51dc0e3022c7eb1a273f5b70ab2fe49a67667dfa11b9c27aacafa8fff815b",
-      "receipt": "thicket-willow-rill",
+      "version": "2.0.0",
+      "path": "contracts/surfaces/WEB_UI.md",
+      "sha256": "34f54e629c83976dd24c618de7111ecfaedc5ad1c99904baa18d9e7ce99479bc",
+      "receipt": "gorse-poplar-harvest",
       "status": "canonical"
     },
     {
       "id": "what-why-next",
-      "version": "1.0.0",
-      "path": "contracts/experience/WHAT_WHY_NEXT.md",
-      "sha256": "9e67f4b15d1949fd610b6b7bb0a4b8021820a17615a3a8f789c4c8dae59473ed",
-      "receipt": "timber-nectar-zenith",
+      "version": "2.0.0",
+      "path": "contracts/people/WHAT_WHY_NEXT.md",
+      "sha256": "0d3e50ee84143bbc9901f84d9295884e576d93a1338b0e6fdc909cbe7ee47a72",
+      "receipt": "rook-marble-twill",
       "status": "canonical"
     },
     {
-      "id": "worker-contract",
-      "version": "1.0.0",
-      "path": "contracts/agents/WORKER_CONTRACT.md",
-      "sha256": "05a9e5c04822b4ad2d3e439dc213d4d1535171d921f77c95d0cc467847b5b922",
-      "receipt": "dell-opal-ember",
+      "id": "working-together",
+      "version": "2.0.0",
+      "path": "contracts/everyone/WORKING_TOGETHER.md",
+      "sha256": "b41ed162bf835ac6519ddf2ebc3858d9030851a9eb00aa94d4d928d935abe8c7",
+      "receipt": "spool-hazel-drift",
       "status": "canonical"
     }
   ]

@@ -17,35 +17,30 @@ freshness:
   update: automatic
 
 always:
-  - assume-unknown
-  - ask-for-help
   - truth-and-evidence
-  - provenance-and-audit
-  - recovery-and-reversibility
-  - explicit-state
-  - deterministic-first
-  - stable-truth-replaceable-machinery
+  - ask-for-help
+  - recovery-and-history
+  - status-and-state
+  - testing-and-evidence
+  - ownership-and-portability
 
 triggers:
   agent:
     - agent-behavior
     - bounded-work
-    - handoff
-    - contract-attestation
+    - handoff-and-continuity
+    - contract-proof
   governance:
-    - versioning-and-compatibility
-    - data-classification
-    - public-private-boundaries
-    - secrets
+    - versions-and-discovery
+    - secrets-and-data
+    - public-and-private
   engineering:
-    - testing-and-verification
-    - documentation-and-continuity
-    - search-before-inventing
-    - dependency-discipline
+    - handoff-and-continuity
+    - search-before-building
     - git-and-worktrees
   human-facing:
-    - copy-and-language
-    - progressive-disclosure
+    - plain-language
+    - depth-on-demand
 
 notes: >-
   Self-adoption keeps the library honest: the floors that govern

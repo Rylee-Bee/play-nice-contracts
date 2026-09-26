@@ -1,5 +1,7 @@
 # Play Nice, Opus — TLDR
 
+> **Status:** Optional reading · a summary of the long-form "why". The rules are in [the floor](../contracts/everyone/FLOOR.md).
+
 > **NON-NORMATIVE companion document.** The [contracts](../contracts/) are
 > authoritative; a reader must not mistake this page's philosophy,
 > interpretation, or case-study lessons for requirements.

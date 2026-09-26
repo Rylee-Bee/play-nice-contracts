@@ -29,7 +29,7 @@
       "description": "canonical = governs work. draft = may govern work but is expected to change. deprecated = superseded, do not adopt newly. retired = kept for provenance only."
     },
     "layer": {
-      "enum": ["core", "human", "experience", "interoperability", "security", "engineering", "agents", "interfaces"],
+      "enum": ["everyone", "work", "people", "surfaces", "sites", "integration", "access"],
       "description": "Library layer the contract lives in."
     },
     "applies": {
