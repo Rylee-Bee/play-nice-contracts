@@ -1,7 +1,7 @@
 {
   "schema": "play-nice/lock-v1",
   "generated_from": {
-    "contract_count": 67
+    "contract_count": 68
   },
   "contracts": [
     {
@@ -194,6 +194,14 @@
       "path": "contracts/interoperability/FAILURE_AND_DEGRADATION.md",
       "sha256": "9a5260cb0ca44b0741c66aa795f04db6618f641c0b04dbe0fe056a12ea7b70bb",
       "receipt": "sigma-hazel-cedar",
+      "status": "canonical"
+    },
+    {
+      "id": "floor",
+      "version": "1.0.0",
+      "path": "contracts/core/FLOOR.md",
+      "sha256": "4c759a2a2be40860801a699536e7f4f7e0f7b0afb9e8f550269d88cdd6593df9",
+      "receipt": "honey-cell-lantern",
       "status": "canonical"
     },
     {

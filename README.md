@@ -10,7 +10,7 @@ This library preserves the lessons that keep being relearned, so that neither Ry
 
 ## New here?
 
-Start with **[Trusted Translation](docs/principles/trusted-translation.md)** for the five-minute mental model, then use the [contract index](CONTRACT_INDEX.md) or `contractctl onboard --role <your-role>` for the rules that apply to your work. A [quick reference](docs/QUICK_REFERENCE.md) is available as a reminder after you have read the contracts.
+Read **[the Play-Nice Floor](contracts/core/FLOOR.md)** first: one page, 17 plain rules, for people, agents, tools and sites. Everything else goes deeper for one kind of work: see the [contract index](CONTRACT_INDEX.md). How the library looks and sounds: [design philosophy](docs/DESIGN_PHILOSOPHY.md).
 
 ## The layering
 
@@ -38,7 +38,7 @@ Rylee's preferred experience is a first-class profile (`profiles/`), not a hidde
 schema/                     JSON Schemas: contract, adoption, attestation,
                             capability, status, question, project, participant,
                             references, room, global Play-Nice config
-contracts/                  67 canonical contracts in 8 topic areas (normative)
+contracts/                  68 canonical contracts in 8 topic areas (normative)
 .contracts/adoption.yaml    this repo's own adoption of its library — the
                             contract gate is dogfooded here (see AGENTS.md)
 docs/                       QUICK_REFERENCE.md (non-normative reminder card),

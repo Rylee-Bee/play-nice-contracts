@@ -125,7 +125,9 @@ def test_receipts_unique(lib):
 
 
 def test_all_contracts_dual_use_structure(lib):
-    required_sections = [
+    """Each contract uses one complete shape: the v1 dual-use headings, or
+    the v2 shape from docs/DESIGN_PHILOSOPHY.md (migration in progress)."""
+    v1 = [
         "## Purpose",
         "## NORMATIVE RULES",
         "## RATIONALE",
@@ -133,13 +135,15 @@ def test_all_contracts_dual_use_structure(lib):
         "## ANTI-PATTERNS",
         "## ACCEPTANCE CHECKS",
     ]
+    v2 = ["## In short", "## Applies when", "## Rules", "## Why", "## You're done when"]
     for c in lib.load_library():
-        for sec in required_sections:
+        shape = v2 if "## In short" in c["text"] else v1
+        for sec in shape:
             assert sec in c["text"], f"{c['rel_path']} missing {sec!r}"
 
 
 def test_contract_count(lib):
-    assert len(lib.load_library()) == 67
+    assert len(lib.load_library()) == 68
 
 
 def test_lock_paths_and_bytes_are_portable(tmp_repo):
@@ -365,7 +369,13 @@ def test_diff_command_reports_changes(tmp_repo):
     # tmp_repo has one commit only; use HEAD..HEAD instead (zero-diff path)
     r = run_ct(["diff", "--from", "HEAD", "--to", "HEAD"], cwd=str(tmp_repo))
     assert r.returncode == 0, r.stdout + r.stderr
-    assert "unchanged: 67" in r.stdout
+    # Count comes from the committed library, not a hard-coded number.
+    committed = subprocess.run(
+        ["git", "ls-tree", "-r", "--name-only", "HEAD", "contracts/"],
+        cwd=str(tmp_repo), capture_output=True, text=True, check=True,
+    ).stdout.split()
+    n = sum(1 for f in committed if f.endswith(".md") and not f.endswith("LICENSE.md"))
+    assert f"unchanged: {n}" in r.stdout
     j = json.loads(
         run_ct(
             ["diff", "--from", "HEAD", "--to", "HEAD", "--json"], cwd=str(tmp_repo)
@@ -782,6 +792,7 @@ def test_commitment_records_exact_bundle(tmp_repo):
     assert art["contract_gate"] == "PASS"
     assert art["commitment"] == "ACTIVE"
     assert selected == {
+        "floor",
         "truth-and-evidence",
         "explicit-state",
         "recovery-and-reversibility",
@@ -2292,7 +2303,7 @@ def test_offline_validation_works():
 def test_cli_status():
     r = run_ct(["status"])
     assert r.returncode == 0
-    assert "contracts: 67" in r.stdout
+    assert "contracts: 68" in r.stdout
 
 
 def test_cli_show():
@@ -2419,7 +2430,7 @@ def test_onboard_json_output(lib):
     total = (
         len(data["high_priority"]) + len(data["applicable"]) + len(data["remaining"])
     )
-    assert total == 67
+    assert total == 68
 
 
 def test_onboard_role_does_not_change_applicability(lib):
@@ -2437,7 +2448,7 @@ def test_onboard_role_does_not_change_applicability(lib):
             + len(data["applicable"])
             + len(data["remaining"])
         )
-        assert total == 67, f"role {role}: total {total} != 67"
+        assert total == 68, f"role {role}: total {total} != 67"
 
 
 def test_onboard_invalid_role():
@@ -2856,3 +2867,11 @@ def test_room_contract_documents_tone_link_and_independence_rule(lib):
         "compatibility cannot otherwise be maintained."
     )
     assert verbatim in t
+
+
+def test_floor_is_always_resolved():
+    """The floor applies to everyone: it resolves for any task, even when a
+    project's manifest doesn't list it."""
+    r = run_ct(["resolve", "--task", "a task that matches nothing else"])
+    assert r.returncode == 0, r.stderr
+    assert "floor" in r.stdout
