@@ -32,8 +32,9 @@ up work someone (or something) else started. The floor already says
    branch, revision, deployment), CHANGED, VERIFIED (exact commands and
    evidence grades), CONTRACTS (what applied, and how it went),
    UNKNOWN, DEFERRED (with reasons), NEXT (one action, or "nothing
-   required"). Human-facing work puts accessibility and other required
-   checks under VERIFIED. (MUST)
+   required"). All seven are required, in this order; add any extra
+   sections after them. Human-facing work puts accessibility and other
+   required checks under VERIFIED. (MUST)
 3. Someone who was not there continues from the handoff alone: nothing
    depends on old chat history or on "ask me". The exact commands in
    VERIFIED are there so the receiver can re-run them. (MUST)

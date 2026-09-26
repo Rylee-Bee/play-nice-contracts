@@ -5,7 +5,7 @@ version: 2.0.0
 status: canonical
 layer: people
 applies: [ui, product, docs, workflows]
-triggers: [docs, documentation, help, onboarding, guide, wizard, tutorial, settings, advanced, details, disclosure, reference, walkthrough]
+triggers: [docs, documentation, help, onboarding, guide, wizard, tutorial, advanced settings, advanced, details, disclosure, reference, walkthrough]
 rationale: Useful complexity is kept, not deleted; it is organized so a beginner has a clear path and an expert can drill all the way down.
 ---
 

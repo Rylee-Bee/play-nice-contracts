@@ -5,7 +5,7 @@ version: 1.0.0
 status: canonical
 layer: surfaces
 applies: [tools, ui, services, agents]
-triggers: [setup, onboarding, install, configure, first run, api key, sso, integration setup]
+triggers: [setup, onboarding, install, configure, settings, connect a, connection setup, provider setup, first run, api key, sso, integration setup]
 rationale: A setup that ends in "should work now" is a guess, so every setup offers a real check the person can run on the spot.
 ---
 

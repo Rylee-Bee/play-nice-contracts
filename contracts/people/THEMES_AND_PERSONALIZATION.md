@@ -5,7 +5,7 @@ version: 2.0.0
 status: canonical
 layer: people
 applies: [ui, web, product, sites]
-triggers: [theme, themes, dark mode, customization, personalization, preferences, settings, branding, accent, skin, styling]
+triggers: [theme, themes, dark mode, light mode, appearance, customization, personalization, theme preferences, branding, accent, skin, styling]
 rationale: People make the product theirs without customization eroding accessibility, coherence or meaning.
 ---
 

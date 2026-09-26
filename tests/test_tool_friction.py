@@ -122,11 +122,15 @@ def test_freshness_missing_manifest_fails_closed_exit_2(tmp_path):
 # ------------------------------------------------- 4. NEXT lines carry --manifest
 
 
-def test_onboard_next_line_includes_manifest():
+def test_onboard_next_step_is_the_proof_line():
+    """v2: onboarding starts at the floor and ends with the one-line proof,
+    not the retired attest ritual."""
     r = run_ct(["onboard", "--role", "worker"])
     assert r.returncode == 0, r.stdout + r.stderr
+    assert "contracts/everyone/FLOOR.md" in r.stdout.split("=== HIGH-PRIORITY", 1)[0]
     next_block = r.stdout.split("=== NEXT ===", 1)[1]
-    assert "--manifest" in next_block, next_block
+    assert "Play-Nice floor" in next_block and "playnice verify" in next_block, next_block
+    assert "attest" not in next_block
 
 
 def _resolved_ids(manifest: Path, task: str) -> list[str]:

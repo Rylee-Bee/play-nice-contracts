@@ -5,7 +5,7 @@ version: 2.0.0
 status: canonical
 layer: surfaces
 applies: [humans, agents, ui, apis, clis, docs]
-triggers: [wording, copy, error message, message, ui text, label, button text, documentation]
+triggers: [wording, copy, error message, error, message, ui text, label, button text, documentation, web page, page, form, screen, ui, cli, api, endpoint, settings]
 rationale: Words are part of every surface, so they get the same care as the rest: honest, short, and actionable.
 ---
 

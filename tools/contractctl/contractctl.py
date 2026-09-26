@@ -2809,7 +2809,7 @@ source:
 
 always:
   - truth-and-evidence
-  - explicit-state
+  - status-and-state
   - ask-for-help
 
 triggers:
@@ -3565,8 +3565,7 @@ def cmd_onboard(args) -> int:
     if getattr(args, "json_output", False):
         out = {
             "role": role,
-            "trusted_translation": "docs/principles/trusted-translation.md",
-            "quick_reference": "docs/QUICK_REFERENCE.md",
+            "first": "contracts/everyone/FLOOR.md",
             "high_priority": [
                 {
                     "id": c["front_matter"]["contract_id"],
@@ -3602,13 +3601,9 @@ def cmd_onboard(args) -> int:
     print(f"library: {lib_ver} ({len(lib)} contracts)")
     print()
 
-    print("=== FIRST: READ THESE ===")
+    print("=== FIRST: READ THE FLOOR ===")
     print()
-    print("  1. Trusted Translation (5-minute mental model)")
-    print("     docs/principles/trusted-translation.md")
-    print()
-    print("  2. Quick Reference (reminder card)")
-    print("     docs/QUICK_REFERENCE.md")
+    print("  contracts/everyone/FLOOR.md  (one page; applies to everyone)")
     print()
 
     print(f"=== HIGH-PRIORITY CONTRACTS FOR {role.upper()} ({len(high)}) ===")
@@ -3643,14 +3638,9 @@ def cmd_onboard(args) -> int:
 
     print("=== NEXT ===")
     print()
-    print("  After reading, produce a CONTRACT ATTESTATION v1 block:")
-    print(
-        "    contractctl attest --manifest .contracts/adoption.yaml "
-        "--task 'your task' --impact <id>=\"<one sentence>\""
-    )
-    print(
-        "    (quote each --impact value, or pass --impact-file <file> to avoid quoting)"
-    )
+    print("  Start your handoff with the proof line from contracts/work/CONTRACT_PROOF.md:")
+    print("    Play-Nice floor <version> · receipt <word> · read <ids you read>")
+    print("  Check it with: playnice verify \"<that line>\"")
     print()
     print("  This tool prepares onboarding; you perform it.")
     print(
@@ -3849,11 +3839,9 @@ def cmd_index(args) -> int:
 
 ADOPTION_ALWAYS_FLOOR = (
     "truth-and-evidence",
-    "explicit-state",
-    "recovery-and-reversibility",
-    "provenance-and-audit",
+    "status-and-state",
+    "recovery-and-history",
     "ask-for-help",
-    "assume-unknown",
 )
 
 

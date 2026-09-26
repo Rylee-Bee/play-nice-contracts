@@ -4,6 +4,34 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-09-26
+
+Play-Nice v2 (decision: `docs/decisions/2026-09-26-play-nice-v2.md`).
+
+### Changed
+- **68 contracts became 40, in 7 packs** (`contracts/everyone`, `work`,
+  `people`, `surfaces`, `sites`, `integration`, `access`), each in one
+  plain shape (In short, Applies when, Rules, Examples, Why, You're done
+  when). About 25,000 words, down from 51,000. Merged and rewritten
+  contracts are 2.0.0 with new receipts; what moved and what was dropped
+  on purpose is in `docs/research/v2-packs/`.
+- **Old names keep working**: `aliases.json` maps every v1 id to its v2
+  contract; `resolve`, `show`, adoption manifests and impacts accept them.
+- The attest/commit gate is legacy; the v2 proof is one line (`contract-proof`).
+- README rewritten as a short front door (486 words); maintainer material
+  moved to `docs/MAINTAINING.md`; `AGENTS.md` says it is for maintainers;
+  `docs/QUICK_REFERENCE.md` points at the floor.
+- `onboard` starts at the floor and ends with the proof line; starter
+  manifests use v2 ids.
+- ROOM keeps the room/0 wire word `unhealthy` (mapped to the shared words).
+
+### Added
+- `setup-checks-itself` (surfaces) and `friendly-site` (sites, with
+  `schema/play-nice-site.schema.json`).
+- Roles-and-permissions rules in `identity-and-roles`.
+- Usability test with seven models (`docs/research/2026-09-26-model-usability-round1.md`).
+
+
 ### Added
 - `floor` 1.0.0 (new core contract): the Play-Nice Floor, one short page
   every participant reads first (17 plain rules), with a one-line proof of

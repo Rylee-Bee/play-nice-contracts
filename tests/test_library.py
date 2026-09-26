@@ -809,7 +809,7 @@ def test_commitment_records_exact_bundle(tmp_repo):
         "testing-and-evidence",
         "observability",
     }
-    assert art["library_version"] == "0.10.0"  # semver from VERSION
+    assert art["library_version"] == (REPO / "VERSION").read_text().strip()  # semver from VERSION
     # no secrets by construction: artifact only carries ids/hashes/words
     # (a contract id legitimately contains the word "secrets"; scan for
     # secret-SHAPED values, matching the repo-wide privacy test)
@@ -841,7 +841,7 @@ def test_resolved_set_bundle_differs_by_scope(tmp_repo):
 def test_library_version_vs_revision(tmp_repo):
     """Library semver and adopted git revision are distinct concepts (hardening #2)."""
     ct = _load_ct_from(tmp_repo)
-    assert ct.library_version() == "0.10.0"  # semver from VERSION file
+    assert ct.library_version() == (REPO / "VERSION").read_text().strip()
     rev = ct.library_revision()
     assert rev != "unknown"
     assert rev != ct.library_version()  # git SHA when repo initialized

@@ -24,7 +24,7 @@
       "id": "api",
       "version": "2.0.0",
       "path": "contracts/surfaces/API.md",
-      "sha256": "4c0c8397914dfbda4f747cfafb2b61431a77f35d0ce5161aa9d0bb6483c4caaa",
+      "sha256": "369f5fdf7d918c8a820d97a6853f74d099216139371ef8d8b55acb3787d7ff15",
       "receipt": "sparrow-walnut-birch",
       "status": "canonical"
     },
@@ -88,7 +88,7 @@
       "id": "depth-on-demand",
       "version": "2.0.0",
       "path": "contracts/people/DEPTH_ON_DEMAND.md",
-      "sha256": "aecd92ec5b22cc465d9e4ebb1766931531dff604b6cca28a0195a1ce1fed7ab5",
+      "sha256": "e816b5f16fac711f187493eb8dffc83d842fe86cfdc9a22a5b7ce66f47a78831",
       "receipt": "garnet-birch-spire",
       "status": "canonical"
     },
@@ -120,7 +120,7 @@
       "id": "friendly-site",
       "version": "1.0.0",
       "path": "contracts/sites/FRIENDLY_SITE.md",
-      "sha256": "61d7fd4fce9afa853ad73825ddc5957d57435064b0cfe69180f462256a57e20d",
+      "sha256": "9c14e8b459342dca9dd21905a3618fabfaf96752a6040afe283d96dc938bf3f7",
       "receipt": "sparrow-thistle-cove",
       "status": "canonical"
     },
@@ -136,7 +136,7 @@
       "id": "handoff-and-continuity",
       "version": "2.0.0",
       "path": "contracts/work/HANDOFF_AND_CONTINUITY.md",
-      "sha256": "6bc4787018873eac219578cecc9a6bd361e904b92c5a6e0e7a5eb0dd5dcb5926",
+      "sha256": "c1c4eac054f416fd62beb94deb501c944db45480b6803822a077ad505deccbdf",
       "receipt": "pasture-walnut-copper",
       "status": "canonical"
     },
@@ -192,7 +192,7 @@
       "id": "plain-language",
       "version": "2.0.0",
       "path": "contracts/surfaces/PLAIN_LANGUAGE.md",
-      "sha256": "28cf67c8cd6f6868be1a582e7b9bc349e2951ff8052961d5bfd2fea2721a199a",
+      "sha256": "eddf9c739bf2a8aa45cf66e9d9f65475b73a62df8b9af079d16102e1a3bf4f7e",
       "receipt": "birch-poplar-stone",
       "status": "canonical"
     },
@@ -256,7 +256,7 @@
       "id": "setup-checks-itself",
       "version": "1.0.0",
       "path": "contracts/surfaces/SETUP_CHECKS_ITSELF.md",
-      "sha256": "900c7021d850c99485e17065f64d24732cd283d11901ba60625138010be1325a",
+      "sha256": "b1446ce89610699fc23b1629b5032970192ae964138bf54ef4cbf62a3afebb8c",
       "receipt": "harvest-web-thistle",
       "status": "canonical"
     },
@@ -280,7 +280,7 @@
       "id": "themes-and-personalization",
       "version": "2.0.0",
       "path": "contracts/people/THEMES_AND_PERSONALIZATION.md",
-      "sha256": "dfc726671a498169db87c15029070799e48782f173fad32a8eaba15ceeaf99c1",
+      "sha256": "7640131083bcf34cd11920e8b71ba11d3991bb3bf7c4e2001f65404d5577451c",
       "receipt": "ochre-fabric-mill",
       "status": "canonical"
     },

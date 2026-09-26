@@ -21,8 +21,10 @@ can do runs through this seam.
 
 ## Applies when
 
-You design or change an HTTP API that others consume. Not this contract's
-job: the human/machine split itself (see one-truth-two-views) or calling
+You design or change an HTTP API that others consume. An API that only its
+own app calls (one app, nobody else depending on it) may leave rules 2 and 7
+until someone else starts using it; say so in the handoff. Not this
+contract's job: the human/machine split itself (see one-truth-two-views) or calling
 someone else's API (Integration pack).
 
 ## Rules

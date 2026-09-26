@@ -21,7 +21,10 @@ agents may do.
 
 ## Applies when
 
-- You publish or change a website, a page, a feed, or a public HTTP endpoint.
+- You publish or change a public website, page, feed, or HTTP endpoint.
+- A site only you or your household reach (localhost, LAN, behind sign-in)
+  needs rules 1, 2, 9, 10 and 12; the public-facing rules 4 to 8 start
+  when it goes public.
 - Not this contract's job: how a UI looks and behaves for a person (the web UI
   contract in the Surfaces pack); accessibility details (the accessibility
   contract in the People pack); behaving politely toward other systems' APIs

@@ -1,4 +1,9 @@
-# play-nice-contracts — project rules
+# play-nice-contracts — rules for changing this library
+
+> **Using Play-Nice in your own project? This file is not for you.** Read
+> [the floor](contracts/everyone/FLOOR.md) and the pack for what you're
+> building ([index](CONTRACT_INDEX.md)). This file is for agents and people
+> who edit this library itself.
 
 **What this repo is:** the canonical Play-Nice contract library — the
 normative contract text (`contracts/`), its JSON Schemas (`schema/`),
