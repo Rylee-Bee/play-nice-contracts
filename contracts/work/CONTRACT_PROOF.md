@@ -29,10 +29,11 @@ apply to a task (the resolver and the packs say).
 
 1. An agent starts substantial work with one line, written from the
    files it actually read:
-   `Play-Nice floor <version> · receipt <word> · packs <a, b>`.
-   The `packs` part lists only the packs it read for this task; say
-   none if you read none. Never write the line from memory or guess
-   the words. (MUST)
+   `Play-Nice floor <version> · receipt <word>[ · read <id>, <id>]`.
+   The `read` part lists the contract ids it actually read for this
+   task (ids as they appear in this library; an old v1 id counts,
+   because `aliases.json` resolves it); say none if you read none.
+   Never write the line from memory or guess the words. (MUST)
 2. `playnice verify "<line>"` answers one question: is this line
    current for the library today? Current means keep working. Out of
    date means re-read the pages and write a fresh line. There is no
@@ -69,9 +70,9 @@ apply to a task (the resolver and the packs say).
 
 ## Examples
 
-- Good: `Play-Nice floor 1.0.0 · receipt honey-cell-lantern · packs
-  work` — written after reading the floor and the work pack;
-  `playnice verify` returns current.
+- Good: `Play-Nice floor 1.0.0 · receipt honey-cell-lantern · read
+  floor, contract-proof` — written after reading the floor and this
+  page; `playnice verify` returns current.
 - Bad: an agent copies yesterday's line without re-reading after a
   pack bump; `verify` returns out of date and the work is stopped
   until it reads.
@@ -99,10 +100,17 @@ staying quiet about failing is not allowed) at near-zero cost.
 
 ## Machine notes
 
-Line grammar: `Play-Nice floor <semver> · receipt <word-word-word>[
-· packs <id>[, <id>...]]` — version and receipt word copied verbatim
-from the floor page's front matter and receipt comment; pack ids are
-the layer names (e.g. `work`).
+Line grammar: `Play-Nice floor <version> · receipt <word>[ · read
+<id>[, <id>...]]` — version and receipt word copied verbatim from the
+floor page's front matter and receipt comment; `read` lists the
+contract ids actually read, and old v1 ids are allowed because
+`aliases.json` resolves them. Separators may be `·`, `-` or `|`
+(`-` and `|` need spaces around them, so hyphenated receipt words
+stay one word). `playnice verify "<line>"` answers one of three
+things: CURRENT (exit 0), OUT OF DATE (exit 1 — the floor moved or
+the word does not match the floor page: re-read
+`contracts/everyone/FLOOR.md` and write a fresh line), or INVALID
+(exit 2 — malformed line, or an unknown read id, which it names).
 
 `/.well-known/play-nice.json`:
 

@@ -8,6 +8,8 @@ Subcommands:
   show <id>             print a contract's canonical content
   validate              validate the whole library (schemas, receipts, index)
   resolve               resolve the applicable contract set for a task
+                        (works without an adoption manifest: floor + role
+                        base set + library-trigger matches)
   lock                  generate contracts.lock.json (deterministic)
   diff                  compare the contract set between two library revisions
   scan                  scan a tree for banned public-boundary shapes
@@ -3121,18 +3123,45 @@ def cmd_diff(args) -> int:
     return 0
 
 
+# Base contract sets by participant role, used when a folder carries no
+# adoption manifest (v2: `resolve` must answer, not error — the manifest
+# stays optional). Floor and library-trigger matches are added on top.
+ROLE_BASE_SETS = {
+    "agent": [
+        "agent-behavior",
+        "bounded-work",
+        "handoff-and-continuity",
+        "testing-and-evidence",
+        "contract-proof",
+    ],
+    "human": [
+        "accessibility",
+        "attention-and-quiet",
+        "depth-on-demand",
+        "plain-language",
+        "what-why-next",
+    ],
+    "service": [
+        "api",
+        "calling-other-services",
+        "events-and-caching",
+        "status-and-state",
+        "versions-and-discovery",
+    ],
+}
+
+
 def cmd_resolve(args) -> int:
-    manifest = (
-        Path(args.manifest) if args.manifest else Path(".contracts/adoption.yaml")
-    )
-    try:
+    explicit = args.manifest is not None
+    manifest = Path(args.manifest) if explicit else Path(".contracts/adoption.yaml")
+    if manifest.is_file():
         m = load_adoption(manifest)
-    except CTManifestMissing as e:
-        # fail closed, same as `freshness`: a task with no adopted contract
-        # set cannot be resolved, so exit 2 (not a generic error 1)
-        print(f"error: {e}", file=sys.stderr)
-        print_missing_manifest_hint(e)
-        return 2
+    elif explicit:
+        # explicitly named but missing: still fail closed (a typo is not "none")
+        m = load_adoption(manifest)
+    else:
+        print("no adoption manifest: resolved from the library defaults")
+        m = {"always": list(ROLE_BASE_SETS[args.role]), "triggers": {}}
     res = resolve_set(m, args.task, (args.tag or []))
     if res["errors"]:
         print("resolution errors:", file=sys.stderr)
@@ -4057,8 +4086,9 @@ def main(argv=None) -> int:
     p = sub.add_parser("resolve", help="resolve applicable contracts for a task")
     p.add_argument(
         "--manifest",
-        default=".contracts/adoption.yaml",
-        help="adoption manifest (default: .contracts/adoption.yaml)",
+        default=None,
+        help="adoption manifest (default: .contracts/adoption.yaml when present; "
+        "without any manifest, resolve from the library defaults)",
     )
     p.add_argument(
         "--task", default="", help="task description matched against trigger surfaces"
@@ -4068,6 +4098,12 @@ def main(argv=None) -> int:
         action="append",
         default=[],
         help="explicit surface tags for trigger matching (repeatable)",
+    )
+    p.add_argument(
+        "--role",
+        default="agent",
+        choices=["agent", "human", "service"],
+        help="base contract set when there is no adoption manifest (default: agent)",
     )
     p.set_defaults(func=cmd_resolve)
 
