@@ -423,7 +423,10 @@ def _index_contract_ids() -> set[str]:
     ids: set[str] = set()
     if INDEX_FILE.is_file():
         text = INDEX_FILE.read_text(encoding="utf-8")
-        for m in re.finditer(r"\| `([a-z0-9-]+)`", text):
+        # registry rows only: the v2 aliases table also has backticked ids in
+        # table cells, and an id named only as a redirect target is not a
+        # registered contract (it would mask a missing row from drift checks)
+        for m in _INDEX_ROW_RE.finditer(text):
             ids.add(m.group(1))
     return ids
 
@@ -3427,7 +3430,10 @@ def cmd_onboard(args) -> int:
 
     role = args.role
     keywords = ROLE_KEYWORDS.get(role, set())
-    high_ids = set(ROLE_HIGH_PRIORITY.get(role, []))
+    # The priority table predates the v2 pack merge; map old ids through
+    # aliases.json so role lists name the contracts that actually exist.
+    lib_ids = {c["front_matter"]["contract_id"] for c in lib}
+    high_ids = {canonical_id(cid, lib_ids) for cid in ROLE_HIGH_PRIORITY.get(role, [])}
 
     # Classify: high-priority (explicit list) vs applicable (by metadata match) vs remaining
     high = []

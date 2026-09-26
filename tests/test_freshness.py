@@ -1,4 +1,4 @@
-"""Remote freshness regression tests (contract-attestation 1.3.0).
+"""Remote freshness regression tests (v2 contract-proof pack).
 
 Covers the required cases with a LOCAL bare git repository substituted for
 the authoritative remote — no test depends on live GitHub network access:
@@ -31,12 +31,14 @@ CT = REPO / "tools" / "contractctl" / "contractctl.py"
 _TASK = "rotate the deploy credentials and update the health checks"
 _TASK_IMPACT = {
     "truth-and-evidence": "rotation verified by live check, not by report",
-    "explicit-state": "statuses use the shared vocabulary with observed_at",
-    "recovery-and-reversibility": "rollback documented before rotation",
-    "provenance-and-audit": "rotation journaled with actor and reason",
-    "least-privilege": "deploy token scoped to the deploy job only",
+    "status-and-state": "statuses use the shared vocabulary with observed_at",
+    "recovery-and-history": "rollback documented and journaled before rotation",
+    "identity-and-roles": "each deploy role scoped to its own job",
     "ask-for-help": "unknown provider semantics asked, not guessed",
-    "assume-unknown": "probe compatibility before rollout; preserve UNKNOWN",
+    "secrets-and-data": "rotated credentials handled by reference, never in logs",
+    "public-and-private": "rotation notes keep private topology out of public places",
+    "testing-and-evidence": "health checks re-run after rotation with command and grade",
+    "observability": "dashboards show post-rotation state honestly, not cached green",
 }
 _INHERITED_IMPACT = {f"{k}=inherited: {k} governed" for k in _TASK_IMPACT}
 
@@ -100,12 +102,10 @@ def manifest(tmp_repo, remote):
         f"  revision: {sha}\n"
         "always:\n"
         "  - truth-and-evidence\n"
-        "  - explicit-state\n"
-        "  - recovery-and-reversibility\n"
-        "  - provenance-and-audit\n"
-        "  - least-privilege\n"
+        "  - status-and-state\n"
+        "  - recovery-and-history\n"
+        "  - identity-and-roles\n"
         "  - ask-for-help\n"
-        "  - assume-unknown\n"
         "freshness:\n"
         "  policy: require-current\n"
         "  ref: main\n"
@@ -232,7 +232,7 @@ def test_pinned_policy_stays_backward_compatible(tmp_repo, remote, tmp_path):
         f"  revision: {sha}\n"
         "always:\n"
         "  - truth-and-evidence\n"
-        "  - explicit-state\n"
+        "  - status-and-state\n"
         "freshness:\n"
         "  policy: pinned\n"
     )
@@ -340,8 +340,8 @@ def test_automatic_contract_change_still_behind(tmp_repo, remote, manifest):
     )
     assert _commit(manifest, _TASK).returncode == 0
     # move the remote with a real contract change
-    t = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
-    t.write_text(t.read_text().replace("version: 1.0.0", "version: 1.0.1"))
+    t = tmp_repo / "contracts" / "everyone" / "TRUTH_AND_EVIDENCE.md"
+    t.write_text(t.read_text().replace("version: 2.0.0", "version: 2.0.1"))
     assert git0(tmp_repo, "add", "-A").returncode == 0
     assert git0(tmp_repo, "commit", "-qm", "contract patch", "--no-gpg-sign").returncode == 0
     assert git0(tmp_repo, "push", "--quiet", str(remote), "main:main").returncode == 0
@@ -369,8 +369,8 @@ def test_sync_automatic_updates_pin_but_not_commitment(tmp_repo, remote, manifes
     )
     assert _commit(manifest, _TASK).returncode == 0
     # a REAL contract change: sync must repin but the old commitment stays STALE
-    t = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
-    t.write_text(t.read_text().replace("version: 1.0.0", "version: 1.0.1"))
+    t = tmp_repo / "contracts" / "everyone" / "TRUTH_AND_EVIDENCE.md"
+    t.write_text(t.read_text().replace("version: 2.0.0", "version: 2.0.1"))
     assert git0(tmp_repo, "add", "-A").returncode == 0
     assert git0(tmp_repo, "commit", "-qm", "contract patch", "--no-gpg-sign").returncode == 0
     assert git0(tmp_repo, "push", "--quiet", str(remote), "main:main").returncode == 0
@@ -510,44 +510,12 @@ def test_adoption_rejects_invalid_freshness_policy(tmp_path):
     assert "freshness.policy" in r.stdout
 
 
-def test_contract_text_states_the_requirement():
-    sys.path.insert(0, str(REPO / "tools" / "contractctl"))
-    try:
-        import contractctl as ct
-    finally:
-        sys.path.pop(0)
-    c = [
-        x
-        for x in ct.load_library()
-        if x["front_matter"]["contract_id"] == "contract-attestation"
-    ][0]
-    t = c["text"]
-    assert c["front_matter"]["version"] == "1.3.0"
-    assert "VERIFY AUTHORITATIVE REMOTE REVISION" in t
-    assert "None of these is proof of remote freshness" in t
-    assert "REMOTE FRESHNESS: CURRENT" in t
-    for state in ("UNKNOWN", "UNREACHABLE", "DIVERGED", "BEHIND"):
-        assert state in t
-    assert "PLAY_NICE_SOURCE_REVISION" in t
-    assert "not the same as adopting it" in t
-
-
-def test_contract_text_states_the_equivalence_rule():
-    """Rule 27 must be normative text, not just tooling behavior."""
-    sys.path.insert(0, str(REPO / "tools" / "contractctl"))
-    try:
-        import contractctl as ct
-    finally:
-        sys.path.pop(0)
-    c = [
-        x
-        for x in ct.load_library()
-        if x["front_matter"]["contract_id"] == "contract-attestation"
-    ][0]
-    t = c["text"]
-    assert "Equivalence" in t and "byte-identical" in t
-    assert "freshness.equivalence" in t
-    assert "never applies this rule" in t  # update: review exclusion is explicit
+# v1 had two tests here asserting the remote-freshness block lived in the
+# contract TEXT (contract-attestation 1.3.0 rules 21-27). The v2 pack review
+# (docs/research/v2-packs/pack-work.md) deliberately retired that block:
+# remote freshness is contractctl behavior, documented in the tool, not a
+# contract rule — so the text assertions have no v2 home. The behavior they
+# protected is still covered by every test above.
 
 
 # ---------------------------------------- 11. upgrade-check (composed answer)
@@ -568,8 +536,8 @@ def test_upgrade_check_docs_drift_needs_review_only(tmp_repo, remote, manifest):
 
 
 def test_upgrade_check_flags_always_set_impact(tmp_repo, remote, manifest):
-    t = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
-    t.write_text(t.read_text().replace("version: 1.0.0", "version: 1.1.0"))
+    t = tmp_repo / "contracts" / "everyone" / "TRUTH_AND_EVIDENCE.md"
+    t.write_text(t.read_text().replace("version: 2.0.0", "version: 2.1.0"))
     assert git0(tmp_repo, "add", "-A").returncode == 0
     assert git0(tmp_repo, "commit", "-qm", "contract bump", "--no-gpg-sign").returncode == 0
     assert git0(tmp_repo, "push", "--quiet", str(remote), "main:main").returncode == 0

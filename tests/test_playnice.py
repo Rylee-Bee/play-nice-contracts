@@ -126,11 +126,9 @@ def manifest_text(remote, sha, *, policy="require-current", update="review"):
         f"  revision: {sha}\n"
         "always:\n"
         "  - truth-and-evidence\n"
-        "  - explicit-state\n"
-        "  - recovery-and-reversibility\n"
-        "  - provenance-and-audit\n"
+        "  - status-and-state\n"
+        "  - recovery-and-history\n"
         "  - ask-for-help\n"
-        "  - assume-unknown\n"
         "freshness:\n"
         f"  policy: {policy}\n"
         "  ref: main\n"
@@ -393,26 +391,26 @@ def test_automatic_update_policy_repins(lib, pn_remote, tmp_path):
     then reaches CURRENT."""
     consumer = make_consumer(tmp_path, lib, pn_remote, update="automatic")
     # mutate AFTER the consumer pinned a clean HEAD, keeping lib self-consistent
-    t = lib / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
+    t = lib / "contracts" / "everyone" / "TRUTH_AND_EVIDENCE.md"
     text = t.read_text()
     # rotate the receipt too: MINOR-class change semantics (validate enforces it)
     m = re.search(r"<!-- contract-receipt: ([a-z-]+) -->", text)
-    assert m and m.group(1) == "wren-loam-sail", m  # fixture sanity
+    assert m and m.group(1) == "kestrel-flint-loom", m  # fixture sanity
     text = text.replace(m.group(0), "<!-- contract-receipt: basalt-quill-ember -->")
-    text = text.replace("version: 1.0.0", "version: 1.1.0")
+    text = text.replace("version: 2.0.0", "version: 2.1.0")
     t.write_text(text)
     cl = lib / "CHANGELOG.md"
     cl.write_text(
         cl.read_text().replace(
             "## [Unreleased]\n",
-            "## [Unreleased]\n\n- truth-and-evidence 1.0.0 → 1.1.0 (test fixture change)\n",
+            "## [Unreleased]\n\n- truth-and-evidence 2.0.0 → 2.1.0 (test fixture change)\n",
         )
     )
     idx = lib / "CONTRACT_INDEX.md"
     idx.write_text(
         idx.read_text().replace(
-            "| `truth-and-evidence` | Truth and Evidence | 1.0.0 | canonical |",
-            "| `truth-and-evidence` | Truth and Evidence | 1.1.0 | canonical |",
+            "| `truth-and-evidence` | Truth and Evidence | 2.0.0 | canonical |",
+            "| `truth-and-evidence` | Truth and Evidence | 2.1.0 | canonical |",
         )
     )
     lk = run_lib_ct(lib, ["lock"])

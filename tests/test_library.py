@@ -143,7 +143,17 @@ def test_all_contracts_dual_use_structure(lib):
 
 
 def test_contract_count(lib):
-    assert len(lib.load_library()) == 68
+    # Counts are derived, never hard-coded: the library must load exactly the
+    # Markdown files shipped under contracts/ (v2 packs).
+    lib_all = lib.load_library()
+    files = sorted(
+        str(f.relative_to(REPO))
+        for f in (REPO / "contracts").rglob("*.md")
+        if f.name != "LICENSE.md"
+    )
+    assert len(lib_all) == len(files)
+    assert sorted(c["rel_path"] for c in lib_all) == files
+    assert len(lib_all) >= 40  # v2 sanity: the merged packs are all present
 
 
 def test_lock_paths_and_bytes_are_portable(tmp_repo):
@@ -158,33 +168,33 @@ def test_lock_paths_and_bytes_are_portable(tmp_repo):
 
 
 @pytest.mark.parametrize("name", ["homelab", "personal-world", "vefr"])
-def test_assume_unknown_adoption_requires_task_impact(lib, name):
+def test_always_contract_requires_task_impact(lib, name):
     manifest = REPO / "examples" / f"{name}.adoption.yaml"
     task = "routine maintenance"
     selected = lib.resolve_set(lib.load_adoption(manifest), task)["selected"]
-    assert selected["assume-unknown"] == "always"
+    assert selected["truth-and-evidence"] == "always"
     impacts = {
         cid: "Preserve the current bounded maintenance constraints."
         for cid in selected
-        if cid != "assume-unknown"
+        if cid != "truth-and-evidence"
     }
     blocked = lib.make_attestation(manifest, task, impacts)
     assert "CONTRACT GATE: BLOCKED" in blocked
     assert "missing task-impact" in blocked
-    impacts["assume-unknown"] = (
-        "ASSUMED: all consumers tolerate the field; probe a strict reader before "
-        "rollout, record contrary output and UNKNOWN on an inconclusive result."
+    impacts["truth-and-evidence"] = (
+        "ASSUMED: nothing beyond checked evidence is claimed; probe a strict reader "
+        "before rollout, record contrary output and unknown on an inconclusive result."
     )
     accepted = lib.make_attestation(manifest, task, impacts)
     assert "CONTRACT GATE: PASS" in accepted
 
 
-def test_assume_unknown_adoption_changes_bundle_and_invalidates_old_attestation(
+def test_always_contract_adoption_changes_bundle_and_invalidates_old_attestation(
     lib, tmp_path
 ):
     manifest = tmp_path / "adoption.yaml"
     source = (REPO / "examples/homelab.adoption.yaml").read_text()
-    manifest.write_text(source.replace("  - assume-unknown\n", ""))
+    manifest.write_text(source.replace("  - truth-and-evidence\n", ""))
     task = "routine maintenance"
     before = lib.resolve_set(lib.load_adoption(manifest), task)["selected"]
     attestation = lib.make_attestation(
@@ -201,12 +211,15 @@ def test_assume_unknown_adoption_changes_bundle_and_invalidates_old_attestation(
     assert lib.verify_attestation(receipt, manifest)
 
 
-def test_assume_unknown_is_discoverable_for_every_role():
+def test_floor_is_discoverable_for_every_role():
+    """v2: the always-applicable truth rules live on the floor (assume-unknown's
+    rules were absorbed into truth-and-evidence and the floor). Every role must
+    see the floor in its high-priority list — the v1 discoverability invariant."""
     for role in ["orchestrator", "worker", "ui", "cli", "service", "human"]:
         result = run_ct(["onboard", "--role", role, "--json"])
         assert result.returncode == 0, result.stderr
         data = json.loads(result.stdout)
-        assert "assume-unknown" in {c["id"] for c in data["high_priority"]}
+        assert "floor" in {c["id"] for c in data["high_priority"]}
 
 
 def test_assume_unknown_case_study_preserves_evidence_boundary():
@@ -241,10 +254,10 @@ def _load_ct_from(tmp_repo):
 
 def test_duplicate_id_fails(tmp_repo):
     ct = _load_ct_from(tmp_repo)
-    src = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
-    dup = tmp_repo / "contracts" / "core" / "TRUTH_DUPLICATE.md"
+    src = tmp_repo / "contracts" / "everyone" / "TRUTH_AND_EVIDENCE.md"
+    dup = tmp_repo / "contracts" / "everyone" / "TRUTH_DUPLICATE.md"
     # same contract_id, different file, unique receipt → pure duplicate-id error
-    text = src.read_text().replace("wren-loam-sail", "north-juniper-cedar")
+    text = src.read_text().replace("kestrel-flint-loom", "north-juniper-cedar")
     dup.write_text(text)
     errors = ct.validate_library()
     assert any("duplicate contract_id" in e for e in errors), errors
@@ -252,11 +265,11 @@ def test_duplicate_id_fails(tmp_repo):
 
 def test_duplicate_receipt_fails(tmp_repo):
     ct = _load_ct_from(tmp_repo)
-    src = tmp_repo / "contracts" / "core" / "EXPLICIT_STATE.md"
-    target = tmp_repo / "contracts" / "core" / "PLAY_NICE_TOGETHER.md"
+    src = tmp_repo / "contracts" / "everyone" / "STATUS_AND_STATE.md"
+    target = tmp_repo / "contracts" / "everyone" / "WORKING_TOGETHER.md"
     text = target.read_text()
-    # give PLAY_NICE_TOGETHER the same receipt as EXPLICIT_STATE
-    text = text.replace("compass-fern-harbor", "driftwood-thicket-jetty")
+    # give WORKING_TOGETHER the same receipt as STATUS_AND_STATE
+    text = text.replace("spool-hazel-drift", "sedge-harbor-porch")
     target.write_text(text)
     errors = ct.validate_library()
     assert any("duplicate receipt" in e for e in errors), errors
@@ -264,9 +277,9 @@ def test_duplicate_receipt_fails(tmp_repo):
 
 def test_missing_receipt_fails(tmp_repo):
     ct = _load_ct_from(tmp_repo)
-    target = tmp_repo / "contracts" / "human" / "HUMAN_RELIABILITY.md"
+    target = tmp_repo / "contracts" / "people" / "HUMAN_RELIABILITY.md"
     text = target.read_text()
-    text = text.replace("<!-- contract-receipt: jade-harbor-cobalt -->", "")
+    text = text.replace("<!-- contract-receipt: pebble-thistle-wharf -->", "")
     target.write_text(text)
     errors = ct.validate_library()
     assert any("missing receipt" in e for e in errors), errors
@@ -274,8 +287,8 @@ def test_missing_receipt_fails(tmp_repo):
 
 def test_invalid_version_fails(tmp_repo):
     ct = _load_ct_from(tmp_repo)
-    target = tmp_repo / "contracts" / "core" / "PROVENANCE_AND_AUDIT.md"
-    text = target.read_text().replace("version: 1.0.0", "version: banana")
+    target = tmp_repo / "contracts" / "everyone" / "RECOVERY_AND_HISTORY.md"
+    text = target.read_text().replace("version: 2.0.0", "version: banana")
     target.write_text(text)
     errors = ct.validate_library()
     assert any("invalid version" in e for e in errors), errors
@@ -287,8 +300,8 @@ def test_index_drift_fails(tmp_repo):
     text = idx.read_text()
     # remove a row → contract missing from index
     text = text.replace(
-        "| `truth-and-evidence` | Truth and Evidence | 1.0.0 | canonical |",
-        "| `ghost-contract` | Ghost | 1.0.0 | canonical |",
+        "| `truth-and-evidence` | Truth and Evidence | 2.0.0 | canonical |",
+        "| `ghost-contract` | Ghost | 2.0.0 | canonical |",
     )
     idx.write_text(text)
     errors = ct.validate_library()
@@ -302,7 +315,7 @@ def test_index_version_drift_fails(tmp_repo):
     ct = _load_ct_from(tmp_repo)
     idx = tmp_repo / "CONTRACT_INDEX.md"
     text = idx.read_text().replace(
-        "| `truth-and-evidence` | Truth and Evidence | 1.0.0 | canonical |",
+        "| `truth-and-evidence` | Truth and Evidence | 2.0.0 | canonical |",
         "| `truth-and-evidence` | Truth and Evidence | 9.9.9 | canonical |",
     )
     idx.write_text(text)
@@ -314,8 +327,8 @@ def test_index_status_drift_fails(tmp_repo):
     ct = _load_ct_from(tmp_repo)
     idx = tmp_repo / "CONTRACT_INDEX.md"
     text = idx.read_text().replace(
-        "| `truth-and-evidence` | Truth and Evidence | 1.0.0 | canonical |",
-        "| `truth-and-evidence` | Truth and Evidence | 1.0.0 | draft |",
+        "| `truth-and-evidence` | Truth and Evidence | 2.0.0 | canonical |",
+        "| `truth-and-evidence` | Truth and Evidence | 2.0.0 | draft |",
     )
     idx.write_text(text)
     errors = ct.validate_library()
@@ -335,18 +348,18 @@ def test_changelog_guard_flags_unrecorded_meaningful_change(tmp_repo):
     """A MINOR bump vs HEAD with no new [Unreleased] bullet fails validate;
     recording it clears the error. PATCH-only changes are exempt."""
     ct = _load_ct_from(tmp_repo)
-    t = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
-    text = t.read_text().replace("version: 1.0.0", "version: 1.1.0")
+    t = tmp_repo / "contracts" / "everyone" / "TRUTH_AND_EVIDENCE.md"
+    text = t.read_text().replace("version: 2.0.0", "version: 2.1.0")
     text = text.replace(
-        "<!-- contract-receipt: wren-loam-sail -->",
+        "<!-- contract-receipt: kestrel-flint-loom -->",
         "<!-- contract-receipt: basalt-quill-ember -->",
     )
     t.write_text(text)
     idx = tmp_repo / "CONTRACT_INDEX.md"
     idx.write_text(
         idx.read_text().replace(
-            "| `truth-and-evidence` | Truth and Evidence | 1.0.0 | canonical |",
-            "| `truth-and-evidence` | Truth and Evidence | 1.1.0 | canonical |",
+            "| `truth-and-evidence` | Truth and Evidence | 2.0.0 | canonical |",
+            "| `truth-and-evidence` | Truth and Evidence | 2.1.0 | canonical |",
         )
     )
     errors = ct.validate_library()
@@ -355,7 +368,7 @@ def test_changelog_guard_flags_unrecorded_meaningful_change(tmp_repo):
     cl.write_text(
         cl.read_text().replace(
             "## [Unreleased]\n",
-            "## [Unreleased]\n\n- truth-and-evidence 1.0.0 → 1.1.0 (a real new rule)\n",
+            "## [Unreleased]\n\n- truth-and-evidence 2.0.0 → 2.1.0 (a real new rule)\n",
         )
     )
     errors = ct.validate_library()
@@ -411,7 +424,7 @@ def test_hash_verification(tmp_repo):
     ct = _load_ct_from(tmp_repo)
     import hashlib
 
-    src = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
+    src = tmp_repo / "contracts" / "everyone" / "TRUTH_AND_EVIDENCE.md"
     sha = hashlib.sha256(src.read_text().encode()).hexdigest()
     lock = json.loads((tmp_repo / "contracts.lock.json").read_text())
     entry = [e for e in lock["contracts"] if e["id"] == "truth-and-evidence"][0]
@@ -431,7 +444,7 @@ def test_adoption_examples_valid(lib):
 def test_adoption_unknown_contract_rejected(tmp_repo):
     ct = _load_ct_from(tmp_repo)
     m = tmp_repo / "examples" / "vefr.adoption.yaml"
-    text = m.read_text().replace("- deterministic-first", "- not-a-real-contract")
+    text = m.read_text().replace("- testing-and-evidence", "- not-a-real-contract")
     m.write_text(text)
     errors = ct.validate_adoption_manifest(m)
     assert any("unknown contract" in e for e in errors), errors
@@ -461,7 +474,7 @@ def test_trigger_selection_works(lib):
     res = lib.resolve_set(
         m, task="add GitHub provider and update Project UI", task_tags=["external-api"]
     )
-    for cid in ("friendly-api-client", "provider-neutrality", "capability-first"):
+    for cid in ("calling-other-services", "capabilities-not-vendors"):
         assert cid in res["selected"], cid
 
 
@@ -470,8 +483,8 @@ def test_irrelevant_contracts_omitted(lib):
     res = lib.resolve_set(
         m, task="rename a variable in the deploy script", task_tags=["git"]
     )
-    assert "migraine-and-sensory-safety" not in res["selected"]
-    assert "guide-me" not in res["selected"]
+    assert "sensory-safety" not in res["selected"]
+    assert "depth-on-demand" not in res["selected"]
     # ALWAYS still applies
     for cid in m["always"]:
         assert cid in res["selected"]
@@ -496,9 +509,9 @@ def test_lock_generation_deterministic(lib):
 def test_bundle_changes_when_contract_changes(tmp_repo):
     ct = _load_ct_from(tmp_repo)
     before = ct.bundle_receipt(ct.load_lock())
-    target = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
+    target = tmp_repo / "contracts" / "everyone" / "TRUTH_AND_EVIDENCE.md"
     text = target.read_text()
-    target.write_text(text.replace("UNKNOWN", "UNKNOWN-AND-PROUD"))
+    target.write_text(text.replace("Keep honesty cheap.", "Keep honesty cheap, always."))
     # regenerate lock from mutated library
     lock2 = ct.build_lock()
     after = ct.bundle_receipt(lock2)
@@ -523,12 +536,13 @@ def test_good_attestation_passes_and_verifies(tmp_repo):
     # impact must cover every contract the resolver selects for this task
     impact = {
         "truth-and-evidence": "rotation verified by live check, not by report",
-        "explicit-state": "statuses use the shared vocabulary with observed_at",
-        "recovery-and-reversibility": "rollback documented before rotation",
-        "provenance-and-audit": "rotation journaled with actor and reason",
-        "least-privilege": "deploy token scoped to the deploy job only",
+        "status-and-state": "statuses use the shared vocabulary with observed_at",
+        "recovery-and-history": "rollback documented and journaled before rotation",
         "ask-for-help": "unknown provider semantics get asked, not guessed",
-        "assume-unknown": "challenge consumer compatibility with a strict-reader probe before rollout",
+        "secrets-and-data": "rotated credentials handled by reference, never in logs",
+        "public-and-private": "rotation notes keep private topology out of public places",
+        "testing-and-evidence": "health checks re-run after rotation with command and grade",
+        "observability": "dashboards show post-rotation state honestly, not cached green",
     }
     r = _attest(tmp_repo, manifest, task, impact, ct_path)
     assert "CONTRACT GATE: PASS" in r.stdout, r.stdout + r.stderr
@@ -564,16 +578,14 @@ def test_incorrect_receipt_fails_verification(tmp_repo):
         cid: "applied"
         for cid in (
             "truth-and-evidence",
-            "explicit-state",
-            "recovery-and-reversibility",
-            "provenance-and-audit",
+            "status-and-state",
+            "recovery-and-history",
             "ask-for-help",
-            "assume-unknown",
         )
     }
     r = _attest(tmp_repo, manifest, task, impact, ct_path)
     att = tmp_repo / "att.txt"
-    att.write_text(r.stdout.replace("wren-loam-sail", "wrong-wrong-wrong"))
+    att.write_text(r.stdout.replace("kestrel-flint-loom", "wrong-wrong-wrong"))
     v = run_ct(["verify-attestation", str(att)], cwd=str(tmp_repo), ct_path=ct_path)
     assert v.returncode != 0
     assert "wrong receipt" in v.stdout
@@ -587,11 +599,9 @@ def test_incorrect_hash_fails_verification(tmp_repo):
         cid: "applied"
         for cid in (
             "truth-and-evidence",
-            "explicit-state",
-            "recovery-and-reversibility",
-            "provenance-and-audit",
+            "status-and-state",
+            "recovery-and-history",
             "ask-for-help",
-            "assume-unknown",
         )
     }
     r = _attest(tmp_repo, manifest, task, impact, ct_path)
@@ -603,7 +613,7 @@ def test_incorrect_hash_fails_verification(tmp_repo):
     lock = tmp_repo / "contracts.lock.json"
     data = json.loads(lock.read_text())
     for e in data["contracts"]:
-        if e["id"] == "explicit-state":
+        if e["id"] == "status-and-state":
             e["sha256"] = "0" * 64
     lock.write_text(json.dumps(data))
     v = run_ct(["verify-attestation", str(att)], cwd=str(tmp_repo), ct_path=ct_path)
@@ -619,11 +629,9 @@ def test_omitted_mandatory_contract_fails_verification(tmp_repo):
         cid: "applied"
         for cid in (
             "truth-and-evidence",
-            "explicit-state",
-            "recovery-and-reversibility",
-            "provenance-and-audit",
+            "status-and-state",
+            "recovery-and-history",
             "ask-for-help",
-            "assume-unknown",
         )
     }
     r = _attest(tmp_repo, manifest, task, impact, ct_path)
@@ -634,7 +642,7 @@ def test_omitted_mandatory_contract_fails_verification(tmp_repo):
     out = []
     skip = 0
     for i, ln in enumerate(lines):
-        if ln.strip() == "explicit-state@1.0.0":
+        if ln.strip() == "status-and-state@2.0.0":
             skip = 3  # skip the id + receipt + status lines
             continue
         if skip > 0:
@@ -648,7 +656,7 @@ def test_omitted_mandatory_contract_fails_verification(tmp_repo):
         ct_path=ct_path,
     )
     assert v.returncode != 0
-    assert "mandatory contract 'explicit-state'" in v.stdout
+    assert "mandatory contract 'status-and-state'" in v.stdout
 
 
 def test_stale_attestation_fails_after_library_change(tmp_repo):
@@ -659,21 +667,19 @@ def test_stale_attestation_fails_after_library_change(tmp_repo):
         cid: "applied"
         for cid in (
             "truth-and-evidence",
-            "explicit-state",
-            "recovery-and-reversibility",
-            "provenance-and-audit",
+            "status-and-state",
+            "recovery-and-history",
             "ask-for-help",
-            "assume-unknown",
         )
     }
     r = _attest(tmp_repo, manifest, task, impact, ct_path)
     att = tmp_repo / "att.txt"
     att.write_text(r.stdout)
     # now change a contract and relock: the old attestation must fail
-    target = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
+    target = tmp_repo / "contracts" / "everyone" / "TRUTH_AND_EVIDENCE.md"
     target.write_text(
         target.read_text().replace(
-            "Make honesty cheap.", "Make honesty cheap and durable."
+            "Keep honesty cheap.", "Keep honesty cheap and durable."
         )
     )
     run_ct(["lock"], cwd=str(tmp_repo), ct_path=ct_path)
@@ -698,14 +704,14 @@ bundle:
   scope: resolved-set
 
 loaded:
-  truth-and-evidence@1.0.0
-    receipt: wren-loam-sail
+  truth-and-evidence@2.0.0
+    receipt: kestrel-flint-loom
     status: CONFLICT
 
 task-impact:
   - truth-and-evidence: evidence grades preserved in reports
 
-conflicts: truth-and-evidence conflicts with explicit-state on unknown-vs-healthy rendering
+conflicts: truth-and-evidence conflicts with status-and-state on unknown-vs-healthy rendering
 
 CONTRACT GATE: BLOCKED
 """
@@ -720,12 +726,13 @@ CONTRACT GATE: BLOCKED
 
 _IMPACT_OK = {
     "truth-and-evidence": "rotation verified by live check, not by report",
-    "explicit-state": "statuses use the shared vocabulary with observed_at",
-    "recovery-and-reversibility": "rollback documented before rotation",
-    "provenance-and-audit": "rotation journaled with actor and reason",
-    "least-privilege": "deploy token scoped to the deploy job only",
-    "ask-for-help": "unknown provider semantics asked, not guessed; WAITING_FOR_HELP over retry",
-    "assume-unknown": "probe compatibility before rollout; preserve UNKNOWN on inconclusive results",
+    "status-and-state": "statuses use the shared vocabulary with observed_at",
+    "recovery-and-history": "rollback documented and journaled before rotation",
+    "ask-for-help": "unknown provider semantics asked, not guessed; waiting-for-help over retry",
+    "secrets-and-data": "rotated credentials handled by reference, never in logs",
+    "public-and-private": "rotation notes keep private topology out of public places",
+    "testing-and-evidence": "health checks re-run after rotation with command and grade",
+    "observability": "dashboards show post-rotation state honestly, not cached green",
 }
 
 
@@ -794,20 +801,21 @@ def test_commitment_records_exact_bundle(tmp_repo):
     assert selected == {
         "floor",
         "truth-and-evidence",
-        "explicit-state",
-        "recovery-and-reversibility",
-        "provenance-and-audit",
-        "least-privilege",
+        "status-and-state",
+        "recovery-and-history",
         "ask-for-help",
-        "assume-unknown",
+        "secrets-and-data",
+        "public-and-private",
+        "testing-and-evidence",
+        "observability",
     }
     assert art["library_version"] == "0.10.0"  # semver from VERSION
     # no secrets by construction: artifact only carries ids/hashes/words
+    # (a contract id legitimately contains the word "secrets"; scan for
+    # secret-SHAPED values, matching the repo-wide privacy test)
     blob = json.dumps(art).lower()
-    for bad in ("token", "secret", "password", "api_key"):
-        assert bad not in blob or bad in (
-            "task",
-        )  # task text mentions credentials, fine
+    for bad in ("password", "api_key", "gh" + "p_", "AK" + "IA"):
+        assert bad not in blob
 
 
 def test_resolved_set_bundle_differs_by_scope(tmp_repo):
@@ -850,10 +858,10 @@ def test_stale_bundle_invalidates_commitment(tmp_repo):
         == 0
     )
     # change the library → relock → commitment must go STALE
-    target = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
+    target = tmp_repo / "contracts" / "everyone" / "TRUTH_AND_EVIDENCE.md"
     target.write_text(
         target.read_text().replace(
-            "Make honesty cheap.", "Make honesty cheap and durable."
+            "Keep honesty cheap.", "Keep honesty cheap and durable."
         )
     )
     run_ct(["lock"], cwd=str(tmp_repo), ct_path=ct_path)
@@ -875,11 +883,9 @@ def test_task_change_requires_reresolution(tmp_repo):
         cid: "applied"
         for cid in (
             "truth-and-evidence",
-            "explicit-state",
-            "recovery-and-reversibility",
-            "provenance-and-audit",
+            "status-and-state",
+            "recovery-and-history",
             "ask-for-help",
-            "assume-unknown",
         )
     }
     assert (
@@ -909,7 +915,7 @@ def test_task_change_requires_reresolution(tmp_repo):
     )
     assert s2.returncode != 0
     assert "additional contracts not in the commitment" in s2.stdout
-    assert "least-privilege" in s2.stdout
+    assert "secrets-and-data" in s2.stdout
 
 
 def test_worker_commitment_requires_parent_bundle(tmp_repo):
@@ -920,11 +926,9 @@ def test_worker_commitment_requires_parent_bundle(tmp_repo):
         cid: "applied"
         for cid in (
             "truth-and-evidence",
-            "explicit-state",
-            "recovery-and-reversibility",
-            "provenance-and-audit",
+            "status-and-state",
+            "recovery-and-history",
             "ask-for-help",
-            "assume-unknown",
         )
     }
     r = run_ct(
@@ -946,11 +950,9 @@ def test_worker_rejects_invented_parent_hash(tmp_repo):
         cid: "applied"
         for cid in (
             "truth-and-evidence",
-            "explicit-state",
-            "recovery-and-reversibility",
-            "provenance-and-audit",
+            "status-and-state",
+            "recovery-and-history",
             "ask-for-help",
-            "assume-unknown",
         )
     }
     fake = "f" * 64
@@ -991,16 +993,20 @@ def test_worker_commitment_inherits_real_parent(tmp_repo):
         cid: "applied"
         for cid in (
             "truth-and-evidence",
-            "explicit-state",
-            "recovery-and-reversibility",
-            "provenance-and-audit",
+            "status-and-state",
+            "recovery-and-history",
             "ask-for-help",
-            "assume-unknown",
         )
     }
-    impact["least-privilege"] = (
-        "inherited from parent: deploy token scoped to the deploy job"
-    )
+    # the parent's broad task pulled in four contracts the worker's narrow
+    # task does not resolve — each inherited one needs its own acknowledgement
+    for cid in (
+        "secrets-and-data",
+        "public-and-private",
+        "testing-and-evidence",
+        "observability",
+    ):
+        impact[cid] = f"inherited from parent: {cid} stays governed"
     r = run_ct(
         _commit_args(
             manifest, task, impact, extra=["--worker", "--parent-bundle", parent_sha]
@@ -1018,10 +1024,13 @@ def test_worker_commitment_inherits_real_parent(tmp_repo):
     # the parent's whole applicable set is preserved via the union
     for cid in (
         "truth-and-evidence",
-        "explicit-state",
-        "recovery-and-reversibility",
-        "provenance-and-audit",
-        "least-privilege",
+        "status-and-state",
+        "recovery-and-history",
+        "ask-for-help",
+        "secrets-and-data",
+        "public-and-private",
+        "testing-and-evidence",
+        "observability",
     ):
         assert cid in art["contracts"]
     # worker artifact verifies: parent recorded + no dropped constraints
@@ -1031,13 +1040,13 @@ def test_worker_commitment_inherits_real_parent(tmp_repo):
 
 def test_worker_attestation_covers_exact_union(tmp_repo):
     """Hardening: the contract set ATTESTED must be exactly the set COMMITTED.
-    A worker inherits a parent-only contract (least-privilege); that inherited
-    contract must appear in the worker's attestation, and the attested set
-    must equal the committed set — including the parent-only contract."""
+    A worker inherits parent-only contracts (secrets-and-data and the other
+    extras the broad task resolved); those inherited ones must appear in the
+    worker's attestation, and the attested set must equal the committed set."""
     ct = _load_ct_from(tmp_repo)
     ct_path = tmp_repo / "tools" / "contractctl" / "contractctl.py"
     manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
-    # orchestrator on a broad task resolves least-privilege (credentials trigger)
+    # orchestrator on a broad task resolves secrets-and-data (credentials trigger)
     orch_task = "rotate the deploy credentials and update the health checks"
     r0 = run_ct(
         _commit_args(manifest, orch_task, _IMPACT_OK, extra=["--role", "orchestrator"]),
@@ -1049,13 +1058,16 @@ def test_worker_attestation_covers_exact_union(tmp_repo):
         next((artifact_dir(tmp_repo)).glob("orchestrator-*.json")).read_text()
     )["bundle_sha256"]
 
-    # worker's own task does NOT trigger least-privilege...
+    # worker's own task does NOT trigger secrets-and-data...
     worker_task = "update a compose file"
     own = set(ct.resolve_set(ct.load_adoption(manifest), worker_task)["selected"])
-    assert "least-privilege" not in own
-    # ...so when it inherits, least-privilege is a parent-only addition
+    assert "secrets-and-data" not in own
+    # ...so when it inherits, secrets-and-data is a parent-only addition
     impact = {cid: "applied" for cid in own}
-    impact["least-privilege"] = "inherited: deploy token scoped to the deploy job"
+    impact["secrets-and-data"] = "inherited: credentials handled by reference"
+    impact["public-and-private"] = "inherited: private notes stay private"
+    impact["testing-and-evidence"] = "inherited: checks re-run with command and grade"
+    impact["observability"] = "inherited: dashboards stay honest about state"
     # capture the attestation the worker's commitment used
     atts = {}
     orig_make_attestation = ct.make_attestation
@@ -1090,7 +1102,7 @@ def test_worker_attestation_covers_exact_union(tmp_repo):
     finally:
         ct.make_attestation = orig_make_attestation
     # inherited parent-only contract IS in the attested set and committed set
-    assert "least-privilege" in atts["loaded"]
+    assert "secrets-and-data" in atts["loaded"]
     assert atts["loaded"] == set(w_art["contracts"]), "attested set != committed set"
     assert (
         atts["resolved_ids"] is not None and set(atts["resolved_ids"]) == atts["loaded"]
@@ -1109,8 +1121,8 @@ def test_worker_missing_impact_for_inherited_contract_blocks(tmp_repo):
     ct.write_session_artifact(orch_art)
     worker_task = "update a compose file"
     own = set(ct.resolve_set(ct.load_adoption(manifest), worker_task)["selected"])
-    assert "least-privilege" not in own
-    w_impact = {cid: "applied" for cid in own}  # NO impact for least-privilege
+    assert "secrets-and-data" not in own
+    w_impact = {cid: "applied" for cid in own}  # NO impacts for the inherited extras
     import pytest as _pq
 
     with _pq.raises(ct.CTError) as exc:
@@ -1122,7 +1134,8 @@ def test_worker_missing_impact_for_inherited_contract_blocks(tmp_repo):
             parent_bundle=orch_art["bundle_sha256"],
             worker=True,
         )
-    assert "least-privilege" in str(exc.value)
+    # every parent-only inherited contract is named in the block
+    assert "secrets-and-data" in str(exc.value)
 
 
 def test_worker_cannot_drop_parent_constraints(tmp_repo):
@@ -1132,23 +1145,21 @@ def test_worker_cannot_drop_parent_constraints(tmp_repo):
     ct = _load_ct_from(tmp_repo)
     ct_path = tmp_repo / "tools" / "contractctl" / "contractctl.py"
     manifest = tmp_repo / "examples" / "homelab.adoption.yaml"
-    # orchestrator commits on the credentials task (resolves least-privilege too)
+    # orchestrator commits on the credentials task (resolves secrets-and-data too)
     orch_task = "rotate the deploy credentials and update the health checks"
     orch_art, _ = ct.build_commitment(
         manifest, orch_task, dict(_IMPACT_OK), role="orchestrator"
     )
     ct.write_session_artifact(orch_art)
-    # a worker claims inheritance but does not acknowledge least-privilege's impact
-    worker_task = "update a compose file"  # does not itself trigger least-privilege
+    # a worker claims inheritance but does not acknowledge the inherited extras
+    worker_task = "update a compose file"  # does not itself trigger secrets-and-data
     w_impact = {
         cid: "applied"
         for cid in (
             "truth-and-evidence",
-            "explicit-state",
-            "recovery-and-reversibility",
-            "provenance-and-audit",
+            "status-and-state",
+            "recovery-and-history",
             "ask-for-help",
-            "assume-unknown",
         )
     }
     import pytest as _pq
@@ -1164,7 +1175,7 @@ def test_worker_cannot_drop_parent_constraints(tmp_repo):
         )
     assert "inherited contracts need task-impact" in str(
         exc.value
-    ) or "least-privilege" in str(exc.value)
+    ) or "secrets-and-data" in str(exc.value)
 
 
 def test_session_safe_keyed_artifacts(tmp_repo):
@@ -1177,11 +1188,9 @@ def test_session_safe_keyed_artifacts(tmp_repo):
         cid: "applied"
         for cid in (
             "truth-and-evidence",
-            "explicit-state",
-            "recovery-and-reversibility",
-            "provenance-and-audit",
+            "status-and-state",
+            "recovery-and-history",
             "ask-for-help",
-            "assume-unknown",
         )
     }
     assert (
@@ -1220,15 +1229,16 @@ def test_session_isolation_across_projects(tmp_repo, tmp_path):
     ct_path = tmp_repo / "tools" / "contractctl" / "contractctl.py"
     task = "identical integration task"
     role = "session"
+    # "integration" also library-triggers bounded-work + calling-other-services
     impact = {
         cid: "applied"
         for cid in (
             "truth-and-evidence",
-            "explicit-state",
-            "recovery-and-reversibility",
-            "provenance-and-audit",
+            "status-and-state",
+            "recovery-and-history",
             "ask-for-help",
-            "assume-unknown",
+            "bounded-work",
+            "calling-other-services",
         )
     }
     # two consumer projects, each with its own .contracts/ adoption manifest
@@ -1299,9 +1309,8 @@ def test_attestation_fails_closed_on_lock_drift(tmp_repo):
                 c: "x"
                 for c in (
                     "truth-and-evidence",
-                    "explicit-state",
-                    "recovery-and-reversibility",
-                    "provenance-and-audit",
+                    "status-and-state",
+                    "recovery-and-history",
                 )
             },
         )
@@ -1315,11 +1324,9 @@ def test_commit_impact_file(tmp_repo):
     impact_file = tmp_repo / "impact.txt"
     impact_file.write_text(
         "truth-and-evidence = unknown stays unknown\n"
-        "explicit-state = vocabulary with observed_at\n"
-        "recovery-and-reversibility = rollback documented\n"
-        "provenance-and-audit = journaled with actor\n"
+        "status-and-state = vocabulary with observed_at\n"
+        "recovery-and-history = rollback documented and journaled\n"
         "ask-for-help = provider semantics asked, not guessed\n"
-        "assume-unknown = probe consumer compatibility before rollout\n"
         "# comment line ignored\n"
     )
     r = run_ct(
@@ -1347,11 +1354,9 @@ def test_commitment_hash_mismatch_prevents_active(tmp_repo):
         cid: "applied"
         for cid in (
             "truth-and-evidence",
-            "explicit-state",
-            "recovery-and-reversibility",
-            "provenance-and-audit",
+            "status-and-state",
+            "recovery-and-history",
             "ask-for-help",
-            "assume-unknown",
         )
     }
     # corrupt the lockfile: a selected contract's hash no longer matches the file
@@ -1649,66 +1654,62 @@ def test_participant_help_routing_present():
 
 
 # --------------------------------------------------------------- participation and contribution
+# v1's participation-and-contribution / model-routing pages live in the v2
+# pack: everyone/WORKING_TOGETHER.md (the loop), work/AGENT_BEHAVIOR.md and
+# work/ORCHESTRATION.md (the mechanisms), integration/CAPABILITIES_NOT_VENDORS.md
+# (participant choice). Assertions keep the same RULES in v2 wording.
 
 
-def test_participation_contract_exists(lib):
+def _norm(lib, cid):
+    """Text of one contract, whitespace-normalized so line wrapping never
+    breaks a prose assertion."""
+    c = [
+        x for x in lib.load_library() if x["front_matter"]["contract_id"] == cid
+    ][0]
+    return " ".join(c["text"].split())
+
+
+def test_working_together_contract_exists(lib):
     c = [
         x
         for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "participation-and-contribution"
+        if x["front_matter"]["contract_id"] == "working-together"
     ]
     assert len(c) == 1
     c = c[0]
-    assert c["front_matter"]["version"] == "1.2.0"
+    assert c["front_matter"]["version"] == "2.0.0"
     assert c["front_matter"]["status"] == "canonical"
-    assert c["front_matter"]["layer"] == "core"
+    assert c["front_matter"]["layer"] == "everyone"
     assert c["receipts"], "receipt present"
 
 
-def test_participation_core_principles(lib):
-    c = [
-        x
-        for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "participation-and-contribution"
-    ][0]
-    t = c["text"]
-    # right-sized ladder, not biggest-model
-    assert "SMALLEST SUITABLE PARTICIPANT" in t
-    assert "EVERY TASK → BIGGEST MODEL AVAILABLE" in t  # the anti-shape
-    # no castes / dignity / honest refusal
-    assert "Small capability is not no capability" in t
-    assert "No model castes" in t
-    assert (
-        "UNSUPPORTED" in t
-        and "OUT_OF_SCOPE" in t
-        and "INSUFFICIENT_CONTEXT" in t
-        and "LOW_CONFIDENCE" in t
-    )
-    assert "designed for it to fail" in t
-    # partial contributions + failure preserves discoveries
-    assert "may still offer a smaller contribution" in t
-    assert "Failure does not erase useful contributions" in t
+def test_working_together_core_principles(lib):
+    t = _norm(lib, "working-together")
+    # right-sized ladder, not biggest-model (v2 renders it in plain words)
+    assert "the smallest suitable participant" in t
+    assert "never exclude a small participant from bounded work it does well" in t
     # right-sized not cheap-first (the explicitly forbidden misreading)
-    assert "Right-sized does not mean cheapest-first" in t
-    assert "Cheapness-as-ideology" in t
-    # cross-references to the mechanism contracts
-    for ref in [
-        "Model Routing",
-        "Orchestration",
-        "Ask for Help",
-        "Participation and Contribution rules 16",
-    ]:
-        pass  # refs checked loosely; the strong ones below
-    assert "see Model Routing" in t
-    assert "see Orchestration rule 5" in t
-    assert "see Ask for Help" in t
-    # pack vocabulary present
-    assert "good_task_shapes" in t and "avoid_task_shapes" in t
-    # no-token-burn
-    assert "No token burn for status" in t
+    assert "Right-sized, not cheapest-first" in t
+    assert "Never route by prestige, price, or benchmark" in t
+    # no castes / no prestige routing — the routing rule lives in agent-behavior
+    ab = _norm(lib, "agent-behavior")
+    assert "A model's size, price, or brand buys it no trust and no authority" in ab
+    assert "never excluded just for being small" in ab
+    assert "Bounded mechanical work goes to the cheaper, faster one" in ab
+    # honest refusal: v2 writes the answer codes lowercase in ask-for-help
+    ask = _norm(lib, "ask-for-help")
+    assert "Refusal is a valid answer" in ask
+    for word in ("unsupported", "insufficient-context", "low-confidence", "out-of-scope"):
+        assert word in ask
+    assert "task designed to fail" in _norm(lib, "orchestration")
+    # partial contributions + failure preserves discoveries
+    assert "Every contribution counts, including partial ones" in t
+    assert "A failed attempt keeps its discoveries" in t
+    # pack vocabulary: good task shapes are observed data in project-context
+    assert "good task shapes" in _norm(lib, "project-context")
 
 
-def test_participation_resolves_for_orchestration_tasks(lib):
+def test_working_together_resolves_for_orchestration_tasks(lib):
     manifest = lib._yaml_block_to_dict(
         (REPO / "examples" / "personal-world.adoption.yaml").read_text().split("\n")
     )
@@ -1717,84 +1718,85 @@ def test_participation_resolves_for_orchestration_tasks(lib):
         "decompose and delegate a batch of bounded implementation tasks to workers",
         ["agent"],
     )
-    assert "participation-and-contribution" in res["selected"]
+    assert "working-together" in res["selected"]
     res2 = lib.resolve_set(manifest, "write documentation", [])
-    assert "participation-and-contribution" in res2["selected"]
+    assert "working-together" in res2["selected"]
 
 
-def test_model_routing_integrates_participation(lib):
+def test_agent_behavior_integrates_working_together(lib):
     c = [
         x
         for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "model-routing"
+        if x["front_matter"]["contract_id"] == "agent-behavior"
     ][0]
-    t = c["text"]
-    assert c["front_matter"]["version"] == "1.2.0"
-    assert "sufficient for this bounded contribution" in t
-    assert "never excluded merely because a larger model exists" in t
-    assert "Participation and Contribution" in t
+    t = _norm(lib, "agent-behavior")
+    assert c["front_matter"]["version"] == "2.0.0"
+    assert "sufficient for this job" in t
+    assert "never chosen just for being cheap" in t
     assert (
-        "cedar-basalt-vellum" not in t and "sable-fathom-orbit" not in t
-    )  # old receipt rotated out
+        "cedar-basalt-vellum" not in c["text"] and "sable-fathom-orbit" not in c["text"]
+    )  # old receipts rotated out
 
 
-def test_orchestration_integrates_participation(lib):
+def test_orchestration_integrates_working_together(lib):
     c = [
         x
         for x in lib.load_library()
         if x["front_matter"]["contract_id"] == "orchestration"
     ][0]
-    t = c["text"]
-    assert c["front_matter"]["version"] == "1.4.0"
+    t = _norm(lib, "orchestration")
+    assert c["front_matter"]["version"] == "2.0.0"
     assert (
         "negotiation, not a decree" in t
-        and "contribute in the best way it genuinely can" in t
+        and "what shape of contribution fits" in t
     )
-    assert "designed for it to fail" in t
-    # renumbering is clean: rules 1..13 strictly increasing
+    assert "nobody gets a task designed to fail" in t
+    # renumbering is clean: rules 1..14 strictly increasing
     import re as _re
 
-    nums = [int(n) for n in _re.findall(r"^(\d+)\. ", t, _re.M)]
-    assert nums == sorted(nums) and nums[0] == 1 and nums[-1] == 13
+    nums = [int(n) for n in _re.findall(r"^(\d+)\. ", c["text"], _re.M)]
+    assert nums == sorted(nums) and nums[0] == 1 and nums[-1] == 14
 
 
-def test_ask_for_help_and_capability_first_integrate(lib):
+def test_ask_for_help_and_capabilities_not_vendors_integrate(lib):
     afh = [
         x
         for x in lib.load_library()
         if x["front_matter"]["contract_id"] == "ask-for-help"
     ][0]
-    assert afh["front_matter"]["version"] == "1.3.0"
-    assert "Honest refusal is always in-bounds" in afh["text"]
+    assert afh["front_matter"]["version"] == "2.0.0"
+    assert "Refusal is a valid answer" in afh["text"]
     cf = [
         x
         for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "capability-first"
+        if x["front_matter"]["contract_id"] == "capabilities-not-vendors"
     ][0]
-    assert cf["front_matter"]["version"] == "1.1.0"
-    assert "smallest suitable participant" in cf["text"]
+    assert cf["front_matter"]["version"] == "2.0.0"
+    t = " ".join(cf["text"].split())
+    assert "Pick participants — models, tools, services, people — by what the task needs" in t
+    # the right-sizing ladder itself lives on the collaboration page now
+    assert "the smallest suitable participant" in _norm(lib, "working-together")
 
 
-def test_packs_contract_integrates_participation(lib):
+def test_project_context_integrates_neighbors(lib):
     c = [
         x
         for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "project-context-and-participant-packs"
+        if x["front_matter"]["contract_id"] == "project-context"
     ][0]
-    assert c["front_matter"]["version"] == "1.2.0"
-    assert "Participation and Contribution rule 22" in c["text"]
+    assert c["front_matter"]["version"] == "2.0.0"
+    t = " ".join(c["text"].split())
+    # v1's numbered cross-ref ("Participation and Contribution rule 22") is
+    # gone; v2 links neighbours by id instead
+    assert "see ask-for-help" in t
+    assert "see the floor, rule 11" in t
 
 
-def test_play_nice_together_rule_10(lib):
-    c = [
-        x
-        for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "play-nice-together"
-    ][0]
-    t = c["text"]
-    assert "real capabilities" in t
-    assert "never from the price of the participant" in t
-    assert "Participation and Contribution" in t
+def test_working_together_sizing_rule(lib):
+    t = _norm(lib, "working-together")
+    assert "the smallest suitable participant" in t
+    assert "Never route by prestige, price, or benchmark" in t
+    assert "A failed attempt keeps its discoveries" in t
 
 
 def test_participant_schema_allows_capability_shape():
@@ -1823,122 +1825,85 @@ def test_participant_schema_allows_capability_shape():
 
 
 # --------------------------------------------------------------- mutual contribution
+# v1's mutual-contribution lives in working-together's agreement rules (v2
+# dropped the CODE_WORD negotiation vocabulary — same rules, plain words).
 
 
-def test_mutual_contribution_contract_exists(lib):
+def test_working_together_carries_collaboration_triggers(lib):
     c = [
         x
         for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "mutual-contribution"
+        if x["front_matter"]["contract_id"] == "working-together"
     ]
     assert len(c) == 1
     c = c[0]
-    assert c["front_matter"]["version"] == "1.1.0"
-    assert c["front_matter"]["layer"] == "core"
-    assert c["receipts"]
+    assert c["front_matter"]["version"] == "2.0.0"
+    assert c["front_matter"]["layer"] == "everyone"
+    assert c["receipts"] == ["spool-hazel-drift"]
+    trig = set(c["front_matter"]["triggers"])
+    assert {"contribution", "negotiate", "assign", "delegate"} <= trig
 
 
-def test_mutual_contribution_core_principles(lib):
-    t = [
-        x
-        for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "mutual-contribution"
-    ][0]["text"]
+def test_working_together_agreement_loop(lib):
+    t = _norm(lib, "working-together")
     # founding principle: capability defines possibility, not obligation
-    assert "Capability defines possibility, not obligation" in t
-    assert "agreed, not simply assigned" in t
-    # the agreement loop
-    assert "OFFER A CONTRIBUTION" in t
-    assert "ACCEPT / MODIFY / DECLINE / OFFER ALTERNATIVE" in t
-    # negotiation states, no penalty
-    assert "OFFER_ALTERNATIVE" in t and "NEEDS_CONTEXT" in t
-    assert "No penalty for boundaries" in t
-    assert "DECLINE` as disobedience" in t and "MODIFY` as failure" in t
+    assert "Capability is possibility, not obligation" in t
+    assert "Assignment is never automatically accepted" in t
+    # the agreement loop, in plain words
+    assert "accept, modify, decline, or counter-offer" in t
+    # negotiation carries no penalty for boundaries
+    assert "Declining, narrowing, or naming a limit is never misbehavior" in t
     # safety + usability as capability; both sides' constraints
     assert "safe enough" in t and "usable enough" in t
-    assert "shaped around both" in t
+    assert "both sides' constraints" in t
     # authority separation
-    assert "Agreement to contribute is not authorization" in t
-    assert (
-        "capability    participation    agreement    authorization    acceptance" in t
-    )
+    assert "Agreeing to help isn't authorization" in t
+    assert "capability, agreement, authority, and acceptance" in t
     # verification unchanged by friendliness
-    assert "Mutual agreement does not remove verification" in t
-    # shared closed vocabulary
-    assert (
-        "`OFFERED`, `ACCEPTED`, `MODIFIED`, `DECLINED`, `NEEDS_CONTEXT`, `NEEDS_HELP`, `COMPLETED`, `PARTIAL`"
-        in t
-    )
-    # partial participation / changing agreements
-    assert "change scope during work" in t
-    assert "not permanent identities" in t
-    # lightweight scope guard
-    assert (
-        "Do NOT build in this contract's name: a negotiation server, an assignment marketplace, an optimization engine, automatic labor scheduling, or a large new schema family"
-        in t
-    )
+    assert "verify to the consequence whatever the mood" in t
+    # partial participation: the wrong task shape gets renegotiated
+    assert "renegotiate it" in t
+    # the loop's name
+    assert "Offer, don't impose" in t
 
 
-def test_mutual_contribution_integrates(lib):
-    pn = [
+def test_working_together_integrates(lib):
+    wt = _norm(lib, "working-together")
+    c = [
         x
         for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "play-nice-together"
+        if x["front_matter"]["contract_id"] == "working-together"
     ][0]
-    assert pn["front_matter"]["version"] == "1.6.0"
-    assert (
-        "optimize for the contribution both sides can successfully sustain"
-        in pn["text"]
-    )
-    orc = [
-        x
-        for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "orchestration"
-    ][0]
-    assert "negotiation, not a decree" in orc["text"]
-    afh = [
-        x
-        for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "ask-for-help"
-    ][0]
-    assert "Scope negotiation uses the same machinery" in afh["text"]
-    mr = [
-        x
-        for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "model-routing"
-    ][0]
-    assert "never justifies assignment" in mr["text"]
-    packs = [
-        x
-        for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "project-context-and-participant-packs"
-    ][0]
-    assert "good_fits" in packs["text"] and "preferred_task_shape" in packs["text"]
-    part = [
-        x
-        for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "participation-and-contribution"
-    ][0]
-    assert "Mutual Contribution by Agreement" in part["text"]
+    assert c["front_matter"]["version"] == "2.0.0"
+    assert "the contribution both sides can sustain" in wt
+    orc = _norm(lib, "orchestration")
+    assert "negotiation, not a decree" in orc
+    # scope negotiation machinery moved onto the collaboration page (rule 6)
+    assert "renegotiate it" in wt
+    # capability never justifies assignment: v2 states it as rule 4
+    assert "Being able to do more is not a reason to ask for more" in wt
+    # observed-fit vocabulary lives in project-context as data, not schema
+    assert "good task shapes" in _norm(lib, "project-context")
     hr = [
         x
         for x in lib.load_library()
         if x["front_matter"]["contract_id"] == "human-reliability"
     ][0]
-    assert hr["front_matter"]["version"] == "1.2.0"
-    assert "not this way, not this much, not right now" in hr["text"]
+    assert hr["front_matter"]["version"] == "2.0.0"
+    t_hr = " ".join(hr["text"].split())
+    assert '"not this much"' in t_hr and '"not right now"' in t_hr
 
 
-def test_mutual_contribution_resolves_always(lib):
+def test_working_together_resolves_always(lib):
     manifest = lib._yaml_block_to_dict(
         (REPO / "examples" / "personal-world.adoption.yaml").read_text().split("\n")
     )
     res = lib.resolve_set(manifest, "write documentation", [])
-    assert "mutual-contribution" in res["selected"]
+    assert "working-together" in res["selected"]
     res2 = lib.resolve_set(
         manifest, "offer a bounded implementation task to a worker", ["agent"]
     )
-    assert "mutual-contribution" in res2["selected"]
+    assert "working-together" in res2["selected"]
 
 
 def test_mutual_contribution_no_schema_explosion():
@@ -1954,95 +1919,68 @@ def test_mutual_contribution_no_schema_explosion():
 
 
 # --------------------------------------------------------------- collaborative good faith
+# v1's collaborative-good-faith: the bare principle was lifted to the floor
+# (rule 17), the behavioral rules into working-together. The no-tone-policing
+# machinery guard moved from contract text to tool scope — schemas and source
+# stay verified by test_collaborative_good_faith_no_moderation_machinery below.
 
 
-def test_collaborative_good_faith_contract_exists(lib):
+def test_floor_carries_good_faith(lib):
     c = [
         x
         for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "collaborative-good-faith"
+        if x["front_matter"]["contract_id"] == "floor"
     ]
     assert len(c) == 1
     c = c[0]
     assert c["front_matter"]["version"] == "1.0.0"
-    assert c["front_matter"]["layer"] == "core"
-    assert c["receipts"]
+    assert c["front_matter"]["layer"] == "everyone"
+    assert c["receipts"] == ["honey-cell-lantern"]
+    t = " ".join(c["text"].split())
+    assert "Assume good faith" in t
+    assert "Critique the work, not the worker, and aim at a fix" in t
+    assert "Say when you disagree, and why" in t
 
 
-def test_collaborative_good_faith_core_principles(lib):
-    t = [
-        x
-        for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "collaborative-good-faith"
-    ][0]["text"]
-    # founding principles
-    assert "Be useful without being cruel" in t
-    assert "Critique the work without diminishing the participant" in t
-    assert "Do not create unnecessary interpersonal cleanup work" in t
-    # not nice-at-all-costs: the quadrant
-    assert "CLEAR + HONEST + RESPECTFUL + USEFUL" in t
-    assert "hostile honesty and dishonest politeness" in t
-    assert "Truth and kindness are not competing goals" in t
-    # criticize toward repair pattern
-    assert "WHAT I OBSERVED" in t and "WHAT I CAN HELP WITH" in t
-    # disagreement discipline
-    assert "Good-faith disagreement is a contribution" in t
-    assert "HEARD ≠ AGREED ≠ ADOPTED" in t
-    # no gotchas / status / gatekeeping
-    assert "No gotcha culture" in t
-    assert "No status games" in t
-    assert "No gatekeeping knowledge" in t
+def test_working_together_good_faith_rules(lib):
+    t = _norm(lib, "working-together")
+    # criticize toward repair, with an offer attached
+    assert "Criticize toward repair" in t
+    assert "what you can help with" in t
+    # disagreement discipline: contrary evidence is welcome, no penalty
+    assert 'Contrary evidence and "I disagree" carry no penalty' in t
+    assert "Being heard is not being adopted" in t
+    # no gotchas / no status games / no gatekeeping
+    assert "No gatekeeping, no gotchas" in t
+    assert "argue the claim, never status, identity, or price" in t
+    assert "Hand over context instead of demanding someone prove they belong" in t
     # boundaries and human voice
-    assert "does NOT require endless tolerance" in t
-    assert "Humans keep their own voice" in t
-    assert "Do not tone-police users" in t
-    # foreman normalizes disagreement
-    assert "integrates disagreement rather than forwarding conflict raw" in t
-    assert (
-        "never has to referee a model argument" in t or "referee agent arguments" in t
-    )
-    # no-politeness-police guard
-    assert (
-        "Do NOT build in its name: sentiment scoring, tone classifiers, civility points, automated punishment, social ranking, forced phrases, banned-word bureaucracies, or moderation infrastructure"
-        in t
-    )
+    assert "No one owes endless engagement with abuse" in t
+    assert "Humans keep their own voice; the system checks conduct, not tone" in t
+    # the coordinator normalizes disagreement before the human sees it
+    assert "Don't make the human referee" in t
+    assert "options, evidence, and a recommendation — not the heat" in t
+    # the cleanup-work lesson survives as named example anti-patterns
+    assert "wound to clean up" in t
+    assert "corrected without humiliation" in t
 
 
 def test_collaborative_good_faith_integrates(lib):
-    pn = [
+    wt = _norm(lib, "working-together")
+    c = [
         x
         for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "play-nice-together"
+        if x["front_matter"]["contract_id"] == "working-together"
     ][0]
-    assert pn["front_matter"]["version"] == "1.6.0"
-    assert "candid without being needlessly cruel" in pn["text"]
-    orc = [
-        x
-        for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "orchestration"
-    ][0]
-    assert (
-        "resolves the disagreement into a decision summary" in orc["text"]
-        or "decision summary" in orc["text"]
-    )
-    afh = [
-        x
-        for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "ask-for-help"
-    ][0]
-    assert "Asking must also feel safe" in afh["text"]
-    mc = [
-        x
-        for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "mutual-contribution"
-    ][0]
-    assert "social prerequisite" in mc["text"]
-    part = [
-        x
-        for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "participation-and-contribution"
-    ][0]
-    assert "Hearing a contribution is not agreeing with it" in part["text"]
+    assert c["front_matter"]["version"] == "2.0.0"
+    # candid without cruel: v2 carries it as a good/bad example pair
+    assert "corrected without humiliation" in wt
+    orc = _norm(lib, "orchestration")
+    assert "one decision: claims, evidence, tradeoff, recommendation" in orc
+    assert "information, not an argument to referee" in orc
+    floor = _norm(lib, "floor")
+    assert "Assume good faith" in floor
+    assert "Critique the work, not the worker" in floor
 
 
 def test_collaborative_good_faith_resolves_always(lib):
@@ -2050,7 +1988,8 @@ def test_collaborative_good_faith_resolves_always(lib):
         (REPO / "examples" / "personal-world.adoption.yaml").read_text().split("\n")
     )
     res = lib.resolve_set(manifest, "write documentation", [])
-    assert "collaborative-good-faith" in res["selected"]
+    assert "working-together" in res["selected"]
+    assert "floor" in res["selected"]
 
 
 def test_collaborative_good_faith_no_moderation_machinery():
@@ -2073,18 +2012,18 @@ def test_receipt_rotation_enforced_for_meaningful_changes(tmp_repo):
     """Git-history rule: a canonical contract whose version changed MINOR/MAJOR
     (meaningful) without rotating its receipt fails validation."""
     ct = _load_ct_from(tmp_repo)
-    # HEAD has play-nice-together @1.1.0 with the rotated receipt. Bump the
+    # HEAD has working-together @2.0.0 with the merged-pack receipt. Bump the
     # version MINOR again WITHOUT rotating the receipt -> violation.
-    target = tmp_repo / "contracts" / "core" / "PLAY_NICE_TOGETHER.md"
+    target = tmp_repo / "contracts" / "everyone" / "WORKING_TOGETHER.md"
     text = target.read_text()
-    assert "version: 1.6.0" in text
+    assert "version: 2.0.0" in text
     target.write_text(
-        text.replace("version: 1.6.0", "version: 1.7.0").replace(
-            "Make honesty cheap.", "Make honesty cheap and durable."
+        text.replace("version: 2.0.0", "version: 2.1.0").replace(
+            "A no is complete.", "A no is complete, full stop."
         )
     )
     errors = ct.check_receipt_rotation(ct.load_library())
-    assert any("receipt did not rotate" in e and "PLAY_NICE" in e for e in errors), (
+    assert any("receipt did not rotate" in e and "WORKING_TOGETHER" in e for e in errors), (
         errors
     )
 
@@ -2092,12 +2031,12 @@ def test_receipt_rotation_enforced_for_meaningful_changes(tmp_repo):
 def test_receipt_rotation_not_required_for_patch(tmp_repo):
     """PATCH-clarification content changes do not require receipt rotation."""
     ct = _load_ct_from(tmp_repo)
-    target = tmp_repo / "contracts" / "core" / "TRUTH_AND_EVIDENCE.md"
+    target = tmp_repo / "contracts" / "everyone" / "TRUTH_AND_EVIDENCE.md"
     text = target.read_text()
-    assert "version: 1.0.0" in text
+    assert "version: 2.0.0" in text
     target.write_text(
-        text.replace("version: 1.0.0", "version: 1.0.1").replace(
-            "Make honesty cheap.", "Make honesty cheap and durable."
+        text.replace("version: 2.0.0", "version: 2.0.1").replace(
+            "Keep honesty cheap.", "Keep honesty cheap and durable."
         )
     )
     errors = ct.check_receipt_rotation(ct.load_library())
@@ -2122,22 +2061,25 @@ def test_ask_for_help_contract_exists(lib):
         for x in lib.load_library()
         if x["front_matter"]["contract_id"] == "ask-for-help"
     ][0]
-    assert c["front_matter"]["layer"] == "core"
-    assert c["receipts"] == ["velvet-orchard-wren"]
-    for concept in ("NEEDS_HELP", "WAITING_FOR_HELP", "recommendation"):
+    assert c["front_matter"]["layer"] == "everyone"
+    assert c["receipts"] == ["moss-taper-reed"]
+    # v2 lifecycle words are lowercase, not CODE_WORDS
+    for concept in ("needs-help", "waiting-for-help", "recommendation"):
         assert concept in c["text"]
 
 
-def test_play_nice_references_ask_for_help(lib):
+def test_working_together_and_neighbors_cross_reference(lib):
+    """v1's prose pointers ("see Ask for Help") became real id links in v2."""
     c = [
         x
         for x in lib.load_library()
-        if x["front_matter"]["contract_id"] == "play-nice-together"
+        if x["front_matter"]["contract_id"] == "working-together"
     ][0]
-    assert "Ask for Help" in c["text"]
-    assert "Project Context and Participant Packs" in c["text"]
-    assert c["front_matter"]["version"] == "1.6.0"
-    assert c["receipts"] == ["compass-fern-harbor"]
+    assert "see the floor, rules 16 and 17" in _norm(lib, "working-together")
+    assert c["front_matter"]["version"] == "2.0.0"
+    assert c["receipts"] == ["spool-hazel-drift"]
+    assert "see ask-for-help" in _norm(lib, "orchestration")
+    assert "see ask-for-help" in _norm(lib, "project-context")
 
 
 GOOD_QUESTION = {
@@ -2300,16 +2242,16 @@ def test_offline_validation_works():
     assert "VALID" in r.stdout
 
 
-def test_cli_status():
+def test_cli_status(lib):
     r = run_ct(["status"])
     assert r.returncode == 0
-    assert "contracts: 68" in r.stdout
+    assert f"contracts: {len(lib.load_library())}" in r.stdout
 
 
 def test_cli_show():
     r = run_ct(["show", "truth-and-evidence"])
     assert r.returncode == 0
-    assert "contract-receipt: wren-loam-sail" in r.stdout
+    assert "contract-receipt: kestrel-flint-loom" in r.stdout
 
 
 def test_cli_list():
@@ -2430,7 +2372,7 @@ def test_onboard_json_output(lib):
     total = (
         len(data["high_priority"]) + len(data["applicable"]) + len(data["remaining"])
     )
-    assert total == 68
+    assert total == len(lib.load_library())
 
 
 def test_onboard_role_does_not_change_applicability(lib):
@@ -2448,7 +2390,7 @@ def test_onboard_role_does_not_change_applicability(lib):
             + len(data["applicable"])
             + len(data["remaining"])
         )
-        assert total == 68, f"role {role}: total {total} != 67"
+        assert total == len(lib.load_library()), f"role {role}: total {total}"
 
 
 def test_onboard_invalid_role():
@@ -2457,8 +2399,8 @@ def test_onboard_invalid_role():
     assert r.returncode != 0
 
 
-def test_onboard_play_nice_together_always_high(lib):
-    """play-nice-together is high-priority for every role."""
+def test_onboard_working_together_always_high(lib):
+    """working-together (v1 play-nice-together) is high-priority for every role."""
     import argparse, io, contextlib, json
 
     for role in ["orchestrator", "worker", "ui", "cli", "service", "human"]:
@@ -2468,8 +2410,8 @@ def test_onboard_play_nice_together_always_high(lib):
             lib.cmd_onboard(args)
         data = json.loads(buf.getvalue())
         ids = [c["id"] for c in data["high_priority"]]
-        assert "play-nice-together" in ids, (
-            f"role {role}: play-nice-together not in high_priority"
+        assert "working-together" in ids, (
+            f"role {role}: working-together not in high_priority"
         )
 
 
@@ -2506,7 +2448,7 @@ def test_index_write_repairs_column_drift(tmp_repo):
     idx = tmp_repo / "CONTRACT_INDEX.md"
     idx.write_text(
         idx.read_text().replace(
-            "| `truth-and-evidence` | Truth and Evidence | 1.0.0 | canonical |",
+            "| `truth-and-evidence` | Truth and Evidence | 2.0.0 | canonical |",
             "| `truth-and-evidence` | Truth and Evidence | 9.9.9 | canonical |",
         )
     )
@@ -2514,7 +2456,7 @@ def test_index_write_repairs_column_drift(tmp_repo):
     assert details and details[0][0] == "truth-and-evidence", details
     assert ct.cmd_index(argparse.Namespace(write=True)) == 0
     assert ct.index_drift_details(ct.load_library()) == []
-    assert "| 1.0.0 | canonical |" in idx.read_text().split("truth-and-evidence", 1)[1][:120]
+    assert "| 2.0.0 | canonical |" in idx.read_text().split("truth-and-evidence", 1)[1][:120]
 
 
 def test_index_write_refuses_when_otherwise_invalid(tmp_repo, capsys):
@@ -2522,8 +2464,8 @@ def test_index_write_refuses_when_otherwise_invalid(tmp_repo, capsys):
 
     ct = _load_ct_from(tmp_repo)
     # break a contract version to make the library invalid, then ask index to write
-    t = tmp_repo / "contracts" / "core" / "PROVENANCE_AND_AUDIT.md"
-    t.write_text(t.read_text().replace("version: 1.0.0", "version: banana"))
+    t = tmp_repo / "contracts" / "everyone" / "RECOVERY_AND_HISTORY.md"
+    t.write_text(t.read_text().replace("version: 2.0.0", "version: banana"))
     assert ct.cmd_index(argparse.Namespace(write=True)) == 1
     assert "unresolved errors" in capsys.readouterr().err
 
@@ -2558,9 +2500,9 @@ def test_onboard_includes_maintainer_role(tmp_repo):
     assert r.returncode == 0, r.stdout + r.stderr
     data = json.loads(r.stdout)
     ids = {c["id"] for c in data["high_priority"]}
-    assert "contract-attestation" in ids
-    assert "documentation-and-continuity" in ids
-    assert "deterministic-first" in ids
+    assert "contract-proof" in ids
+    assert "handoff-and-continuity" in ids
+    assert "testing-and-evidence" in ids
 
 
 # --------------------------------------------------------------- room contract
@@ -2578,10 +2520,10 @@ def _room_text(lib):
 
 def test_room_contract_exists(lib):
     c = _room_text(lib)
-    assert c["front_matter"]["version"] == "1.1.1"
+    assert c["front_matter"]["version"] == "2.0.0"
     assert c["front_matter"]["status"] == "canonical"
-    assert c["front_matter"]["layer"] == "interfaces"
-    assert c["receipts"] == ["lumen-quill-marsh"]
+    assert c["front_matter"]["layer"] == "surfaces"
+    assert c["receipts"] == ["thistle-bracken-sparrow"]
 
 
 def test_room_contract_declares_five_endpoints(lib):
@@ -2597,29 +2539,33 @@ def test_room_contract_declares_five_endpoints(lib):
 
 
 def test_room_contract_shapes_and_vocabulary(lib):
-    t = _room_text(lib)["text"]
-    # shape fields the front door depends on
+    t = " ".join(_room_text(lib)["text"].split())
+    # shape fields the front door depends on (v2 carries them in Machine notes)
     for field in (
-        '"freshness"',
-        '"lane"',
-        '"input_schema"',
-        '"default_autonomy"',
-        '"writes"',
-        '"changed"',
-        '"contract": "room/0"',
+        "freshness",
+        "lane",
+        "input_schema",
+        "default_autonomy",
+        "writes",
+        "changed",
+        "room/0",
     ):
         assert field in t, field
-    # closed vocabularies
-    assert "`healthy`, `degraded`, `unhealthy`, `unknown`" in t
-    assert "`personal`, `work`" in t
-    assert "`auto`, `check_in`, `ask_first`" in t
+    # closed vocabularies — v2 keeps the room/0 wire words and maps them
+    assert "`healthy`, `degraded`, `unhealthy`, or `unknown`" in t
+    assert "`unhealthy` means the shared `unavailable` or `needs_attention`" in t
+    assert "`lane` is `personal` or `work`" in t
+    assert "`auto`, `check_in`, or `ask_first`" in t
 
 
 def test_room_contract_idempotent_writes(lib):
-    t = _room_text(lib)["text"]
+    t = " ".join(_room_text(lib)["text"].split())
     assert "Idempotency-Key" in t
-    assert "MUST be idempotent" in t
-    assert "Idempotency" in t  # references the Idempotency contract
+    assert "is idempotent" in t
+    assert "never applies the change twice" in t
+    # every action call answers with a receipt (v1's separate Idempotency
+    # contract is now a rule inside room)
+    assert "Every action call returns a receipt" in t
 
 
 def test_room_contract_autonomy_floor_is_non_lowerable(lib):
@@ -2637,39 +2583,41 @@ def test_room_contract_autonomy_floor_is_non_lowerable(lib):
 
 
 def test_room_contract_honesty_and_unreachable(lib):
-    t = _room_text(lib)["text"]
-    assert "reports `unknown`" in t
-    assert "never `healthy`" in t
+    t = " ".join(_room_text(lib)["text"].split())
+    assert "says `unknown`, never `healthy`" in t
     assert "stale_after_s" in t
-    assert "MUST NOT render as current" in t
-    assert "render an unreachable room as unreachable" in t
+    assert "present the card as stale, never as current" in t
+    assert "renders an unreachable room as unreachable" in t
     assert "last-seen time" in t
 
 
 def test_room_contract_observed_at_is_item_time_not_request_time(lib):
-    # 1.1.1 PATCH clarification: observed_at is the underlying item's own time,
-    # never the time the room served the request.
+    # The ROOM 1.1.1 clarification survives as v2 rule 3: observed_at is the
+    # underlying item's own time, never the request time. (v2 compacted the
+    # 1.1.1 elaborations — consumer-comparison guidance now rides with the
+    # Machine-notes shapes and the stale-presentation rule below.)
     t = " ".join(_room_text(lib)["text"].split())
     assert "is the underlying item's own time" in t
-    assert "never the time the room served the request" in t
-    assert "may use the time it last observed the item" in t
+    assert "when the thing was created or last changed" in t
     assert "never the request time" in t
-    assert "Consumers MAY compare" in t
-    assert "person's last visit to say what changed" in t
+    assert "present the card as stale, never as current" in t
 
 
 def test_room_contract_auth_and_secrets(lib):
-    t = _room_text(lib)["text"]
-    assert "same-origin behind the front door's auth proxy" in t
+    t = " ".join(_room_text(lib)["text"].split())
+    assert "Links are same-origin paths" in t
     assert "scoped bearer tokens" in t
-    assert "No response may contain" in t
+    assert "never the human's session token" in t
+    assert "No response field ever carries a secret value" in t
 
 
 def test_room_contract_versioning(lib):
-    t = _room_text(lib)["text"]
+    t = " ".join(_room_text(lib)["text"].split())
     assert "path stays `/room`" in t
-    assert "Versioning and Compatibility" in t
-    assert "`contract` field in `GET /room`" in t
+    assert "never versions" in t
+    assert "the `contract` field does that" in t
+    assert "breaking change takes a new value and a migration path" in t
+    assert "an unknown value fails clearly rather than guessing" in t
 
 
 def test_room_schema_covers_five_response_shapes():
@@ -2720,7 +2668,7 @@ def _room_schema_defs():
 def _room_text_schema():
     """ROOM.md text, whitespace-normalized so line wrapping never breaks a
     prose assertion."""
-    raw = (REPO / "contracts" / "interfaces" / "ROOM.md").read_text(encoding="utf-8")
+    raw = (REPO / "contracts" / "surfaces" / "ROOM.md").read_text(encoding="utf-8")
     return " ".join(raw.split())
 
 
@@ -2805,9 +2753,9 @@ def test_room_card_tone_absent_is_treated_as_update():
     defs = _room_schema_defs()
     assert _room_shape_errors(defs, "card", _V1_CARD) == []
     t = _room_text_schema()
-    assert "treated as `update`" in t
-    assert "never crashes or drops the card" in t
-    assert "there is no critical, alert, or warning tone" in t
+    assert "Treat an unrecognized tone as `update`" in t
+    assert "never crash or drop the card" in t
+    assert "Urgency belongs in needs-you, not in cards" in t
 
 
 def test_room_card_tone_bad_value_rejected_by_schema_consumers_lenient():
@@ -2816,10 +2764,10 @@ def test_room_card_tone_bad_value_rejected_by_schema_consumers_lenient():
     errors = _room_shape_errors(defs, "card", {**_V1_CARD, "tone": "critical"})
     assert any("not in enum" in e for e in errors), errors
     # ...but consumers neither crash nor drop the card: they fall back to
-    # `update` and log the unrecognized value (documented in ROOM.md).
+    # `update` and log it (documented in ROOM.md).
     t = _room_text_schema()
-    assert "does not recognize" in t
-    assert "logs the unrecognized" in t
+    assert "Treat an unrecognized tone as `update`" in t
+    assert "and log it" in t
     # the task's urgency vocabulary must not be a card tone
     assert "critical" not in defs["card_tone"]["enum"]
     assert "alert" not in defs["card_tone"]["enum"]
@@ -2844,29 +2792,19 @@ def test_room_need_link_rejected(bad):
 
 def test_room_contract_documents_tone_link_and_independence_rule(lib):
     t = " ".join(_room_text(lib)["text"].split())
-    # tone semantics + UI tier names
-    assert "`good_news`, `update`, `when_ready`" in t
-    assert '"NEEDS YOU"' in t
-    assert '"GOOD NEWS"' in t
-    assert '"A SMALL UPDATE"' in t
-    assert '"WHEN YOU\'RE READY"' in t
+    # tone semantics
+    assert "`good_news`, `update`, or `when_ready`" in t
+    assert "a display hint, never priority" in t
     # link semantics
-    assert "opens the exact item" in t
-    assert "does not start with `//`" in t
-    assert "MUST reject any other value" in t
-    # the verbatim independence requirement (rule 15)
-    verbatim = (
-        "Worlds MUST support independently built, versioned, deployed, and "
-        "rolled-back rooms. Integrating a room MUST NOT require bundling its "
-        "source code into the Worlds build or redeploying unrelated "
-        "applications. Rooms MUST expose a versioned Play-Nice contract and be "
-        "registered through a runtime-discoverable manifest. Worlds MUST "
-        "validate compatibility before loading a room and preserve independent "
-        "repository ownership, release lifecycles, and owner approval gates. "
-        "Shared shell or contract changes MAY require coordinated releases when "
-        "compatibility cannot otherwise be maintained."
-    )
-    assert verbatim in t
+    assert "Links are same-origin paths" in t
+    assert "no scheme, not `//`" in t
+    assert "reject anything else rather than following it" in t
+    # independence: v2 moves the per-product deployment requirement out of
+    # the rules and delegates it — the contract says building/deploying/
+    # registering rooms independently is the product's spec (for Worlds: the
+    # Worlds product spec), "not a rule of this contract".
+    assert "not a rule of this contract" in t
+    assert "Worlds product spec" in t
 
 
 def test_floor_is_always_resolved():
