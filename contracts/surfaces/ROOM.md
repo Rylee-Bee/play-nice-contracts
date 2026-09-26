@@ -46,7 +46,8 @@ notes) or general API manners (api).
 5. `GET /room/needs-you` lists what a person must handle: the title, why
    it waits, and the action ids that resolve it. (MUST) A need that is a
    choice may list up to six short `choices`; the front door offers them
-   as buttons and sends the picked one as the action's input. (MAY)
+   as buttons and posts `{"need": <need id>, "choice": <the pick>}` to the
+   need's first action, which accepts that input. (MAY)
 6. Links are same-origin paths: starting with `/`, no scheme, not `//`.
    Consumers reject anything else rather than following it. (MUST)
 7. `GET /room/actions` lists actions with an input JSON Schema, whether

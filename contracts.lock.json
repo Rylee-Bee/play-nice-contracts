@@ -224,7 +224,7 @@
       "id": "room",
       "version": "2.1.0",
       "path": "contracts/surfaces/ROOM.md",
-      "sha256": "c049362d2242d96201d2f108ae082d744655988f780a0d923c9eda64e84b471b",
+      "sha256": "e7029cffc21f7b772c455d3bb0dda702e9552a21a83ef8d9584cfa2f204705ef",
       "receipt": "thatch-beacon-heron",
       "status": "canonical"
     },
