@@ -10,6 +10,7 @@ Layers, in resolution order of authority: universal safety/interoperability (cor
 
 | ID | Title | Ver | Status | Purpose |
 |---|---|---|---|---|
+| `floor` | The Play-Nice Floor | 1.0.0 | canonical | One page everyone reads first: say what's true, ask instead of guessing, get permission, leave a handoff |
 | `assume-unknown` | Assume UNKNOWN — Epistemic Humility Before Execution | 1.0.0 | canonical | Challenge unproven interpretations before execution; authority and evidence do not guarantee understanding |
 | `truth-and-evidence` | Truth and Evidence | 1.0.0 | canonical | Honesty cheaper than fabrication; UNKNOWN is valid; evidence over reports |
 | `stable-truth-replaceable-machinery` | Stable Truth, Replaceable Machinery | 1.0.0 | canonical | Truth survives tool replacement; derived ≠ canonical |

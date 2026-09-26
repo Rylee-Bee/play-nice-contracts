@@ -733,6 +733,9 @@ def resolve_set(
         else:
             errors.append(f"manifest references unknown contract '{cid}'")
 
+    # The floor applies to every participant, whatever the manifest says.
+    if "floor" in lib:
+        add("floor", "floor")
     for cid in manifest.get("always", []) or []:
         add(cid, "always")
 
@@ -820,6 +823,14 @@ I understand that "play nice together" means designing the boundary between
 systems as carefully as the systems themselves."""
 
 
+FLOOR_IMPACT = "the floor applies to all work; proof is the floor receipt line"
+
+
+def _with_floor_impact(task_impact: dict[str, str]) -> dict[str, str]:
+    """The floor needs no per-task sentence: add a standard one if absent."""
+    return {"floor": FLOOR_IMPACT, **(task_impact or {})}
+
+
 def make_attestation(
     manifest_path: Path,
     task: str,
@@ -835,6 +846,7 @@ def make_attestation(
     EXACTLY this set — no re-resolution. This is the governing invariant:
     the contract set attested must be exactly the contract set committed.
     """
+    task_impact = _with_floor_impact(task_impact)
     manifest = load_adoption(manifest_path)
     if resolved_ids is not None:
         # verify every id is real and known to the lockfile; no re-resolution
@@ -1156,6 +1168,7 @@ def build_commitment(
     must prevent the ACTIVE state: resolution errors, missing task-impact,
     conflicts, lock drift, or (for workers) an unverifiable parent bundle.
     """
+    task_impact = _with_floor_impact(task_impact)
     manifest = load_adoption(manifest_path)
     # freshness gate: runs BEFORE resolution — a require-current policy must
     # establish the authoritative remote revision before anything mutates.
