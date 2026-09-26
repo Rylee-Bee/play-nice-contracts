@@ -38,6 +38,16 @@ check result, so pair it with the badge if you want proof.
 <img src="https://raw.githubusercontent.com/Rylee-Bee/play-nice-contracts/main/assets/badge/sticker-hive.svg" width="120" alt="Play-Nice: joined the hive">
 ```
 
+## Floor stickers
+
+Four of the floor's rules as stickers, for when a project wants to say what
+it cares about.
+
+| | | | |
+|---|---|---|---|
+| <img src="sticker-asks.svg" width="120" alt="Play-Nice: asks instead of guessing"> | <img src="sticker-unknown.svg" width="120" alt="Play-Nice: unknown is a real answer"> | <img src="sticker-quiet.svg" width="120" alt="Play-Nice: quiet when fine"> | <img src="sticker-agents.svg" width="120" alt="Play-Nice: plays nice with agents"> |
+| asks instead of guessing (floor 2-3) | unknown is a real answer (floor 1) | quiet when fine (floor 15) | plays nice with agents |
+
 ## The bee on its own
 
 <img src="bee.svg" width="64" alt="The Play-Nice bee">
