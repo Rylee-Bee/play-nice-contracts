@@ -9,12 +9,24 @@ Subcommands:
   validate              validate the whole library (schemas, receipts, index)
   resolve               resolve the applicable contract set for a task
   lock                  generate contracts.lock.json (deterministic)
+  diff                  compare the contract set between two library revisions
+  scan                  scan a tree for banned public-boundary shapes
+  index                 report or repair CONTRACT_INDEX.md columns
+  init-adoption         write a starter adoption manifest
+  upgrade-check         am I current, what changed, what do I run next?
   attest                produce a CONTRACT_ATTESTATION v1 block
   verify-attestation    re-verify an attestation against the library
+  commit                activate the CONTRACT OPERATIONAL COMMITMENT artifact
+  session-status        ACTIVE / STALE / INACTIVE for a commitment
   adopt                 validate a project adoption manifest
+  init-project          scaffold a .project/ context folder
+  project               .project/ subcommands (validate)
+  participant           participant-pack subcommands (list, validate)
+  validate-question     validate a question / help-request artifact
+  onboard               guided reading plan for a role
+  status                library health summary (not this project's state)
   freshness             verify the authoritative remote revision (fail closed)
   sync                  refresh the adoption pin to the remote revision
-  status                one-line library health summary
 
 Run with --help or <subcommand> --help for details.
 """
@@ -22,10 +34,12 @@ Run with --help or <subcommand> --help for details.
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -83,9 +97,35 @@ class CTError(Exception):
     """A contractctl failure with a stable message."""
 
 
+class CTManifestMissing(CTError):
+    """No adoption manifest at the expected path: the folder has not adopted yet.
+
+    Carries the path so callers can print the fix-forward step in plain words.
+    """
+
+    def __init__(self, path):
+        self.path = Path(path)
+        super().__init__(
+            f"no adoption manifest at {path} — this folder has not adopted Play-Nice yet."
+        )
+
+
+def _suggested_project_name() -> str:
+    """A clean --project suggestion derived from the current directory name."""
+    name = re.sub(r"[^a-z0-9-]+", "-", Path.cwd().name.lower()).strip("-")
+    return name or "my-project"
+
+
+def print_missing_manifest_hint(err: CTManifestMissing, *, stream=None) -> None:
+    """Plain next step after a missing-manifest error, on the given stream."""
+    stream = stream or sys.stderr
+    print(f"  next: contractctl init-adoption --project {_suggested_project_name()}", file=stream)
+
+
 # ---------------------------------------------------------------- yaml subset
 # Minimal YAML front-matter parser for the shapes this library actually uses.
-# Supports: nested maps, lists of scalars, one level of list-of-maps, scalars.
+# Supports: nested maps, lists of scalars, one level of list-of-maps, scalars,
+# and empty flow collections (`{}` -> {}, `[]` -> []).
 
 
 def _parse_scalar(s: str):
@@ -99,6 +139,8 @@ def _parse_scalar(s: str):
         return "none"  # keep the literal; conflicts: none is meaningful
     if s.lower() in ("true", "false"):
         return s.lower() == "true"
+    if s.startswith("{") and s.endswith("}") and not s[1:-1].strip():
+        return {}  # empty flow mapping, not the string "{}"
     if s.startswith("[") and s.endswith("]"):
         inner = s[1:-1].strip()
         if not inner:
@@ -717,7 +759,7 @@ _RECEIPT_WORDS = (
 
 def load_adoption(manifest_path: Path) -> dict:
     if not manifest_path.is_file():
-        raise CTError(f"adoption manifest not found: {manifest_path}")
+        raise CTManifestMissing(manifest_path)
     text = manifest_path.read_text(encoding="utf-8")
     # strip front-matter delimiter style if present, else parse whole as yaml
     m = FM_RE.match(text)
@@ -763,7 +805,14 @@ def resolve_set(
     tags = set(task_tags or [])
     if task:
         tl = task.lower()
-        for surface, cids in (manifest.get("triggers", {}) or {}).items():
+        triggers = manifest.get("triggers", {}) or {}
+        if not isinstance(triggers, dict):
+            errors.append(
+                "manifest: 'triggers' must be a mapping of surface -> contract "
+                "list (write 'triggers:' for none, not a scalar value)"
+            )
+            triggers = {}
+        for surface, cids in triggers.items():
             surface_l = str(surface).lower()
             # surface matches if the tag was passed explicitly or appears in the task text
             if (
@@ -1880,15 +1929,22 @@ def validate_adoption_manifest(manifest_path: Path) -> list[str]:
     for cid in manifest.get("always", []) or []:
         if canonical_id(cid, lib) not in lib:
             errors.append(f"adoption: unknown contract in always: '{cid}'")
-    for surface, cids in (manifest.get("triggers", {}) or {}).items():
-        if not isinstance(cids, list):
-            errors.append(f"adoption: triggers.{surface} must be a list")
-            continue
-        for cid in cids:
-            if canonical_id(cid, lib) not in lib:
-                errors.append(
-                    f"adoption: unknown contract in triggers.{surface}: '{cid}'"
-                )
+    triggers = manifest.get("triggers", {}) or {}
+    if not isinstance(triggers, dict):
+        errors.append(
+            "adoption: 'triggers' must be a mapping of surface -> contract list; "
+            "for no triggers write 'triggers:' (empty), not a scalar value"
+        )
+    else:
+        for surface, cids in triggers.items():
+            if not isinstance(cids, list):
+                errors.append(f"adoption: triggers.{surface} must be a list")
+                continue
+            for cid in cids:
+                if canonical_id(cid, lib) not in lib:
+                    errors.append(
+                        f"adoption: unknown contract in triggers.{surface}: '{cid}'"
+                    )
     props = schema.get("properties", {})
     for key in manifest:
         if key not in props and schema.get("additionalProperties") is False:
@@ -2749,14 +2805,14 @@ schema: play-nice/adoption-v1
 project: {id}
 source:
   repository: Rylee-Bee/play-nice-contracts
-  revision: PIN-TO-ADOPTED-SHA
+  revision: {revision}
 
 always:
   - truth-and-evidence
   - explicit-state
   - ask-for-help
 
-triggers: {{}}
+triggers:
 
 notes: >-
   Start minimal; add trigger surfaces as the project grows.
@@ -2785,13 +2841,21 @@ def init_project(
     d.mkdir(parents=True, exist_ok=True)
     (d / "contracts").mkdir(exist_ok=True)
     (d / "participants").mkdir(exist_ok=True)
+    # pin the manifest to this library checkout's revision so the scaffolded
+    # adoption is valid on day one (an unpinned placeholder was a crash magnet)
+    revision = library_revision() or "0000000"
     for rel, template in PROJECT_INIT_FILES.items():
         p = d / rel
         if p.is_file():
             continue
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(
-            template.format(id=project_id, name=name, adoption_path=adoption_path),
+            template.format(
+                id=project_id,
+                name=name,
+                adoption_path=adoption_path,
+                revision=revision,
+            ),
             encoding="utf-8",
         )
         created.append(str(p))
@@ -2829,7 +2893,14 @@ def cmd_show(args) -> int:
         if c["front_matter"].get("contract_id") == want:
             print(c["text"], end="")
             return 0
-    print(f"unknown contract: {args.contract_id}", file=sys.stderr)
+    ids = sorted(c["front_matter"].get("contract_id", "") for c in lib)
+    print(
+        f"unknown contract: {args.contract_id} — run `contractctl list` to see all {len(lib)} ids",
+        file=sys.stderr,
+    )
+    close = difflib.get_close_matches(args.contract_id, ids, n=3)
+    if close:
+        print(f"  closest: {', '.join(close)}", file=sys.stderr)
     return 1
 
 
@@ -3054,13 +3125,24 @@ def cmd_resolve(args) -> int:
     manifest = (
         Path(args.manifest) if args.manifest else Path(".contracts/adoption.yaml")
     )
-    m = load_adoption(manifest)
+    try:
+        m = load_adoption(manifest)
+    except CTManifestMissing as e:
+        # fail closed, same as `freshness`: a task with no adopted contract
+        # set cannot be resolved, so exit 2 (not a generic error 1)
+        print(f"error: {e}", file=sys.stderr)
+        print_missing_manifest_hint(e)
+        return 2
     res = resolve_set(m, args.task, (args.tag or []))
     if res["errors"]:
         print("resolution errors:", file=sys.stderr)
         for e in res["errors"]:
             print(f"  - {e}", file=sys.stderr)
         return 1
+    if (args.tag or []) and not (m.get("triggers") or {}):
+        print(
+            f"note: no trigger surfaces defined in {manifest}; --tag had no effect"
+        )
     groups: dict[str, list[str]] = {}
     for cid, why in res["selected"].items():
         groups.setdefault(why, []).append(cid)
@@ -3091,7 +3173,8 @@ def cmd_attest(args) -> int:
         print()
         print("Next: activate the operational commitment before mutating work:")
         print(
-            "  contractctl commit --manifest <m> --task <task> --impact id=sentence ..."
+            f"  contractctl commit --manifest {manifest} --task {shlex.quote(args.task)} "
+            "--impact id=sentence ... (quote each value, or use --impact-file <file>)"
         )
     return 0 if "CONTRACT GATE: PASS" in str(out) else 2
 
@@ -3151,6 +3234,8 @@ def cmd_commit(args) -> int:
             f"CONTRACT GATE: BLOCKED\nCONTRACT COMMITMENT: INACTIVE\n\n{e}",
             file=sys.stderr,
         )
+        if isinstance(e, CTManifestMissing):
+            print_missing_manifest_hint(e)
         return 2
     out = (
         Path(args.output)
@@ -3302,10 +3387,21 @@ def cmd_verify_attestation(args) -> int:
 
 
 def cmd_adopt(args) -> int:
-    errors = validate_adoption_manifest(Path(args.manifest))
-    errors += check_stale_pin(Path(args.manifest))
+    mp = Path(args.manifest)
+    if not mp.is_file():
+        # report a missing manifest once (both checkers used to report it),
+        # and point at the command that creates it
+        print("ADOPTION INVALID — 1 problem")
+        print(
+            f"  - no adoption manifest at {mp} — this folder has not adopted Play-Nice yet."
+        )
+        print(f"  next: contractctl init-adoption --manifest {mp}")
+        return 1
+    errors = validate_adoption_manifest(mp) + check_stale_pin(mp)
+    errors = list(dict.fromkeys(errors))  # dedupe; a real problem, stated once
     if errors:
-        print(f"ADOPTION INVALID — {len(errors)} problem(s):")
+        noun = "problem" if len(errors) == 1 else "problems"
+        print(f"ADOPTION INVALID — {len(errors)} {noun}:")
         for e in errors:
             print(f"  - {e}")
         return 1
@@ -3429,6 +3525,10 @@ def cmd_onboard(args) -> int:
         return 1
 
     role = args.role
+    if role == "agent":
+        # 'agent' is an accepted alias for 'worker': same reading plan, and
+        # the role never grants or removes permissions either way.
+        role = "worker"
     keywords = ROLE_KEYWORDS.get(role, set())
     # The priority table predates the v2 pack merge; map old ids through
     # aliases.json so role lists name the contracts that actually exist.
@@ -3544,7 +3644,13 @@ def cmd_onboard(args) -> int:
     print("=== NEXT ===")
     print()
     print("  After reading, produce a CONTRACT ATTESTATION v1 block:")
-    print(f"    contractctl attest --task 'your task' --impact ...")
+    print(
+        "    contractctl attest --manifest .contracts/adoption.yaml "
+        "--task 'your task' --impact <id>=\"<one sentence>\""
+    )
+    print(
+        "    (quote each --impact value, or pass --impact-file <file> to avoid quoting)"
+    )
     print()
     print("  This tool prepares onboarding; you perform it.")
     print(
@@ -3555,15 +3661,36 @@ def cmd_onboard(args) -> int:
     return 0
 
 
+def _project_manifest_in_tree() -> Path | None:
+    """Adoption manifest of the CURRENT working tree, if this project adopted.
+
+    Both documented locations count: `.contracts/adoption.yaml` and the
+    `.project/contracts/adoption.yaml` written by init-project.
+    """
+    for cand in (
+        Path(".contracts") / "adoption.yaml",
+        Path(".project") / "contracts" / "adoption.yaml",
+    ):
+        if cand.is_file():
+            return cand
+    return None
+
+
 def cmd_status(_args) -> int:
     lib = load_library()
     errors = validate_library(lib)
     n_canon = sum(1 for c in lib if c["front_matter"].get("status") == "canonical")
     lock_ok = not verify_lock(lib) if LOCKFILE.is_file() else False
+    project_manifest = _project_manifest_in_tree()
+    if project_manifest is None:
+        # a green PASS here is the LIBRARY's health, not this project's state
+        print("LIBRARY HEALTH (the installed Play-Nice library — not this project):")
     print(f"contracts: {len(lib)} ({n_canon} canonical)")
     print(f"validate:  {'PASS' if not errors else 'FAIL (' + str(len(errors)) + ')'}")
     print(f"lockfile:  {'VERIFIED' if lock_ok else 'MISSING/DRIFTED'}")
     print(f"revision:  {library_revision()}")
+    if project_manifest is None:
+        print("this project: no adoption manifest — run contractctl init-adoption")
     return 0 if (not errors and lock_ok) else 1
 
 
@@ -3593,6 +3720,8 @@ def cmd_freshness(args) -> int:
         fr = check_freshness(manifest)
     except CTError as e:
         print(f"error: {e}", file=sys.stderr)
+        if isinstance(e, CTManifestMissing):
+            print_missing_manifest_hint(e)
         return 2
     if args.json_output:
         print(json.dumps({k: fr[k] for k in sorted(fr)}, sort_keys=True, indent=2))
@@ -3892,11 +4021,38 @@ def cmd_upgrade_check(args) -> int:
     return 1
 
 
+def _split_impact_value(argv_eff: list[str], extras: list[str]) -> str | None:
+    """Recover the likely full --impact value when the shell split it.
+
+    The signature of the mistake (`--impact id=some words`) is: an --impact
+    flag whose consumed value is a bare `id=word`, plus trailing non-flag
+    leftovers. Returns the reconstructed value, or None when the extras do
+    not look like a split --impact value.
+    """
+    if not extras or any(e.startswith("-") for e in extras):
+        return None
+    if "--impact" not in argv_eff:
+        return None
+    idx = max(i for i, tok in enumerate(argv_eff) if tok == "--impact")
+    if idx + 1 >= len(argv_eff):
+        return None
+    first = argv_eff[idx + 1]
+    if "=" not in first or " " in first or first.startswith("-"):
+        return None
+    return f"{first} {' '.join(extras)}"
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(
         prog="contractctl",
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    ap.add_argument(
+        "--version",
+        action="version",
+        version=f"contractctl {library_version()}",
+        help="print contractctl and library version, then exit",
     )
     sub = ap.add_subparsers(dest="command", required=True)
 
@@ -3911,9 +4067,20 @@ def main(argv=None) -> int:
     p.set_defaults(func=cmd_validate)
 
     p = sub.add_parser("resolve", help="resolve applicable contracts for a task")
-    p.add_argument("--manifest", default=".contracts/adoption.yaml")
-    p.add_argument("--task", default="")
-    p.add_argument("--tag", action="append", default=[])
+    p.add_argument(
+        "--manifest",
+        default=".contracts/adoption.yaml",
+        help="adoption manifest (default: .contracts/adoption.yaml)",
+    )
+    p.add_argument(
+        "--task", default="", help="task description matched against trigger surfaces"
+    )
+    p.add_argument(
+        "--tag",
+        action="append",
+        default=[],
+        help="explicit surface tags for trigger matching (repeatable)",
+    )
     p.set_defaults(func=cmd_resolve)
 
     p = sub.add_parser("lock", help="regenerate contracts.lock.json")
@@ -3958,7 +4125,11 @@ def main(argv=None) -> int:
     p = sub.add_parser(
         "init-adoption", help="write a starter adoption manifest (instead of copying an example)"
     )
-    p.add_argument("--manifest", default=".contracts/adoption.yaml")
+    p.add_argument(
+        "--manifest",
+        default=".contracts/adoption.yaml",
+        help="where to write the manifest (default: .contracts/adoption.yaml)",
+    )
     p.add_argument("--repository", default=None, help="defaults to this library's own source")
     p.add_argument("--revision", default=None, help="defaults to this checkout's revision")
     p.add_argument("--project", default=None, help="project name (default: current dir name)")
@@ -3973,24 +4144,32 @@ def main(argv=None) -> int:
         "upgrade-check",
         help="one answer: is my pin current, what changed, and what do I run next?",
     )
-    p.add_argument("--manifest", required=True)
+    p.add_argument("--manifest", required=True, help="adoption manifest to check")
     p.add_argument(
         "--json", action="store_true", dest="json_output", help="machine-readable JSON"
     )
     p.set_defaults(func=cmd_upgrade_check)
 
     p = sub.add_parser("attest", help="produce CONTRACT_ATTESTATION v1")
-    p.add_argument("--manifest", required=True)
-    p.add_argument("--task", required=True)
+    p.add_argument(
+        "--manifest", required=True, help="adoption manifest of this project"
+    )
+    p.add_argument(
+        "--task", required=True, help="the task being attested (one description)"
+    )
     p.add_argument(
         "--impact",
         action="append",
         default=[],
         metavar="ID=SENTENCE",
-        help="contract_id=sentence task-impact acknowledgement (repeatable)",
+        help="contract_id=sentence task-impact acknowledgement (repeatable); quote values with spaces",
     )
     p.add_argument("--impact-file", help="file of 'id = sentence' lines")
-    p.add_argument("--revision", default="")
+    p.add_argument(
+        "--revision",
+        default="",
+        help="library revision to attest against (default: this checkout's revision)",
+    )
     p.add_argument(
         "--tag",
         action="append",
@@ -4000,17 +4179,25 @@ def main(argv=None) -> int:
     p.set_defaults(func=cmd_attest)
 
     p = sub.add_parser("commit", help="activate CONTRACT OPERATIONAL COMMITMENT v1")
-    p.add_argument("--manifest", required=True)
-    p.add_argument("--task", required=True)
+    p.add_argument(
+        "--manifest", required=True, help="adoption manifest of this project"
+    )
+    p.add_argument(
+        "--task", required=True, help="the task being committed (one description)"
+    )
     p.add_argument(
         "--impact",
         action="append",
         default=[],
         metavar="ID=SENTENCE",
-        help="contract_id=sentence task-impact acknowledgement (repeatable)",
+        help="contract_id=sentence task-impact acknowledgement (repeatable); quote values with spaces",
     )
     p.add_argument("--impact-file", help="file of 'id = sentence' lines")
-    p.add_argument("--revision", default="")
+    p.add_argument(
+        "--revision",
+        default="",
+        help="library revision to commit against (default: this checkout's revision)",
+    )
     p.add_argument(
         "--tag",
         action="append",
@@ -4036,7 +4223,10 @@ def main(argv=None) -> int:
     p.add_argument(
         "--output",
         default=None,
-        help="where to write the session artifact (default: .contract-commitment.json in the library root)",
+        help=(
+            "where to write the session artifact (default: "
+            ".contracts/sessions/<role>-<task>.json next to the manifest)"
+        ),
     )
     p.add_argument(
         "--text-only",
@@ -4109,20 +4299,35 @@ def main(argv=None) -> int:
     p = sub.add_parser(
         "verify-attestation", help="verify an attestation against the library"
     )
-    p.add_argument("attestation")
-    p.add_argument("--manifest", default=None)
+    p.add_argument("attestation", help="path to the CONTRACT_ATTESTATION v1 artifact")
+    p.add_argument(
+        "--manifest",
+        default=None,
+        help="adoption manifest to verify the attestation against",
+    )
     p.set_defaults(func=cmd_verify_attestation)
 
     p = sub.add_parser("adopt", help="validate a project adoption manifest")
-    p.add_argument("--manifest", required=True)
+    p.add_argument(
+        "--manifest", required=True, help="adoption manifest to validate"
+    )
     p.set_defaults(func=cmd_adopt)
 
     p = sub.add_parser("onboard", help="guided onboarding plan for a role")
     p.add_argument(
         "--role",
         required=True,
-        choices=["orchestrator", "worker", "ui", "cli", "service", "human", "maintainer"],
-        help="participant role determining reading order and emphasis",
+        choices=[
+            "orchestrator",
+            "worker",
+            "agent",
+            "ui",
+            "cli",
+            "service",
+            "human",
+            "maintainer",
+        ],
+        help="participant role determining reading order and emphasis ('agent' is an alias for 'worker')",
     )
     p.add_argument(
         "--json",
@@ -4144,7 +4349,11 @@ def main(argv=None) -> int:
             "a require-current freshness policy."
         ),
     )
-    p.add_argument("--manifest", default=".contracts/adoption.yaml")
+    p.add_argument(
+        "--manifest",
+        default=".contracts/adoption.yaml",
+        help="adoption manifest whose pin to check (default: .contracts/adoption.yaml)",
+    )
     p.add_argument(
         "--json",
         action="store_true",
@@ -4162,14 +4371,43 @@ def main(argv=None) -> int:
             "review blocks and prints the review path instead."
         ),
     )
-    p.add_argument("--manifest", default=".contracts/adoption.yaml")
+    p.add_argument(
+        "--manifest",
+        default=".contracts/adoption.yaml",
+        help="adoption manifest whose pin to update (default: .contracts/adoption.yaml)",
+    )
     p.set_defaults(func=cmd_sync)
 
-    args = ap.parse_args(argv)
+    argv_eff = list(argv) if argv is not None else sys.argv[1:]
+    args, extras = ap.parse_known_args(argv_eff)
+    if extras:
+        # An unquoted --impact sentence gets split by the shell; argparse sees
+        # the first word as the value and the rest as garbage. Say that plainly
+        # instead of dumping argparse internals (exit 2, same as before).
+        value = (
+            _split_impact_value(argv_eff, extras)
+            if getattr(args, "command", None) in ("commit", "attest")
+            else None
+        )
+        if value is not None:
+            print(
+                "error: an --impact value contains spaces and was split by the shell.",
+                file=sys.stderr,
+            )
+            print(f'  quote it:  --impact "{value}"', file=sys.stderr)
+            print(
+                "  or avoid quoting entirely: --impact-file <file> "
+                "(one 'id = sentence' line per contract)",
+                file=sys.stderr,
+            )
+            return 2
+        ap.error(f"unrecognized arguments: {' '.join(extras)}")
     try:
         return args.func(args)
     except CTError as e:
         print(f"error: {e}", file=sys.stderr)
+        if isinstance(e, CTManifestMissing):
+            print_missing_manifest_hint(e)
         return 1
 
 
