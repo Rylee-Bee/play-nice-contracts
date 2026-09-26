@@ -1,6 +1,6 @@
 # Play-Nice
 
-[![Play-Nice](assets/badge/badge-current.svg)](contracts/everyone/FLOOR.md)
+[![Play-Nice](assets/badge/badge-current.svg)](assets/badge/README.md)
 
 **How people, AI agents, tools and websites work well together.** A short
 floor everyone follows, plus packs of rules for what you're building.
