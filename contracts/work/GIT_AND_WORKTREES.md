@@ -9,7 +9,7 @@ triggers: [git, branch, branches, worktree, checkout, commit, push, merge, rebas
 rationale: Branches and worktrees record who owns which work in flight, so parallel work stays safe and nothing real is deleted on a guess.
 ---
 
-<!-- contract-receipt: umber-reed-slate -->
+<!-- contract-receipt: tidy-bundle-heron -->
 
 # Git and Worktrees
 
