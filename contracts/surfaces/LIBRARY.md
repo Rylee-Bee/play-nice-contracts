@@ -1,15 +1,15 @@
 ---
 contract_id: library
 title: Library
-version: 1.0.0
+version: 1.1.0
 status: canonical
 layer: surfaces
 applies: [docs, apis, services, ui, integrations]
-triggers: [library, book, books, shelf, journal, explainer, teaching, glossary, words to know, under the hood, how it works]
+triggers: [library, book, books, shelf, journal, explainer, teaching, glossary, words to know, under the hood, how it works, tap to learn]
 rationale: Many apps can teach people how they work only if their books share one shape that a beginner and an expert can both read, and one home can gather them without rewriting them.
 ---
 
-<!-- contract-receipt: quill-shelf-meadow -->
+<!-- contract-receipt: lantern-glossary-tern -->
 
 # Library
 
@@ -65,6 +65,19 @@ books point to them).
    it was. (MUST)
 10. When a keeper's library changes, it may ping its home (see room,
     rule 15); the home reads it again rather than waiting. (MAY)
+11. **Tap to learn.** A library may carry one shared `glossary`: each term
+    with a one-sentence `plain` meaning, the keeper's own name for it
+    (`local`, e.g. VEFR's "Keep" for *commit*) and other spellings
+    (`also`). An *italic* word in a page that matches a term (by its key
+    or an `also`, ignoring case) is tappable: the home shows a small card
+    with the word, its plain meaning and "In <keeper>: <local>" when
+    there is one, closes it on request and returns focus to the word. An
+    italic word with no entry stays plain italic. Nothing shows until it
+    is asked for. (MAY; MUST as described when a glossary is present)
+12. A keeper with a glossary checks it: every italic term on its shelves
+    has an entry, or is on an explicit skip list of ordinary words. A
+    book's `words` page may be generated from the terms it uses, so the
+    two never drift. (SHOULD)
 
 ## Examples
 
@@ -74,6 +87,9 @@ books point to them).
   "Under the hood" names `require_step_up` and the 120-second rule.
 - Hive Works keeps a book on the same topic in a bee's voice. Worlds shows
   both, each under its keeper, and never blends them.
+- VEFR's book on saving says "each *commit* is a checkpoint". Tapping
+  *commit* shows "A saved snapshot of the project you can go back to"
+  and "In VEFR: Keep".
 - Bad: a book whose only explanation is in the technical page; a home
   that "tidies" two keepers' books into one.
 
@@ -99,10 +115,11 @@ GET /room/library -> {contract:"library/0", generated_at, keeper:{id,name,look?}
                       shelves:[{id,name,look?,cover?,blurb?}],
                       books:[{id,shelf,title,short,order?,cover?,source?,link?,updated_at?,
                               pages:[{kind:"plain"|"voice"|"words"|"technical",
-                                      text, voice?}]}]}
+                                      text, voice?}]}],
+                      glossary?:{"<term>":{plain, local?, also?:[...]}}}
 ```
 
-`text` is Markdown. `voice` names the speaker of a `voice` page. `cover`
+`text` is Markdown; `*italic*` marks a glossary term (rule 11). `voice` names the speaker of a `voice` page. Glossary keys are lower-case. `cover`
 is a picture name served at `/room/art/{cover}.webp`. `link` is a
 same-origin path on the keeper's site (room, rule 6). Looks in use:
 `scifi-storybook` (Worlds), `hive-corporate` (Hive Works), `vefr` (VEFR).

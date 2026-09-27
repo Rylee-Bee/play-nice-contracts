@@ -2838,7 +2838,7 @@ def test_room_extras_and_allow_text():
 def test_library_contract_and_schema():
     """library 1.0.0: layered books; only a plain first page is required."""
     text = (REPO / "contracts" / "surfaces" / "LIBRARY.md").read_text()
-    assert "version: 1.0.0" in text and "quill-shelf-meadow" in text
+    assert "version: 1.1.0" in text and "lantern-glossary-tern" in text
     schema = json.loads((REPO / "schema" / "library.schema.json").read_text())
     assert schema["properties"]["contract"]["const"] == "library/0"
     book = schema["$defs"]["book"]
@@ -2846,3 +2846,12 @@ def test_library_contract_and_schema():
     page = book["properties"]["pages"]["items"]
     assert page["properties"]["kind"]["enum"] == ["plain", "voice", "words", "technical"]
     assert book["properties"]["pages"]["prefixItems"][0]["properties"]["kind"]["const"] == "plain"
+
+
+def test_library_glossary_is_optional_and_shaped():
+    """library 1.1.0: tap to learn."""
+    schema = json.loads((REPO / "schema" / "library.schema.json").read_text())
+    g = schema["properties"]["glossary"]
+    assert "glossary" not in schema["required"]
+    assert g["additionalProperties"]["required"] == ["plain"]
+    assert set(g["additionalProperties"]["properties"]) == {"plain", "local", "also"}

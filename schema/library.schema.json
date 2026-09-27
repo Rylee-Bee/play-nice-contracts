@@ -39,6 +39,22 @@
       "type": "array",
       "maxItems": 1000,
       "items": { "$ref": "#/$defs/book" }
+    },
+    "glossary": {
+      "type": "object",
+      "description": "Tap to learn (rule 11): lower-case term -> its plain meaning, the keeper's own name, and other spellings.",
+      "maxProperties": 2000,
+      "propertyNames": { "type": "string", "pattern": "^[a-z0-9][a-z0-9 .'/+-]{0,59}$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["plain"],
+        "additionalProperties": false,
+        "properties": {
+          "plain": { "type": "string", "minLength": 1, "maxLength": 300 },
+          "local": { "type": "string", "maxLength": 80 },
+          "also": { "type": "array", "maxItems": 20, "items": { "type": "string", "minLength": 1, "maxLength": 60 } }
+        }
+      }
     }
   },
   "$defs": {

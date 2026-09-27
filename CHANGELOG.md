@@ -5,6 +5,10 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 ## [Unreleased]
 
 ### Added
+- `library` 1.1.0: tap to learn (from VEFR). A library may carry one shared
+  `glossary` (term -> `plain`, the keeper's own `local` name, `also`
+  spellings); an *italic* word matching a term is tappable and shows a small
+  card on demand. Keepers check that every italic term has an entry.
 - `library` 1.0.0 (new, surfaces pack): shelves of layered books (plain
   `short`, plain pages, the keeper's `voice`, `words` to know, `technical`
   under the hood), one keeper per library, and a home that gathers them
