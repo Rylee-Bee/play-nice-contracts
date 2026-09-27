@@ -120,6 +120,17 @@ def sync_repo(entry: dict, head: str, dry: bool) -> dict:
     pin = m.group(2)
     prs = robot_prs(repo)
 
+    # 0. Already current (someone pinned by hand, or a robot PR merged):
+    # any robot PR left open is no longer needed.
+    if head.startswith(pin) or pin.startswith(head[:len(pin)]):
+        for pr in prs:
+            report["actions"].append(f"close #{pr['number']} (already current)")
+            if not dry:
+                gh("pr", "close", str(pr["number"]), "-R", repo, "--comment",
+                   f"Already current at {head[:7]}; this pin PR isn't needed.")
+        report["status"] = "current"
+        return report
+
     # 1. Merge a green robot PR (it may be for `head` or older; only the newest matters).
     for pr in prs:
         if pr["headRefName"] != BRANCH_PREFIX + head[:7]:
@@ -136,10 +147,6 @@ def sync_repo(entry: dict, head: str, dry: bool) -> dict:
             return report
         report["actions"].append(f"#{pr['number']} waiting ({pr['mergeStateStatus'].lower()})")
         report["status"] = "waiting"
-        return report
-
-    if pin.startswith(head[:len(pin)]) or head.startswith(pin):
-        report["status"] = "current"
         return report
 
     # 2. Close superseded robot PRs, then open one for `head`.
