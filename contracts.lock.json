@@ -1,7 +1,7 @@
 {
   "schema": "play-nice/lock-v1",
   "generated_from": {
-    "contract_count": 40
+    "contract_count": 41
   },
   "contracts": [
     {
@@ -157,6 +157,14 @@
       "status": "canonical"
     },
     {
+      "id": "library",
+      "version": "1.0.0",
+      "path": "contracts/surfaces/LIBRARY.md",
+      "sha256": "15193a07a5209db11de3fe4849cb83cdf6efdc52557580c78ba7dcf321b3c0ad",
+      "receipt": "quill-shelf-meadow",
+      "status": "canonical"
+    },
+    {
       "id": "observability",
       "version": "2.0.0",
       "path": "contracts/work/OBSERVABILITY.md",
@@ -222,10 +230,10 @@
     },
     {
       "id": "room",
-      "version": "2.1.0",
+      "version": "2.2.0",
       "path": "contracts/surfaces/ROOM.md",
-      "sha256": "e7029cffc21f7b772c455d3bb0dda702e9552a21a83ef8d9584cfa2f204705ef",
-      "receipt": "thatch-beacon-heron",
+      "sha256": "fde29777f2c764b2a8b86519c9bd6774ca5a7693340e6ef5949d430a6457a741",
+      "receipt": "amber-comb-lantern",
       "status": "canonical"
     },
     {
