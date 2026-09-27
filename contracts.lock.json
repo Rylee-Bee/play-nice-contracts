@@ -126,10 +126,10 @@
     },
     {
       "id": "git-and-worktrees",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "path": "contracts/work/GIT_AND_WORKTREES.md",
-      "sha256": "d40747d521c13e2bf95215cf72e3824913932f3a1f878f8cc83d04d180a6d511",
-      "receipt": "umber-reed-slate",
+      "sha256": "de0651c25cd560e7f7f3f0bc8083cbec37b24ff8be87e4c9cc0dcf2431956c9d",
+      "receipt": "tidy-bundle-heron",
       "status": "canonical"
     },
     {
