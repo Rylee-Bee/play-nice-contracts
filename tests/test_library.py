@@ -2838,7 +2838,7 @@ def test_room_extras_and_allow_text():
 def test_library_contract_and_schema():
     """library 1.0.0: layered books; only a plain first page is required."""
     text = (REPO / "contracts" / "surfaces" / "LIBRARY.md").read_text()
-    assert "version: 1.1.0" in text and "lantern-glossary-tern" in text
+    assert "version: 1.2.0" in text and "compass-shelf-wren" in text
     schema = json.loads((REPO / "schema" / "library.schema.json").read_text())
     assert schema["properties"]["contract"]["const"] == "library/0"
     book = schema["$defs"]["book"]
@@ -2854,4 +2854,13 @@ def test_library_glossary_is_optional_and_shaped():
     g = schema["properties"]["glossary"]
     assert "glossary" not in schema["required"]
     assert g["additionalProperties"]["required"] == ["plain"]
-    assert set(g["additionalProperties"]["properties"]) == {"plain", "local", "also"}
+    assert {"plain", "local", "also"} <= set(g["additionalProperties"]["properties"])
+
+
+def test_library_one_book_per_idea_and_teach_fields():
+    """library 1.2.0: canonical book refs and teach-while-building fields."""
+    schema = json.loads((REPO / "schema" / "library.schema.json").read_text())
+    entry = schema["properties"]["glossary"]["additionalProperties"]["properties"]
+    assert {"book", "teach", "when"} <= set(entry)
+    shelf = schema["properties"]["shelves"]["items"]["properties"]
+    assert shelf["books"]["items"]["required"] == ["ref"]
