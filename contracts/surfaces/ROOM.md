@@ -1,7 +1,7 @@
 ---
 contract_id: room
 title: Room
-version: 2.1.0
+version: 2.2.0
 status: canonical
 layer: surfaces
 applies: [apis, services, ui, integrations]
@@ -9,7 +9,7 @@ triggers: [room, front door, descriptor, cards, needs-you, room actions]
 rationale: Many small independent backends can share one front door only if each serves the same few endpoints with the same honest shapes.
 ---
 
-<!-- contract-receipt: thatch-beacon-heron -->
+<!-- contract-receipt: amber-comb-lantern -->
 
 # Room
 
@@ -27,8 +27,11 @@ notes) or general API manners (api).
 
 ## Rules
 
-1. A room serves exactly five endpoints; the path stays `/room` and
-   never versions — the `contract` field does that. (MUST)
+1. A room serves five required endpoints; the path stays `/room` and
+   never versions — the `contract` field does that. (MUST) A room may
+   also serve optional extras, each listed by name in the descriptor's
+   `offers` and served under `/room/<extra>`; a front door uses only the
+   extras a room lists (rule 15). (MAY)
 2. `GET /room` is the descriptor: its name, icon, own code version and
    commit, an `updated_at` time, and a status limited to `healthy`,
    `degraded`, `unhealthy`, or `unknown`. These are the room/0 wire
@@ -47,7 +50,10 @@ notes) or general API manners (api).
    it waits, and the action ids that resolve it. (MUST) A need that is a
    choice may list up to six short `choices`; the front door offers them
    as buttons and posts `{"need": <need id>, "choice": <the pick>}` to the
-   need's first action, which accepts that input. (MAY)
+   need's first action, which accepts that input. (MAY) A need with
+   `allow_text: true` also takes an answer in the person's own words,
+   posted as `{"need": <need id>, "text": <their words>}` the same way.
+   (MAY)
 6. Links are same-origin paths: starting with `/`, no scheme, not `//`.
    Consumers reject anything else rather than following it. (MUST)
 7. `GET /room/actions` lists actions with an input JSON Schema, whether
@@ -76,6 +82,15 @@ notes) or general API manners (api).
     Compatible additions keep the value; a breaking change takes a new
     value and a migration path; an unknown value fails clearly rather
     than guessing. (MUST)
+15. The optional extras are: `views` (`GET /room/views/{name}[/{item}]`,
+    read-only JSON the room chooses), `art` (`GET /room/art/{name}.webp`,
+    pictures only, which a front door passes through only after checking
+    they are WebP) and `library` (`GET /room/library`, the room's shelves
+    in the [library](LIBRARY.md) contract). Extras are read-only and never
+    carry a secret. A room whose data changed may ping its front door with
+    no content (Worlds: `POST /api/rooms/{id}/changed`); a ping only makes
+    the front door read again, so it is never trusted for anything else.
+    (MAY)
 
 ## Examples
 
@@ -110,10 +125,14 @@ deploys.
 ```text
 GET  /room              -> {contract,id,name,icon,version,commit,status,updated_at}
                            + voice? (display hint for captioning, never a claim about a person)
+                           + offers? ["views"|"art"|"library"]
 GET  /room/cards        -> [{id,title,body,link,lane,tone?,freshness:{observed_at,stale_after_s}}]
-GET  /room/needs-you    -> [{id,title,why,actions,choices?,link?,created_at}]
+GET  /room/needs-you    -> [{id,title,why,actions,choices?,allow_text?,link?,created_at}]
 GET  /room/actions      -> [{id,label,input_schema,default_autonomy,writes}]
 POST /room/actions/{id} -> {action_id,ok,summary,changed,at}   header: Idempotency-Key
+GET  /room/views/{name}[/{item}] -> JSON        (extra: views)
+GET  /room/art/{name}.webp       -> image/webp  (extra: art)
+GET  /room/library               -> library/0   (extra: library)
 ```
 
 `lane` is `personal` or `work`; times are RFC 3339; descriptor `status`
