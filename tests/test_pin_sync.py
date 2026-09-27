@@ -93,3 +93,22 @@ def test_a_green_follow_along_pr_merges_without_admin(monkeypatch):
     r = ps.sync_repo({"repo": "O/r", "manifest": "m.yaml"}, head, dry=False)
     merge = [c for c in calls if c[:2] == ("pr", "merge")]
     assert r["status"] == "merged" and merge and "--admin" not in merge[0]
+
+
+def test_robot_prs_close_when_already_current(monkeypatch):
+    calls = []
+    head = "d4ed803325dd59e9de62b822c8143aa6a41c5a6c"
+    import base64
+    monkeypatch.setattr(ps, "api", lambda path, method="GET", body=None: {"default_branch": "main"} if path == "repos/O/r"
+                        else {"content": base64.b64encode(f"  revision: {head}\n".encode()).decode(), "sha": "x"})
+
+    def fake_gh(*args, input_=None):
+        calls.append(args)
+        if args[:2] == ("pr", "list"):
+            return json.dumps([{"number": 5, "headRefName": "play-nice/pin-" + head[:7], "mergeable": "MERGEABLE",
+                                "mergeStateStatus": "CLEAN", "statusCheckRollup": [], "title": "x (pin robot)"}])
+        return ""
+    monkeypatch.setattr(ps, "gh", fake_gh)
+    r = ps.sync_repo({"repo": "O/r", "manifest": "m.yaml"}, head, dry=False)
+    assert r["status"] == "current" and [c for c in calls if c[:2] == ("pr", "close")]
+    assert not [c for c in calls if c[:2] == ("pr", "merge")]
