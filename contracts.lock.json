@@ -158,10 +158,10 @@
     },
     {
       "id": "library",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "path": "contracts/surfaces/LIBRARY.md",
-      "sha256": "15193a07a5209db11de3fe4849cb83cdf6efdc52557580c78ba7dcf321b3c0ad",
-      "receipt": "quill-shelf-meadow",
+      "sha256": "be253765a4e090044a8eb3c048825f40159b5917551f929fbcdfe8865efb34e1",
+      "receipt": "lantern-glossary-tern",
       "status": "canonical"
     },
     {
