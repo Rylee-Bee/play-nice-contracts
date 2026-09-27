@@ -2520,10 +2520,10 @@ def _room_text(lib):
 
 def test_room_contract_exists(lib):
     c = _room_text(lib)
-    assert c["front_matter"]["version"] == "2.1.0"
+    assert c["front_matter"]["version"] == "2.2.0"
     assert c["front_matter"]["status"] == "canonical"
     assert c["front_matter"]["layer"] == "surfaces"
-    assert c["receipts"] == ["thatch-beacon-heron"]
+    assert c["receipts"] == ["amber-comb-lantern"]
 
 
 def test_room_need_may_offer_choices():
@@ -2822,3 +2822,27 @@ def test_floor_is_always_resolved():
     r = run_ct(["resolve", "--task", "a task that matches nothing else"])
     assert r.returncode == 0, r.stderr
     assert "floor" in r.stdout
+
+
+def test_room_extras_and_allow_text():
+    """ROOM 2.2.0: optional extras listed in `offers`; a need may allow words."""
+    schema = json.loads((REPO / "schema" / "room.schema.json").read_text())
+    room = schema["$defs"]["room"]
+    assert "offers" not in room["required"]
+    assert set(room["properties"]["offers"]["items"]["enum"]) == {"views", "art", "library"}
+    need = schema["$defs"]["need"]
+    assert need["properties"]["allow_text"]["type"] == "boolean"
+    assert "allow_text" not in need["required"]
+
+
+def test_library_contract_and_schema():
+    """library 1.0.0: layered books; only a plain first page is required."""
+    text = (REPO / "contracts" / "surfaces" / "LIBRARY.md").read_text()
+    assert "version: 1.0.0" in text and "quill-shelf-meadow" in text
+    schema = json.loads((REPO / "schema" / "library.schema.json").read_text())
+    assert schema["properties"]["contract"]["const"] == "library/0"
+    book = schema["$defs"]["book"]
+    assert set(book["required"]) == {"id", "shelf", "title", "short", "pages"}
+    page = book["properties"]["pages"]["items"]
+    assert page["properties"]["kind"]["enum"] == ["plain", "voice", "words", "technical"]
+    assert book["properties"]["pages"]["prefixItems"][0]["properties"]["kind"]["const"] == "plain"

@@ -5,6 +5,17 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 ## [Unreleased]
 
 ### Added
+- `library` 1.0.0 (new, surfaces pack): shelves of layered books (plain
+  `short`, plain pages, the keeper's `voice`, `words` to know, `technical`
+  under the hood), one keeper per library, and a home that gathers them
+  side by side without merging. `look` and `cover` are display hints.
+  Served at `GET /room/library`; schema `schema/library.schema.json`.
+  First keepers: Worlds, Hive Works; VEFR next.
+- `room` 2.2.0: a room may serve optional extras it lists in the
+  descriptor's `offers` (`views`, `art`, `library`), and ping its front
+  door when its data changes (content-free, only triggers a re-read). A
+  need may set `allow_text` to take an answer in the person's own words
+  (`{need, text}`). Rule 1 now says "five required endpoints".
 - `room` 2.1.0: a need may carry up to six `choices` (optional), so a front
   door can offer a decision as buttons (first user: Hive Works). The
   Machine notes now say `unhealthy`, matching rule 2 and the schema.
