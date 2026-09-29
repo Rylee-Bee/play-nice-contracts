@@ -1,7 +1,7 @@
 ---
 contract_id: library
 title: Library
-version: 1.1.0
+version: 1.2.0
 status: canonical
 layer: surfaces
 applies: [docs, apis, services, ui, integrations]
@@ -9,7 +9,7 @@ triggers: [library, book, books, shelf, journal, explainer, teaching, glossary, 
 rationale: Many apps can teach people how they work only if their books share one shape that a beginner and an expert can both read, and one home can gather them without rewriting them.
 ---
 
-<!-- contract-receipt: lantern-glossary-tern -->
+<!-- contract-receipt: compass-shelf-wren -->
 
 # Library
 
@@ -78,6 +78,27 @@ books point to them).
     has an entry, or is on an explicit skip list of ordinary words. A
     book's `words` page may be generated from the terms it uses, so the
     two never drift. (SHOULD)
+13. **One book per idea.** An idea has one canonical book, kept once. The
+    home keeps concept books on its own shelf (Worlds: "Words for what you
+    make"). A glossary entry may point at that book with
+    `book: "<keeper>:<book id>"` instead of copying it, and keeps its own
+    `local` word. A shelf may hold another keeper's book by reference,
+    `{ref: "<keeper>:<book id>"}`, and the home shows the canonical book
+    in that shelf's look. Copying a canonical book is a bug. (SHOULD)
+14. **Teach while building.** A glossary entry may carry `teach` (a group
+    name) and `when` (one sentence describing the shape of what a person
+    makes that embodies it). An assistant may offer the term *after* the
+    person has made the thing: once, briefly, dismissibly, as an ignorable
+    glow (never a popup), and never while they are typing. Tone is
+    recognition, never correction ("You just used a design pattern
+    called gating."). The stages are first ("There's a name for that"),
+    again ("You've seen this idea before", with where it was first met),
+    and familiar (no offer; the word is simply tappable). Familiarity is
+    the person's own record, kept at their home, holding only a concept id
+    and a few words. Concept ids are `slug(term)`. The person picks one
+    mode for everywhere: teach me as I build, occasional tips, or plain
+    words. Silence is always better than a wrong lesson. (MAY; MUST as
+    described when offered)
 
 ## Examples
 
@@ -116,7 +137,8 @@ GET /room/library -> {contract:"library/0", generated_at, keeper:{id,name,look?}
                       books:[{id,shelf,title,short,order?,cover?,source?,link?,updated_at?,
                               pages:[{kind:"plain"|"voice"|"words"|"technical",
                                       text, voice?}]}],
-                      glossary?:{"<term>":{plain, local?, also?:[...]}}}
+                      glossary?:{"<term>":{plain, local?, also?:[...], book?, teach?, when?}}}
+shelves[].books?: [{ref: "<keeper>:<book id>"}]   (shelving another keeper's book by reference)
 ```
 
 `text` is Markdown; `*italic*` marks a glossary term (rule 11). `voice` names the speaker of a `voice` page. Glossary keys are lower-case. `cover`

@@ -5,6 +5,11 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 ## [Unreleased]
 
 ### Added
+- `library` 1.2.0: one book per idea (glossary `book: "keeper:id"`, shelves
+  hold other keepers' books by `ref`, never copies) and teach while building
+  (glossary `teach` and `when`; the first / again / familiar stages; one mode
+  per person; a glow, never a popup; silence over a wrong lesson). From
+  Book Girl, live in VEFR (Fróði) and Worlds' learning memory.
 - `library` 1.1.0: tap to learn (from VEFR). A library may carry one shared
   `glossary` (term -> `plain`, the keeper's own `local` name, `also`
   spellings); an *italic* word matching a term is tappable and shows a small
