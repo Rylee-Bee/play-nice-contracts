@@ -5,6 +5,10 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 ## [Unreleased]
 
 ### Added
+- `git-and-worktrees` 2.1.0: size a pull request to one feature or fix, not
+  one edit. Bundle a fix, its test and its docs into one PR and add
+  follow-ups to the open PR, because every PR runs every check twice and
+  often builds an image. Update a branch from main only when needed to merge.
 - `library` 1.2.0: one book per idea (glossary `book: "keeper:id"`, shelves
   hold other keepers' books by `ref`, never copies) and teach while building
   (glossary `teach` and `when`; the first / again / familiar stages; one mode

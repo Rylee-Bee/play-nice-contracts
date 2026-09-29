@@ -1,15 +1,15 @@
 ---
 contract_id: git-and-worktrees
 title: Git and Worktrees
-version: 2.0.0
+version: 2.1.0
 status: canonical
 layer: work
 applies: [agents, humans, tools, automation]
-triggers: [git, branch, branches, worktree, checkout, commit, push, merge, rebase, stash, cleanup, prune, delete branch]
+triggers: [git, branch, branches, worktree, checkout, commit, push, merge, rebase, stash, cleanup, prune, delete branch, pull request, pr, ci]
 rationale: Branches and worktrees record who owns which work in flight, so parallel work stays safe and nothing real is deleted on a guess.
 ---
 
-<!-- contract-receipt: umber-reed-slate -->
+<!-- contract-receipt: tidy-bundle-heron -->
 
 # Git and Worktrees
 
@@ -51,6 +51,12 @@ floor (rule 6); here is the git-specific shape of that.
    signatures.
 9. In-flight work stays enumerable: current branches, worktrees, and
    their owners can be listed in one command or one status file.
+10. Size a pull request to one feature or fix, not one edit. Bundle
+    small related changes (a fix, its test, its docs) into one PR, and
+    add follow-ups to the open PR instead of opening another. Every PR
+    runs every check, then again on merge, and often builds and ships
+    an image: five tiny PRs cost five times what one does. Update a
+    branch from main only when it's needed to merge.
 
 ## Examples
 
@@ -60,6 +66,8 @@ floor (rule 6); here is the git-specific shape of that.
   its own checkout, never seeing each other's partial state.
 - Bad: `git add -A`, then discovering the commit contains another
   agent's half-finished work.
+- Bad: a screen change, its test and its docs as three PRs an hour
+  apart: three full check runs, three merges, three image builds.
 
 ## Why
 
@@ -76,3 +84,4 @@ parallel work safe without everyone having to remember the hazard.
 - `git add -A` does not appear in shared-context workflows.
 - Branch/worktree ownership is visible in one command or file.
 - History was never rewritten by an agent without named authority.
+- Each open PR is one feature or fix, with its tests and docs inside it.
