@@ -31,7 +31,14 @@
           "name": { "type": "string", "minLength": 1, "maxLength": 120 },
           "blurb": { "type": "string", "maxLength": 300 },
           "look": { "$ref": "#/$defs/look" },
-          "cover": { "$ref": "#/$defs/picture" }
+          "cover": { "$ref": "#/$defs/picture" },
+          "books": {
+            "type": "array",
+            "maxItems": 200,
+            "description": "Books shelved by reference (rule 13): another keeper's canonical book, shown in this shelf's look.",
+            "items": { "type": "object", "required": ["ref"], "additionalProperties": false,
+                       "properties": { "ref": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}:[a-z0-9][a-z0-9-]{0,63}$" } } }
+          }
         }
       }
     },
@@ -52,7 +59,10 @@
         "properties": {
           "plain": { "type": "string", "minLength": 1, "maxLength": 300 },
           "local": { "type": "string", "maxLength": 80 },
-          "also": { "type": "array", "maxItems": 20, "items": { "type": "string", "minLength": 1, "maxLength": 60 } }
+          "also": { "type": "array", "maxItems": 20, "items": { "type": "string", "minLength": 1, "maxLength": 60 } },
+          "book": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}:[a-z0-9][a-z0-9-]{0,63}$", "description": "The canonical book for this idea, as keeper:book-id (rule 13)." },
+          "teach": { "type": "string", "maxLength": 40, "description": "Teach while building: the idea's group (rule 14)." },
+          "when": { "type": "string", "maxLength": 200, "description": "One sentence: the shape of what a person makes that embodies it (rule 14)." }
         }
       }
     }

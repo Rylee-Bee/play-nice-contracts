@@ -158,10 +158,10 @@
     },
     {
       "id": "library",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "path": "contracts/surfaces/LIBRARY.md",
-      "sha256": "be253765a4e090044a8eb3c048825f40159b5917551f929fbcdfe8865efb34e1",
-      "receipt": "lantern-glossary-tern",
+      "sha256": "287bd4b8db5f7c3adb2a9ec12fb06b89271173273906cd6a35cf27802cad1fe0",
+      "receipt": "compass-shelf-wren",
       "status": "canonical"
     },
     {
