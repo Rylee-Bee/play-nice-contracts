@@ -33,6 +33,14 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
   door can offer a decision as buttons (first user: Hive Works). The
   Machine notes now say `unhealthy`, matching rule 2 and the schema.
 
+### Changed
+- Agent governance: `AGENTS.md` stays the short v2 signpost (maintainer rules
+  live in `docs/MAINTAINING.md`, not repeated). `docs/MAINTAINING.md` fixes three
+  broken relative links and describes the CI matrix plus the single `library`
+  gate job. New `.claude/settings.json` denies reads of `.venv/`, caches and
+  the binary `data/content.db`; `.gitignore` ignores `CLAUDE.local.md` and
+  `.claude/settings.local.json`.
+
 ## [2.0.0] - 2026-09-26
 
 Play-Nice v2 (decision: `docs/decisions/2026-09-26-play-nice-v2.md`).
