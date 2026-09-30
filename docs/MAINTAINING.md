@@ -67,7 +67,7 @@ playnice reconcile --repo ~/code/your-repo    # clean up merged work, refresh pi
 - **Deterministic, no live network.** Tests run against local bare remotes and a fake `gh` (`PLAY_NICE_GH`); nothing in the pipeline requires the network.
 - Exit codes: `0` ok · `1` usage/internal · `2` fail-closed · `3` agent failed · `4` needs help (human attention, safely deferred).
 
-Full reference: [`docs/PLAYNICE.md`](docs/PLAYNICE.md) · config schema: [`schema/global-playnice.schema.json`](schema/global-playnice.schema.json) · examples: [`examples/global-playnice.yaml`](examples/global-playnice.yaml).
+Full reference: [`docs/PLAYNICE.md`](PLAYNICE.md) · config schema: [`schema/global-playnice.schema.json`](../schema/global-playnice.schema.json) · examples: [`examples/global-playnice.yaml`](../examples/global-playnice.yaml).
 
 ## Versioning
 
@@ -93,7 +93,7 @@ This repository is **public**. It is published sanitize-first: no credentials, p
 
 ## CI / branch protection
 
-CI (`.github/workflows/ci.yml`) runs on every push and PR. The job is named **`library`** and runs: workflow-YAML self-validation, `contractctl validate`, byte-identical lock determinism, the full test suite, and the secret/private-material scan.
+CI (`.github/workflows/ci.yml`) runs on every push and PR. The `library` job runs once per Python version (3.10–3.12): commit identity guard, workflow-YAML self-validation, `contractctl validate`, byte-identical lock determinism, the full test suite, and the secret/private-material scan. A separate gate job, also named **`library`**, passes only when every matrix run passed; that single name is what branch protection requires.
 
 `main` branch protection is **configured** (verified live):
 
