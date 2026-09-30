@@ -26,5 +26,6 @@ short version:
   paths (write `~`), or personal details. Commit emails must be GitHub
   noreply or `.invalid`.
 - Work on a branch and open a PR. Rylee approves and merges; never push
-  `main`. Licensing and identity files (`LICENSE`, `TRADEMARKS.md`,
-  `SECURITY.md`, `CONTRIBUTING.md`, `.github/CODEOWNERS`) need her review.
+  `main`. Licensing and identity files (`LICENSE`, `contracts/LICENSE.md`,
+  `docs/LICENSE.md`, `TRADEMARKS.md`, `SECURITY.md`, `CONTRIBUTING.md`,
+  `.github/CODEOWNERS`) need her review.
