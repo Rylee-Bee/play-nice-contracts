@@ -13,3 +13,7 @@ examples/.contracts/
 data/content.db
 **/data/content.db
 uv.lock
+
+# Personal agent overrides; may hold local paths (public repo).
+CLAUDE.local.md
+.claude/settings.local.json
