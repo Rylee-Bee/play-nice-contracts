@@ -34,9 +34,8 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
   Machine notes now say `unhealthy`, matching rule 2 and the schema.
 
 ### Changed
-- Agent governance: `AGENTS.md` keeps the consumer signpost and adds a short
-  maintainer checklist (`./tools/check.sh`, lock-with-contract, stdlib-only,
-  changelog, public-repo hygiene, PR flow). `docs/MAINTAINING.md` fixes three
+- Agent governance: `AGENTS.md` stays the short v2 signpost (maintainer rules
+  live in `docs/MAINTAINING.md`, not repeated). `docs/MAINTAINING.md` fixes three
   broken relative links and describes the CI matrix plus the single `library`
   gate job. New `.claude/settings.json` denies reads of `.venv/`, caches and
   the binary `data/content.db`; `.gitignore` ignores `CLAUDE.local.md` and
