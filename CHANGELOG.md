@@ -5,6 +5,11 @@ All notable changes to the play-nice-contracts library. Per-contract semver: PAT
 ## [Unreleased]
 
 ### Added
+- `status-and-state` 2.1.0: `failed` joins the shared status words, meaning
+  a finished operation that did not succeed (the reason goes in a field, not
+  a new word). The list is noted as two kinds of word, health and progress.
+  One test (`tests/test_status_words.py`) keeps the lists in the floor, the
+  quick reference and this contract equal to the schema enum.
 - `git-and-worktrees` 2.1.0: size a pull request to one feature or fix, not
   one edit. Bundle a fix, its test and its docs into one PR and add
   follow-ups to the open PR, because every PR runs every check twice and

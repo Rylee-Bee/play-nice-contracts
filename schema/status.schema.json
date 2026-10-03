@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "play-nice/status-v1",
   "title": "Play-Nice Shared Status Vocabulary",
-  "description": "Closed semantic vocabulary for system state. Projects map provider-specific states into this vocabulary so every surface (CLI, API, UI, agents) speaks the same truth. Distinctions that matter: unavailable != not_configured; unknown != healthy; stale != current; implemented != verified; running != correct.",
+  "description": "Closed semantic vocabulary for system state. Projects map provider-specific states into this vocabulary so every surface (CLI, API, UI, agents) speaks the same truth. Distinctions that matter: unavailable != not_configured; unknown != healthy; stale != current; implemented != verified; running != correct; failed != unavailable. Words are of two kinds: health (healthy, warning, needs_attention, degraded, unavailable, not_configured, disabled, stale, unknown) describes how a thing is now; progress (working, waiting, blocked, deferred, partial, complete, failed) describes how an operation is going.",
   "type": "string",
   "enum": [
     "healthy",
@@ -19,7 +19,8 @@
     "blocked",
     "deferred",
     "partial",
-    "complete"
+    "complete",
+    "failed"
   ],
   "$comment": "Machine vocabulary. A human UI may render any of these as plain language (e.g. healthy -> 'Everything looks good.') but must never collapse distinct states into one another.",
   "$defs": {
@@ -38,7 +39,8 @@
       "blocked": "cannot proceed without a decision or dependency",
       "deferred": "intentionally postponed, with a record of why",
       "partial": "some of a multi-part thing is true (e.g. migration parity)",
-      "complete": "finished, with verification"
+      "complete": "finished, with verification",
+      "failed": "a finished operation that did not succeed; the reason goes in a separate field, not in a new word"
     }
   }
 }

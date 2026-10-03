@@ -43,7 +43,7 @@ this floor.
    "Tested" is not "deployed", and "deployed" is not "works for people".
 8. **Use the shared status words**: healthy, warning, needs_attention,
    degraded, unavailable, not_configured, disabled, stale, unknown, working,
-   waiting, blocked, deferred, partial, complete. Nothing checked means
+   waiting, blocked, deferred, partial, complete, failed. Nothing checked means
    unknown, not healthy.
 9. **Stopping is success when it's right.** Done, not worth more, needs a
    person, sources disagree, or the next step adds risk: stop and say which.

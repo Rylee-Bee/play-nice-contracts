@@ -1,7 +1,7 @@
 ---
 contract_id: status-and-state
 title: Status and State
-version: 2.0.0
+version: 2.1.0
 status: canonical
 layer: everyone
 applies: [ui, api, cli, agents, services, tools, automation]
@@ -9,7 +9,7 @@ triggers: [status, state, error, failure, health, dashboard, monitoring, degrada
 rationale: One shared status vocabulary and honest errors let people and machines tell broken from not-set-up from not-checked without guessing.
 ---
 
-<!-- contract-receipt: sedge-harbor-porch -->
+<!-- contract-receipt: tidal-quill-meadow -->
 
 # Status and State
 
@@ -28,11 +28,15 @@ evidence (see truth-and-evidence) or undo paths (see recovery-and-history).
 
 1. **Use the shared words, only these:** healthy, warning, needs_attention,
    degraded, unavailable, not_configured, disabled, stale, unknown,
-   working, waiting, blocked, deferred, partial, complete. The schema is
+   working, waiting, blocked, deferred, partial, complete, failed. The schema is
    the source (schema/status.schema.json); map provider states into these
-   at your boundary. (MUST)
+   at your boundary. The list holds two kinds of word: health words say how
+   a thing is now (healthy through unknown), progress words say how an
+   operation is going (working through failed). A failure's reason goes in
+   a field next to the word, not in a new word. (MUST)
 2. **Keep the distinctions.** unavailable ≠ not_configured; unknown ≠
-   healthy; stale ≠ current; disabled ≠ failed; working ≠ complete. Never
+   healthy; stale ≠ current; disabled ≠ failed; unavailable ≠ failed (unavailable: cannot be reached
+   now; failed: an operation that ended without succeeding); working ≠ complete. Never
    collapse two words into one screen state. (MUST)
 3. **Every state names its age and source.** A status carries when it was
    observed and where from; data too old to trust shows as stale, not as
