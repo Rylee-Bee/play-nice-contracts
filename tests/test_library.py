@@ -269,7 +269,7 @@ def test_duplicate_receipt_fails(tmp_repo):
     target = tmp_repo / "contracts" / "everyone" / "WORKING_TOGETHER.md"
     text = target.read_text()
     # give WORKING_TOGETHER the same receipt as STATUS_AND_STATE
-    text = text.replace("spool-hazel-drift", "sedge-harbor-porch")
+    text = text.replace("spool-hazel-drift", "tidal-quill-meadow")
     target.write_text(text)
     errors = ct.validate_library()
     assert any("duplicate receipt" in e for e in errors), errors
@@ -642,7 +642,7 @@ def test_omitted_mandatory_contract_fails_verification(tmp_repo):
     out = []
     skip = 0
     for i, ln in enumerate(lines):
-        if ln.strip() == "status-and-state@2.0.0":
+        if ln.strip() == "status-and-state@2.1.0":
             skip = 3  # skip the id + receipt + status lines
             continue
         if skip > 0:
