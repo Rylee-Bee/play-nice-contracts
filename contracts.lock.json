@@ -112,7 +112,7 @@
       "id": "floor",
       "version": "1.0.0",
       "path": "contracts/everyone/FLOOR.md",
-      "sha256": "49608887b0d3f3692b3c929333daddd4d4e238c5610d945f165e15f7f4fd35a1",
+      "sha256": "532d24adc92d6f937c774704a506f25a4373a2085503cfda163892ae2704bf21",
       "receipt": "honey-cell-lantern",
       "status": "canonical"
     },
@@ -270,10 +270,10 @@
     },
     {
       "id": "status-and-state",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "path": "contracts/everyone/STATUS_AND_STATE.md",
-      "sha256": "6571f16b4556c9c2214fd0f6a2e6563960f0ccf330a24f2049d9432065ebbfba",
-      "receipt": "sedge-harbor-porch",
+      "sha256": "5f98b47b1b97e25d3614c7abee6f90fdc5540619458ff401e50567598c312cee",
+      "receipt": "tidal-quill-meadow",
       "status": "canonical"
     },
     {
