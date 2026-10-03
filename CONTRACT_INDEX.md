@@ -15,7 +15,7 @@ All participants: truth, status words, asking, working together, recovery, owner
 | `ownership-and-portability` | Ownership and Portability | 2.0.0 | canonical | Tools are temporary, so the owner's truth must outlive every one of them and stay movable on the owner's terms. |
 | `project-context` | Project Context | 2.0.0 | canonical | A new session should orient from durable files, not rediscover the project and its participants from scratch every time. |
 | `recovery-and-history` | Recovery and History | 2.0.0 | canonical | Mistakes and failures happen, so risky changes need a tested way back and every meaningful change needs a record of who, when, and why. |
-| `status-and-state` | Status and State | 2.0.0 | canonical | One shared status vocabulary and honest errors let people and machines tell broken from not-set-up from not-checked without guessing. |
+| `status-and-state` | Status and State | 2.1.0 | canonical | One shared status vocabulary and honest errors let people and machines tell broken from not-set-up from not-checked without guessing. |
 | `truth-and-evidence` | Truth and Evidence | 2.0.0 | canonical | Confident reports drift from reality, so every claim needs its evidence and every unchecked belief needs a cheap test before it can steer work. |
 | `working-together` | Working Together | 2.0.0 | canonical | Cooperation lasts when work is offered and agreed rather than imposed, contributions are right-sized, and criticism points at a repair. |
 
