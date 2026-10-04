@@ -86,10 +86,10 @@
     },
     {
       "id": "depth-on-demand",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "path": "contracts/people/DEPTH_ON_DEMAND.md",
-      "sha256": "e816b5f16fac711f187493eb8dffc83d842fe86cfdc9a22a5b7ce66f47a78831",
-      "receipt": "garnet-birch-spire",
+      "sha256": "63e6a1e78f85cd689daf5d1b29ff877cde694c6588ec85f639a5192a6c0c399e",
+      "receipt": "cedar-stair-compass",
       "status": "canonical"
     },
     {
@@ -198,10 +198,10 @@
     },
     {
       "id": "plain-language",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "path": "contracts/surfaces/PLAIN_LANGUAGE.md",
-      "sha256": "eddf9c739bf2a8aa45cf66e9d9f65475b73a62df8b9af079d16102e1a3bf4f7e",
-      "receipt": "birch-poplar-stone",
+      "sha256": "c4911da6aa0f271b6f9af394a9479704ed658489cbc7401073dfacf35c6562c7",
+      "receipt": "lantern-bridge-thimble",
       "status": "canonical"
     },
     {
