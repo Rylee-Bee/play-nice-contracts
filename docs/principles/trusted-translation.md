@@ -35,6 +35,8 @@ This document explains the mental model behind that cooperation in three sentenc
 
 Everything else here is a working-out of those three sentences.
 
+For the learner-facing companion idea — using a familiar structural analogy to make an unfamiliar system easier to enter without replacing literal truth — see [The Scotty Principle](scotty-principle.md).
+
 ---
 
 ## The Saru metaphor

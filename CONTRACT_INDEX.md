@@ -43,7 +43,7 @@ Anything a person uses: attention, accessibility, sensory safety, depth, themes.
 |---|---|---|---|---|
 | `accessibility` | Accessibility | 2.0.0 | canonical | The default product already works for people with different vision, motor control and assistive technology; preferences may add comfort but never lower the floor. |
 | `attention-and-quiet` | Attention and Quiet | 2.0.0 | canonical | A person's attention is borrowed, not owned; healthy systems spend almost none of it, and pausing and coming back is designed for, not suffered. |
-| `depth-on-demand` | Depth on Demand | 2.0.0 | canonical | Useful complexity is kept, not deleted; it is organized so a beginner has a clear path and an expert can drill all the way down. |
+| `depth-on-demand` | Depth on Demand | 2.1.0 | canonical | Useful complexity is kept, not deleted; it is organized so a beginner has a clear path and an expert can drill all the way down. |
 | `human-reliability` | Human Reliability | 2.0.0 | canonical | A system must stay safe and understandable when the person using it is tired, interrupted or new, not only at their best. |
 | `sensory-safety` | Sensory Safety | 2.0.0 | canonical | Interfaces stay usable for people sensitive to light, motion and sound as plain engineering requirements; start still, keep motion meaningful, never demand it. |
 | `themes-and-personalization` | Themes and Personalization | 2.0.0 | canonical | People make the product theirs without customization eroding accessibility, coherence or meaning. |
@@ -59,7 +59,7 @@ APIs, CLIs, web UIs, rooms: plain words, one truth for people and machines, setu
 | `cli` | CLI | 2.0.0 | canonical | The command line is a first-class view of the system: usable by a tired human, scriptable by cron, inspectable by agents. |
 | `design-fidelity` | Design Fidelity | 2.0.0 | canonical | The approved design is data in the repo, checked layer by layer, so what ships matches what was decided — with no design tool required. |
 | `one-truth-two-views` | One Truth, Two Views | 2.0.0 | canonical | One fact stored once and shown twice: plain words for people, stable shapes for machines, both generated from the same source. |
-| `plain-language` | Plain Language | 2.0.0 | canonical | Words are part of every surface, so they get the same care as the rest: honest, short, and actionable. |
+| `plain-language` | Plain Language | 2.1.0 | canonical | Words are part of every surface, so they get the same care as the rest: honest, short, and actionable. |
 | `room` | Room | 2.2.0 | canonical | Many small independent backends can share one front door only if each serves the same few endpoints with the same honest shapes. |
 | `library` | Library | 1.2.0 | canonical | Many apps can teach people how they work only if their books share one shape that a beginner and an expert can both read, and one home can gather them without rewriting them. |
 | `setup-checks-itself` | Setup Checks Itself | 1.0.0 | canonical | A setup that ends in "should work now" is a guess, so every setup offers a real check the person can run on the spot. |

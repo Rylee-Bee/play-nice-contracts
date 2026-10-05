@@ -1,7 +1,7 @@
 ---
 contract_id: depth-on-demand
 title: Depth on Demand
-version: 2.0.0
+version: 2.1.0
 status: canonical
 layer: people
 applies: [ui, product, docs, workflows]
@@ -9,7 +9,7 @@ triggers: [docs, documentation, help, onboarding, guide, wizard, tutorial, advan
 rationale: Useful complexity is kept, not deleted; it is organized so a beginner has a clear path and an expert can drill all the way down.
 ---
 
-<!-- contract-receipt: garnet-birch-spire -->
+<!-- contract-receipt: cedar-stair-compass -->
 
 # Depth on Demand
 
@@ -17,7 +17,8 @@ rationale: Useful complexity is kept, not deleted; it is organized so a beginner
 
 Keep the depth; control when it shows. Smallest useful amount first, honest
 steps down to full detail, and an optional guided path for genuinely complex
-flows.
+flows. Familiar explanations and analogies may help someone enter; they never
+replace the path to the real system.
 
 ## Applies when
 
@@ -62,6 +63,11 @@ flows.
     resuming lands at the same point (see attention-and-quiet).
 13. **Docs climb the same ladder.** Quickstart, then explanation, then
     reference, then internals — the reference is one link from the summary.
+14. **Scaffolding leads to bedrock.** A simplified explanation or analogy
+    must keep the real term reachable and let the reader continue to the
+    actual mechanism. Where an analogy stops being accurate in a way that
+    matters, make that limit discoverable before the reader would rely on the
+    wrong model. (SHOULD)
 
 ## Examples
 
@@ -71,15 +77,22 @@ flows.
 - "Guide me through connecting a Git provider": choose provider → credentials
   → verify connection (a live probe, not trust) → pick scope → first sync;
   each step verified, resumable, skippable.
+- Teaching a work queue may begin with "a line at a counter". The next level
+  names it as a work queue; deeper levels explain concurrency, retries and
+  ordering instead of stretching the line analogy past usefulness.
 - Not: an "Advanced" section holding fields the basics actually require; a
   settings page that dumps the full config schema at once.
+- Not: a friendly analogy with no route to the real term, or one whose hidden
+  exception changes a safety or authority decision.
 
 ## Why
 
 "Simple for beginners, powerful for experts" is a false fight: it settles by
 controlling when complexity enters attention. Systems that delete technical
 views make experts fight them; systems that dump everything exhaust everyone
-else; summaries that go nowhere break trust.
+else; summaries that go nowhere break trust. A beginner should be able to
+enter the explanation, and an expert should be able to keep walking until they
+reach bedrock.
 
 ## You're done when
 
@@ -87,5 +100,7 @@ else; summaries that go nowhere break trust.
   levels.
 - An expert reaches full technical detail for any important object within two
   interactions.
+- A simplified explanation or analogy never becomes a dead end; the real term,
+  mechanism, and any consequential limit are reachable.
 - Every expandable summary shows exactly what it claimed; no dead ends.
 - Every guide can be left, resumed, skipped, and finished.
