@@ -170,8 +170,11 @@ different one: `check_freshness` returns `CURRENT | BEHIND | DIVERGED | UNREACHA
 
 ### The drift is not theoretical
 
-Three manifests are accepted by the repo's own validator today but rejected by the repo's own
-JSON Schema. Reproduced by the matrix script reproduced in full below:
+Two manifests are accepted by the repo's own validator today but rejected by the repo's own
+JSON Schema. A third, `pinned` + `automatic`, is **accepted by the committed schema too** and is
+rejected only by the cross-field rule the prototype `.cue` adds — it is a rule the committed
+`schema/adoption.schema.json` does not contain, so that row is not schema drift. Reproduced by the
+matrix script reproduced in full below:
 
 | Case | `contractctl.validate_adoption_manifest` | `jsonschema` 4.23.0 (spec-correct) | CUE reading the committed JSON Schema | CUE reading the prototype `.cue` |
 | --- | --- | --- | --- | --- |
@@ -365,7 +368,10 @@ Why it is awkward today, precisely:
   validates each field in isolation and returns `{'policy': ..., 'ref': ..., 'update': ...}`. It
   never relates them.
 - So a manifest can read `update: automatic`, pass `contractctl validate`, pass CI, and then
-  silently never advance. This repo's own `.contracts/adoption.yaml:17` uses
+  never advance, because the `require-current` gate in `sync_pin_if_allowed` still applies and
+  refuses to refresh a `pinned` manifest. The gate is deliberate, but the failure is invisible to
+  the person who wrote the manifest: nothing they run relates the two fields. This repo's own
+  `.contracts/adoption.yaml:17` uses
   `update: automatic` and is correct only because `:15` also says `policy: require-current` — the
   relationship lives in a comment block at `:1-7`, not in anything a tool checks.
 
@@ -524,7 +530,8 @@ homelab '0000000' str errors= []
 and the drift is invisible. This is a genuine finding, and it is **not** a CUE-vs-JSON-Schema
 disagreement: `jsonschema` 4.23.0 rejects the same documents too. The committed YAML and the
 committed schema disagree today; only the lenient parser hides it. Quoting the sentinel in four
-example files fixes it, and that is a one-character change with no tool at all.
+example files fixes it, and that is a two-character change per file — the two quote marks — with
+no tool at all.
 
 ### Error-message quality — honest reading
 
@@ -637,7 +644,7 @@ therefore never trust. That is reject condition 2 verbatim.
 
 | # | File / lines | What | Cheapest correct fix |
 | --- | --- | --- | --- |
-| 1 | `examples/homelab.adoption.yaml:9`, `examples/personal-world.adoption.yaml:9`, `examples/vefr.adoption.yaml:10`, `examples/project-context/.project/contracts/adoption.yaml:8` | `revision: 0000000` parses as integer 0, contradicting `"type": "string"` in `schema/adoption.schema.json:30` | quote the sentinel: `revision: "0000000"`. Four characters. Confirmed by PyYAML and by CUE. |
+| 1 | `examples/homelab.adoption.yaml:9`, `examples/personal-world.adoption.yaml:9`, `examples/vefr.adoption.yaml:10`, `examples/project-context/.project/contracts/adoption.yaml:8` | `revision: 0000000` parses as integer 0, contradicting `"type": "string"` in `schema/adoption.schema.json:30` | quote the sentinel: `revision: "0000000"`. Two characters per file — the two quote marks. Confirmed by PyYAML and by CUE. |
 | 2 | `contractctl.py:1950-1953` | `validate_adoption_manifest` enforces only `additionalProperties`; `notes` `maxLength` 2000, `revision` `minLength` 7 / `maxLength` 64 and `project` `maxLength` 64 are declared but never checked | ~6 lines in `validate_adoption_manifest`, or replace that function's schema handling with `jsonschema.Draft202012Validator` (one import; it is already available in this environment but is not a declared runtime dep) |
 | 3 | `contractctl.py:431-464` | `_validate_against_contract_schema` implements 7 of the 18 keywords used across `schema/`; `minLength` on `contract.title` is the clearest miss, proven above | add `minLength` (one `elif`), or delegate |
 | 4 | `contractctl.py:645-658` `playnice.py` | the `update: automatic ⇒ policy: require-current` rule exists only in `sync_pin_if_allowed` | ~4 lines in `freshness_config` (`contractctl.py:2038`), which every caller already goes through |
