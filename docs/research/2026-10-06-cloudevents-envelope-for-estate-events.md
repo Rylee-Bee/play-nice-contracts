@@ -18,13 +18,15 @@ Study for Rylee-Bee/play-nice-contracts#55. Envelope first, transport later.
 ## Summary
 
 Every estate event this clone can actually observe already has a stable JSON
-shape with its own vocabulary, its own correlation field, its own timestamp
-field and its own source field. A CloudEvents 1.0 envelope maps onto all three
-prototype events cleanly and validates with zero errors against the published
-CloudEvents JSON Schema, so the technology works; the question is whether it
-removes anything. Of the six extensions the issue asks about, three are already
-covered by standard CloudEvents attributes and two are already covered by
-existing local vocabulary, leaving exactly one worth adopting
+shape with its own vocabulary, its own timestamp field and its own source
+field, and none of them carries a correlation id.
+The identity fields these events carry name the entity an event is about, not the chain of actions that produced it, so they are not a correlation id.
+A CloudEvents 1.0 envelope maps onto
+all three prototype events cleanly and validates with zero errors against
+the published CloudEvents JSON Schema, so the technology works; the question is
+whether it removes anything. Of the six extensions the issue asks about, three
+are already covered by standard CloudEvents attributes and two are already
+covered by existing local vocabulary, leaving exactly one worth adopting
 (`traceparent`/`tracestate`). Inside a single repository where producer and
 consumer are the same process, a CloudEvents envelope adds a decode step to
 every existing consumer and retires no adapter. No demonstrated replay,
@@ -497,7 +499,7 @@ documentation version "2.15 (latest)".
 |---|---|---|
 | Delivery | "Core NATS delivers messages only to subscribers connected at the moment of publication — at most once, never replayed. JetStream adds a persistence layer on top, giving you at-least-once delivery — messages survive restarts and can be replayed." | Replay becomes possible. Nothing in the inventory shows a consumer that needs it — every row is either re-readable at the owner or, for `service health changed`, explicitly required to be re-observed live. |
 | Fan-out | Core NATS: "Every subscriber gets a copy… Subscribing doesn't consume or remove messages." | Already available in Core NATS, with no JetStream and no persistence. |
-| Load balancing | Queue groups are documented as "same pub/sub, but with built-in load balancing". | A task-claim system needs exclusivity, which queue groups give as message routing — but only if exactly one owner of truth accepts the claim atomically. Routing a claim does not make it exclusive across workers that were offline. |
+| Load balancing | Queue groups are documented as "same pub/sub, but with built-in load balancing". | Two different things are being run together here. Queue groups route a message; they do not own a task. Exclusivity does not follow from routing: routing a claim to one worker does not make the claim exclusive, because exclusivity needs a single owner of truth to accept the claim atomically, which is durable owner state and not a transport property. |
 | Retention | "The stream keeps messages until it hits a limit (size, age, or count). The other options are Interest and WorkQueue, which delete messages once a consumer has read them." | Work-queue retention and interest retention both delete on read, i.e. neither is a replay store. Only Limits retention replays, and only until a limit is hit. |
 | Limits are mandatory in practice | "Unlimited defaults grow forever… a production stream needs at least one limit so old orders age out before the disk does." | A second durable store with its own sizing, expiry and archival policy — new operational surface. |
 | Operational gotchas, documented | "A stream name is permanent. There's no rename." / "Only one stream can keep a given subject… If a subject overlaps, the server turns it down." / Duplicate window defaults to 2m0s, keyed on `Nats-Msg-Id`. | Every new event class is a stream-or-subject decision with a one-way door attached. |
@@ -775,7 +777,17 @@ CloudEvents binding (`1.0.3-wip`).
    that no local convention can. Until then it costs a decoder everywhere and
    returns nothing.
 
-REJECT -- The answer is neither envelope nor envelope plus NATS: every estate event observable in this clone already carries its own versioned vocabulary and correlation fields, all three prototype mappings validate against the published CloudEvents JSON Schema with zero errors, and yet the envelope retires no bespoke adapter because every producer and consumer here is the same process, so the envelope should not be adopted now and the broker should never be adopted without a demonstrated replay, fan-out or offline-delivery problem that direct calls plus durable owner state plus telemetry do not already solve.
+REJECT -- The answer is neither envelope nor envelope plus NATS: every estate
+event observable in this clone already carries its own versioned vocabulary, its
+own timestamp field and its own source field, and none of them carries a
+correlation id.
+The identity fields these events carry name the entity an event is about, not the chain of actions that produced it, so they are not a correlation id.
+All three prototype mappings validate against the published CloudEvents JSON
+Schema with zero errors, and yet the envelope retires no bespoke adapter.
+Every producer and consumer found in this clone is in the same process; cross-repository producer and consumer pairings were not measured.
+So the envelope should not be adopted now and the broker should never be adopted
+without a demonstrated replay, fan-out or offline-delivery problem that direct
+calls plus durable owner state plus telemetry do not already solve.
 
 ## Unresolved
 
