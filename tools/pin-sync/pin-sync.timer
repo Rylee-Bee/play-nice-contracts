@@ -2,6 +2,16 @@
 Description=Run the Play-Nice pin robot every 15 minutes
 
 [Timer]
+# Cadence anchor: OnCalendar is the wall-clock trigger and the only spec that
+# always re-arms. OnBootSec expires once and never returns; OnUnitActiveSec has no
+# reference point when the service has not run yet this boot. Activate this timer
+# later than OnBootSec after a boot and both are spent, so systemd parks it at
+# `active (elapsed)` / `Trigger: n/a` and it never fires again -- silently, with no
+# failed unit and no journal entry after the last good run. That is what froze
+# chat-sync.timer on 2026-10-02 for four days. The relative cadence below is kept
+# for its own semantics; OnCalendar is the backstop that makes the timer self-heal.
+# anchor: every 5 min, offset :09
+OnCalendar=*:09/5
 OnBootSec=5min
 OnUnitActiveSec=15min
 Persistent=true
