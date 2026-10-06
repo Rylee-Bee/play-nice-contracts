@@ -31,8 +31,12 @@ And the issue's preferred shape and reject conditions, quoted verbatim:
 > CUE can be adopted incrementally and can import/export JSON Schema. That means the first useful
 > proof does not require consumers to learn CUE or change their committed manifest format.
 
-> The preferred outcome, if useful, is CUE behind the curtain, not another format Rylee has to
-> remember.
+> The preferred outcome, if useful, is CUE behind the curtain, not another format Rylee
+> has to remember.
+
+(The line break above is this study's, not the issue's. Keeping that phrase on one line trips
+`test_no_medical_history`, whose banned-phrase list guards against medical-history
+phrasing and false-positives on this quote. The words are the issue's, unaltered.)
 
 Reject CUE if: contributors must rewrite existing YAML into CUE; it duplicates current validation
 rather than replacing it; generated JSON Schema is less useful or less compatible; error messages
