@@ -27,7 +27,10 @@ the published CloudEvents JSON Schema, so the technology works; the question is
 whether it removes anything. Of the six extensions the issue asks about, three
 are already covered by standard CloudEvents attributes and two are already
 covered by existing local vocabulary, leaving exactly one worth adopting
-(`traceparent`/`tracestate`). Inside a single repository where producer and
+(`traceparent`/`tracestate`) — and even that one is a per-execution
+propagation context, not the durable cross-surface correlation id
+`OBSERVABILITY.md` rule 3 asks for, which this document recommends separately.
+Inside a single repository where producer and
 consumer are the same process, a CloudEvents envelope adds a decode step to
 every existing consumer and retires no adapter. No demonstrated replay,
 fan-out or offline-delivery problem exists in the evidence available in this
@@ -178,9 +181,9 @@ The issue names six extension candidates. Here is what each one becomes.
 | Issue's candidate | Decision | Where it lives | Why |
 |---|---|---|---|
 | World Tree role ID | **no new extension** | `data.actor.role` | `schema/question.schema.json` `$defs/participant` already defines `{type, id, role}` and is already the repo's participant shape. A second attribute for the same three facts is the custom plumbing the rule tells us to remove. Whether a "World Tree role id" is the same string as this `role` field is **UNVERIFIED** — no World Tree artifact exists in this clone. |
-| receipt and provenance reference | **no new extension; one standard extension, optional** | `data.receipt_word`, `data.receipt_line`, `data.evidence[]`, and the standard `dataref` attribute for the artifact location | The receipt is already a deterministic function of the library, re-derived by `playnice check` on every run; it needs a field, not an extension. Provenance by reference is already the repo's shape (`schema/references.schema.json` uses `export`, `provenance.observed_at`, `provenance.method`). `dataref` is the claim-check pattern and is only worth carrying when the payload is large; in all three prototype events it points at a badge SVG. |
+| receipt and provenance reference | **no new extension; one standard extension, optional** | `data.receipt_word`, `data.receipt_line`, `data.evidence[]`, and the standard `dataref` attribute for the artifact location | The receipt is already a deterministic function of the library, re-derived by `playnice check` on every run; it needs a field, not an extension. Provenance by reference is already the repo's shape (`schema/references.schema.json` uses `export`, `provenance.observed_at`, `provenance.method`). `dataref` is the claim-check pattern and is only worth carrying when the payload is large; of the three prototype events only the receipt mapping carries it, pointing at a badge SVG, and the other two payloads are small enough to inline — the validator at "Validation against the published CloudEvents JSON Schema" below confirms this (`dataref` appears only in `out-receipt.json`). |
 | Project Home task and mission correlation | **no new extension** | `data.task_id`, `data.mission_id`, and the standard `subject` attribute for the entity the event is about | CloudEvents' own Correlation extension (`correlationid`, `causationid`) exists, but the extensions index states these "have no official standing and might be changed, or removed, at any time." Two ids in `data`, reused from whatever Project Home already has, cost fewer concepts than an unstable attribute that also duplicates them. The Project Home id shape is **UNVERIFIED** — no Project Home artifact exists in this clone. |
-| W3C trace context | **adopt, the only extension taken** | standard `traceparent` (+ optional `tracestate`) from the CloudEvents Distributed Tracing extension | This is the one with a real external standard behind it: W3C Trace Context, Recommendation 23 November 2021. `contracts/work/OBSERVABILITY.md` rule 3 already requires "a correlation or request id across services so one action can be followed from surface to dependency and back", and no such id exists anywhere in this repo — `grep -rni "traceparent\|trace_id\|opentelemetry\|otel"` returns nothing. This is a genuine gap, and the extension fills exactly that gap with a name everyone already knows. |
+| W3C trace context | **adopt, the only extension taken** | standard `traceparent` (+ optional `tracestate`) from the CloudEvents Distributed Tracing extension | This is the one with a real external standard behind it: W3C Trace Context, Recommendation 23 November 2021. That makes it the right attribute to carry **if this envelope is ever adopted**, and it is still the only candidate here with an external standard rather than a local convention — but it does not fill the gap `contracts/work/OBSERVABILITY.md` rule 3 names, and it is not a substitute for what that rule asks for. Rule 3 requires "a correlation or request id across services so one action can be followed from surface to dependency and back", and no such id exists anywhere in this repo — `grep -rni "traceparent\|trace_id\|opentelemetry\|otel"` returns nothing. Two different things are easy to confuse here, and they are not the same: `traceparent` is a **distributed-tracing propagation context**, scoped to one live execution, carrying parent/span and sampling flags, and it is only useful to something that is already inside that execution; a **durable cross-surface correlation id** is an ordinary identifier that has to survive being written into a rendered handoff line, a badge, a CI log, and read back by another surface minutes or days later. Neither covers the other. A traceparent copied into last Tuesday's handoff file identifies a trace that has ended and cannot be looked up; a durable id rendered into that line carries no span structure and propagates nothing. Rule 3 asks for the durable kind, because the surfaces here are rendered artefacts rather than live spans. **Recommended for the estate: the durable correlation id, now, as recommendation 2 below sets out** — one id rendered by the per-surface formatters, no envelope and no dependency. `traceparent` becomes worth carrying only when a separately deployed consumer makes a real distributed trace exist, which is the same trigger as the reopen condition below. |
 | schema and version | **no extension needed at all** | standard `dataschema` + `specversion` | The standard attributes already say which schema the data follows and which spec version produced the envelope. Proposing an extension here would add a second, competing way to say the same thing. |
 | safe authority classification | **no extension; one required data field** | `data.sensitivity` | CloudEvents' Data Classification extension defines `dataclassification` with recommended labels `public`/`internal`/`confidential`/`restricted` and a `dataregulation` field. Adopting it would import GDPR-flavoured vocabulary on top of a library whose own rule is "one recorded status: publishable, or private" (`PUBLIC_AND_PRIVATE.md` rule 1). If cross-organisation classification ever becomes a real requirement, borrow that attribute's *name* then; do not pre-import its vocabulary now. |
 
@@ -478,17 +481,24 @@ Therefore, in this design:
    approval.
 3. Trace context crosses the boundary; it is not the boundary's payload.
    `traceparent` links an occurrence to the execution that produced it, which
-   is precisely the "follow one action across services" that
-   `OBSERVABILITY.md` rule 3 asks for and that nothing in this repo provides
-   today.
+   serves "follow one action across services" for something already inside that
+   execution. It is not what `OBSERVABILITY.md` rule 3 asks for, because rule 3
+   asks for an id that survives into rendered output and is read back later, and
+   nothing in this repo provides that today — which is why the recommended fix
+   is a durable correlation id, not `traceparent`.
 
 If an envelope's `data` ever needs a field to answer "what is the current
 state?", that field belongs in a read of the owner, not in the envelope.
 
 ## Transport comparison
 
-JetStream against the simpler option: **direct HTTP plus durable owner state
-plus telemetry**. NATS is evaluated here; nothing is deployed.
+JetStream against what this estate actually does today: **a local CLI
+invocation, a git read, or a CI job dependency**, plus the telemetry the
+contracts already require. This study does not compare against HTTP, because
+HTTP is not an alternative this clone uses — there is no long-running service
+here to call. The alternative is the same Python dict, the same git clone, and
+the same job graph that the three prototype mappings already exercised. NATS is
+evaluated here; nothing is deployed.
 
 ### What JetStream actually buys, from its own documentation
 
@@ -506,14 +516,19 @@ documentation version "2.15 (latest)".
 | Consumer behaviour | Empty fetch is normal: the server replies 408 Request Timeout, or 404 No Messages for a no-wait fetch. `MaxAckPending` set below the batch size throttles the server rather than the client. | More consumer-side code than a synchronous call, for the same information. |
 | The binding itself | The CloudEvents NATS protocol binding is headed "NATS Protocol Binding for CloudEvents - Version 1.0.3-wip". | Even if JetStream were adopted, the mapping between the envelope and NATS is a work-in-progress document. |
 
-### What direct HTTP plus durable owner state plus telemetry already covers
+### What local CLI invocations, git reads and CI job dependencies already cover
+
+The "covered today" column below names the mechanism that exists in this
+repository, not an abstract direct-call pattern. In every row that mechanism is
+either a subprocess this repo already spawns, a git operation on a clone this
+repo already has, or a job dependency the CI workflow already declares.
 
 | Need | Covered today by | Cost to add JetStream |
 |---|---|---|
 | A consumer learns something changed | A pull from the owner: `playnice status --json`, `playnice check . --json`, `git ls-remote`, the GitHub API | One more service to deploy, back up, monitor, patch and upgrade |
 | What is true now | The owner. This is the only correct answer by the boundary above. | A second store that must be reconciled with the owner (EVENTS_AND_CACHING rule 9), forever |
 | "What did this run do, and how did it behave?" | OpenTelemetry traces and metrics | Nothing — OTel is orthogonal to the transport |
-| "What did we decide, and why?" | git history plus `schema/question.schema.json` artifacts plus the contract receipts | Nothing; git is already a replayable, durable, queryable log |
+| "What did we decide, and why?" | git history plus `CHANGELOG.md` plus `schema/question.schema.json` artifacts plus the contract receipts | Nothing; git is already a replayable, durable, queryable log |
 | Missed events | A periodic full reconciliation pass, which the contracts already require of every event-driven path | The reconciliation pass still has to exist; the broker does not remove it |
 | Consumer independence | The consumer reads the owner directly, so no consumer can be down without affecting only itself | Every consumer gains a second failure domain |
 
@@ -526,10 +541,19 @@ documentation version "2.15 (latest)".
   and completes in about a second. Replaying yesterday's `DIVERGED` tells you
   about yesterday.
 - The one event that would genuinely benefit from replay — the receipt
-  history — is already replayable, because it is a pure function of the library.
-  `git log contracts/everyone/FLOOR.md` reconstructs every previous receipt,
-  and `CHANGELOG.md` lines 144, 294, 328, 343-347 record them explicitly.
-  A broker would add a place to lose them.
+  history — is already replayable, because it is a pure function of the library,
+  and a broker would add a place to lose it. In a full clone, `git log
+  contracts/everyone/FLOOR.md` reconstructs every previous receipt. **In this
+  clone it does not**, and the claim is scoped accordingly: the clone is
+  shallow with a single grafted commit (`git rev-parse --is-shallow-repository`
+  returns `true`), `git log -- contracts/everyone/FLOOR.md` returns exactly one
+  commit, and the diff of that commit contains one receipt. The receipt history
+  is instead read from `CHANGELOG.md` lines 144, 294, 328 and 343-347, which
+  record each rotation explicitly (`gatehouse-meadow-juniper` →
+  `compass-fern-harbor`, and the four earlier rotations) — and which are in the
+  working tree and therefore as durable and queryable as the git history would
+  be. The conclusion does not depend on which of the two is used: neither is a
+  broker, and both are already built.
 - The one event that genuinely needs exclusivity (`task claimed`) cannot get it
   from a transport at all.
 - Fan-out is already available in Core NATS, which is not the thing under
@@ -538,7 +562,7 @@ documentation version "2.15 (latest)".
 So the second half of the decision rule — "adopt a broker only if replay,
 fan-out or offline delivery solve demonstrated problems that direct calls and
 current durable state do not" — fails on all three clauses. The demonstrated
-alternative (direct reads plus git plus OTel) wins every row in the table
+alternative (local CLI reads plus git plus OTel) wins every row in the table
 above, and it is already built.
 
 ### The first half of the decision rule: three real producers and consumers
@@ -552,14 +576,20 @@ across a process boundary, each of which today carries bespoke glue:
 - Consumers: the handoff file writer (`format_handoff`), the badge renderer,
   `cmd_status`'s text and JSON renderers, and the `library-gate` job.
 
-Every one of these is in the same repository, in the same process, or in the
-same CI job. They already receive the same Python dict. Wrapping that dict in
-a CloudEvents envelope would require each consumer to decode the envelope and
-then re-project it to the shape it already had — strictly more code on the
-consumer side, zero adapters removed on the producer side. The threshold in
-the decision rule ("removes bespoke adapters between at least three real
-producers and consumers") is not met, because at zero of those pairings is
-there an adapter to remove.
+**This count is scoped to this clone.** Everything below is what was found
+inside this one repository; producer and consumer pairings that cross a
+repository boundary were not measured, and nothing here should be read as a
+finding about the wider estate. See "Unresolved" below, which names this as the
+weakest joint in the recommendation.
+
+Within that scope: every one of these is in the same repository, in the same
+process, or in the same CI job. They already receive the same Python dict.
+Wrapping that dict in a CloudEvents envelope would require each consumer to
+decode the envelope and then re-project it to the shape it already had —
+strictly more code on the consumer side, zero adapters removed on the producer
+side. The threshold in the decision rule ("removes bespoke adapters between at
+least three real producers and consumers") is not met, because at zero of
+those pairings is there an adapter to remove.
 
 ## Adapters and code that could be retired
 
@@ -568,7 +598,7 @@ Honest accounting: this is the short list. The envelope retires none of it.
 | Candidate | Current bespoke machinery | Could an envelope retire it? |
 |---|---|---|
 | Per-surface re-rendering of the same facts | `format_handoff`, `_verified_line`, `_contracts_line`, `_unknown_line`, `_deferred_line` in `tools/playnice/playnice.py` (lines 1500-1571) each re-assemble status, receipts, contracts and unknowns into their own string format | **Not by the envelope.** The duplication is real and worth fixing, but the cause is five formatters over one dict, not a missing wire format. One emitter plus one renderer per surface fixes it with no new dependency |
-| Bespoke correlation ids | None exist — `grep -rni "traceparent\|trace_id\|correlation"` finds only the requirement in `OBSERVABILITY.md` rule 3 and the word "correlation" in `contracts/surfaces/API.md` | **Yes, partially.** `traceparent` fills this gap. But the gap can be closed with one `correlation_id` field at an equally low cost, and this repo's consumers are all local |
+| Bespoke correlation ids | None exist — `grep -rni "traceparent\|trace_id\|correlation"` finds only the requirement in `OBSERVABILITY.md` rule 3 and the word "correlation" in `contracts/surfaces/API.md` | **No, not by the envelope.** `traceparent` is a per-execution propagation context, so it does not fill the durable cross-surface gap rule 3 names. That gap is closed by one `correlation_id` field rendered by the per-surface formatters, which costs less than any envelope, and this repo's consumers are all local |
 | Provider status words leaking out | `playnice check` emits `worked` / `needs_fix` / `skipped` (`_check_item`, line 2500) against a closed 16-word vocabulary | **No.** One `STATE_MAP` at the CLI boundary, plus one test that diffs emitted strings against `schema/status.schema.json` the way `tests/test_status_words.py` diffs the Markdown copies. That is the highest-value change found by this study, and it needs no envelope |
 | Bespoke receipt handling | `RECEIPT_RE` + `check_receipt_rotation` + `bundle_receipt` + `_RECEIPT_WORDS` in `tools/contractctl/contractctl.py`, and `playnice verify` | **No.** This is a deliberate, working, fully deterministic mechanism with a lockfile and a test. An envelope would wrap it in a format without replacing a line of it |
 | Approval lifecycle | `schema/question.schema.json` — already an envelope-shaped artifact with `schema`, stable id, lifecycle `status`, `observed_at`-equivalent fields, `evidence`, and `secrets_policy: "excluded"` | **No.** It is already what a CloudEvents-shaped record looks like, in the repo's own vocabulary, enforced by `contractctl validate-question` |
@@ -576,7 +606,8 @@ Honest accounting: this is the short list. The envelope retires none of it.
 | CI run consumption | `library-gate` waits on a job *name*; no event machinery | **No.** A direct read of the run's conclusion is simpler and already correct |
 
 Summed up: the envelope removes **no** adapter. The one thing it genuinely
-offers — a correlation id that crosses process boundaries — is not needed by
+offers — a `traceparent` that crosses a process boundary during a live
+execution — is not needed by
 any pairing that exists in this clone. Meanwhile the study turned up a real
 defect (the `worked`/`needs_fix`/`skipped` divergence) whose fix is smaller,
 local and testable, and which an envelope would obscure rather than fix.
@@ -731,7 +762,9 @@ nothing. Five of the six extensions the issue asks about are already answered by
 a standard CloudEvents attribute or by vocabulary this repo already owns
 (`schema/status.schema.json`, `schema/question.schema.json`'s participant shape,
 `schema/references.schema.json`'s provenance); only `traceparent` survives, and
-the gap it fills has no cross-process consumer in this clone. The decision
+it has no cross-process consumer in this clone — nor is it the durable
+cross-surface correlation id `OBSERVABILITY.md` rule 3 asks for, which is a
+separate recommendation below. The decision
 rule's threshold — bespoke adapters removed between at least three real
 producers and consumers — is not met at any pairing: producer and consumer are
 the same process or the same CI job, already sharing one Python dict, so an
