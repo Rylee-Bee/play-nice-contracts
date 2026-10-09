@@ -1,5 +1,7 @@
 # Play-Nice
 
+[![Play-Nice](assets/badge/badge-current.svg)](assets/badge/README.md)
+
 ## What this is
 
 Where the estate's shared rules live: one short floor every person, agent, tool
