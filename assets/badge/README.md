@@ -24,7 +24,7 @@ every colour pair meets WCAG AA contrast (7.2, 5.5 and 5.2 to 1).
 playnice-badge.svg`) keeps it current:
 
 ```markdown
-[![Play-Nice](playnice-badge.svg)](https://github.com/Rylee-Bee/play-nice-contracts)
+[![Play-Nice](playnice-badge.svg)](https://github.com/rylee-bee-labs/play-nice-contracts)
 ```
 
 ## The sticker
@@ -35,7 +35,7 @@ For a README, a site footer, or a laptop. It says you joined; it isn't a
 check result, so pair it with the badge if you want proof.
 
 ```markdown
-<img src="https://raw.githubusercontent.com/Rylee-Bee/play-nice-contracts/main/assets/badge/sticker-hive.svg" width="120" alt="Play-Nice: joined the hive">
+<img src="https://raw.githubusercontent.com/rylee-bee-labs/play-nice-contracts/main/assets/badge/sticker-hive.svg" width="120" alt="Play-Nice: joined the hive">
 ```
 
 ## Floor stickers

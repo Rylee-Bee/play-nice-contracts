@@ -75,7 +75,7 @@ We would simply like to know what you learned.
 If you implemented Play Nice and it made something worse, didn't
 cover what you needed, didn't translate, or created unnecessary
 work, we want to hear about that. Open an issue on the canonical
-repository (`https://github.com/Rylee-Bee/play-nice-contracts`)
+repository (`https://github.com/rylee-bee-labs/play-nice-contracts`)
 or find a contact channel linked from there.
 
 Failure is information. The judge is also a participant.

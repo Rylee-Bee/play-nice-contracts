@@ -112,7 +112,7 @@ DISPOSITIONS = (
 def default_config() -> dict:
     return {
         "play_nice": {
-            "repository": "Rylee-Bee/play-nice-contracts",
+            "repository": "rylee-bee-labs/play-nice-contracts",
             "ref": "main",
             "freshness": "pinned",  # the global floor; manifests may raise
         },
@@ -2055,7 +2055,7 @@ def cmd_reconcile(args) -> int:
 # Exit codes: verify 0 current / 1 out of date / 2 invalid; check 0 plays
 # nice / 1 fix needed or behind / 2 could not check; start 0 / 2 error.
 
-LIBRARY_URL = "https://github.com/Rylee-Bee/play-nice-contracts"
+LIBRARY_URL = "https://github.com/rylee-bee-labs/play-nice-contracts"
 FLOOR_REL = "contracts/everyone/FLOOR.md"
 CONTRACTCTL_REL = "tools/contractctl/contractctl.py"
 BADGE_REL = "assets/badge"
@@ -2907,7 +2907,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/checkout@v4
         with:
-          repository: Rylee-Bee/play-nice-contracts
+          repository: rylee-bee-labs/play-nice-contracts
           path: .play-nice-library
       - run: python3 .play-nice-library/tools/playnice/playnice.py check --badge playnice-badge.svg
 """

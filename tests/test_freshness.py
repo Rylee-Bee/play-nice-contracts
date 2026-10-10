@@ -500,7 +500,7 @@ def test_adoption_rejects_invalid_freshness_policy(tmp_path):
     bad.write_text(
         "schema: play-nice/adoption-v1\n"
         "source:\n"
-        "  repository: Rylee-Bee/play-nice-contracts\n"
+        "  repository: rylee-bee-labs/play-nice-contracts\n"
         "  revision: deadbeef\n"
         "freshness:\n"
         "  policy: auto-current\n"

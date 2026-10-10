@@ -31,7 +31,7 @@ A project can opt into **current contracts** in its adoption manifest:
 ```yaml
 schema: play-nice/adoption-v1
 source:
-  repository: Rylee-Bee/play-nice-contracts
+  repository: rylee-bee-labs/play-nice-contracts
   revision: <reviewed SHA>
 freshness:
   policy: require-current   # pinned (legacy default) | require-current
