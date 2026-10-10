@@ -10,7 +10,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "repository": { "type": "string", "default": "Rylee-Bee/play-nice-contracts" },
+        "repository": { "type": "string", "default": "rylee-bee-labs/play-nice-contracts" },
         "ref": { "type": "string", "default": "main" },
         "freshness": {
           "enum": ["pinned", "require-current"],

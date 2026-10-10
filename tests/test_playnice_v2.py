@@ -304,7 +304,7 @@ def test_check_adoption_manifest_states(tmp_path):
         "schema: play-nice/adoption-v1\n"
         "project: t\n"
         "source:\n"
-        "  repository: Rylee-Bee/play-nice-contracts\n"
+        "  repository: rylee-bee-labs/play-nice-contracts\n"
         f"  revision: {library_head()}\n"
     )
     # old ids -> worked, with suggestions of the new ids

@@ -5,7 +5,7 @@ how the name is used and how forks should distinguish themselves.
 
 ## The official project
 
-- Canonical source: `https://github.com/Rylee-Bee/play-nice-contracts`
+- Canonical source: `https://github.com/rylee-bee-labs/play-nice-contracts`
 - Maintainer of record: Rylee Hulgan (the author)
 - Official communication channels: GitHub issues and pull requests
   on the canonical repository

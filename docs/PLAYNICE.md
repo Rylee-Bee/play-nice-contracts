@@ -151,7 +151,7 @@ freshness:
   enforce: require-current      # pinned | require-current (floor; manifests may strengthen)
 github:
   enabled: true                 # explicit opt-in; gh subprocess + token via PLAY_NICE_GITHUB_TOKEN
-  owner: Rylee-Bee
+  owner: rylee-bee-labs
   token_env: PLAY_NICE_GITHUB_TOKEN
 automation:
   merge-pull-requests: true

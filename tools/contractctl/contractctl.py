@@ -2806,7 +2806,7 @@ library for the full model. No secrets here — ever.
 schema: play-nice/adoption-v1
 project: {id}
 source:
-  repository: Rylee-Bee/play-nice-contracts
+  repository: rylee-bee-labs/play-nice-contracts
   revision: {revision}
 
 always:
@@ -3881,7 +3881,7 @@ def _default_repository() -> str:
             return str((load_adoption(own).get("source") or {}).get("repository", "") or "")
         except CTError:
             pass
-    return "Rylee-Bee/play-nice-contracts"
+    return "rylee-bee-labs/play-nice-contracts"
 
 
 def render_adoption_manifest(

@@ -38,7 +38,7 @@ When quoting or adapting documents in this directory, please
 attribute them to:
 
 > Rylee Hulgan, "Play Nice Contracts — Documentation" —
-> `https://github.com/Rylee-Bee/play-nice-contracts`
+> `https://github.com/rylee-bee-labs/play-nice-contracts`
 > Licensed under CC BY-SA 4.0.
 
 For the Opus specifically:

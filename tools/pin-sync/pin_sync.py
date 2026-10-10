@@ -34,7 +34,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-UPSTREAM = "Rylee-Bee/play-nice-contracts"
+UPSTREAM = "rylee-bee-labs/play-nice-contracts"
 CONFIG = Path(os.environ.get("PIN_SYNC_CONFIG", Path.home() / ".config/play-nice/pin-sync.json"))
 GH = os.environ.get("PIN_SYNC_GH", "gh")
 BRANCH_PREFIX = "play-nice/pin-"

@@ -14,7 +14,7 @@ play_nice:
   # authoritative Play Nice source; the consumer manifest's own pin is what
   # gets verified, but this floor means a repo's manifest cannot silently
   # downgrade freshness to 'pinned'.
-  repository: Rylee-Bee/play-nice-contracts
+  repository: rylee-bee-labs/play-nice-contracts
   ref: main
   freshness: require-current
 
